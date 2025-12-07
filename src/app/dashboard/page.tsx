@@ -15,11 +15,14 @@ export default async function DashboardPage() {
   // Fetch recent games with error handling
   let recentGames = [];
   try {
-    recentGames = await db.query.games.findMany({
-      where: eq(games.userId, session.user.id),
-      limit: 5,
-      orderBy: (games, { desc }) => [desc(games.createdAt)],
-    });
+    // Ensure session.user exists before accessing id
+    if (session?.user?.id) {
+      recentGames = await db.query.games.findMany({
+        where: eq(games.userId, session.user.id),
+        limit: 5,
+        orderBy: (games, { desc }) => [desc(games.createdAt)],
+      });
+    }
   } catch (error) {
     console.error("Error fetching recent games:", error);
     // Continue with empty array - don't crash the page
