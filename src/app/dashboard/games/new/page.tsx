@@ -3,17 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import ScoringBoard from "@/components/scoring/ScoringBoard";
+import ModernScoringBoard from "@/components/scoring/ModernScoringBoard";
 import { GameState } from "@/lib/game-logic";
+import { useScoringInterface } from "@/hooks/useScoringInterface";
+import InterfaceToggle from "@/components/scoring/InterfaceToggle";
 
 export default function NewGamePage() {
   const router = useRouter();
   const [gameMode, setGameMode] = useState<"single" | "multiplayer" | "tournament">("single");
   const [saving, setSaving] = useState(false);
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const { interfaceType, isLoaded } = useScoringInterface();
 
   const handleScoreUpdate = (newGameState: GameState) => {
     setGameState(newGameState);
   };
+
+  const showImmersive = isLoaded ? interfaceType === "immersive" : true;
 
   const handleSaveGame = async () => {
     if (!gameState || !gameState.isComplete) {
@@ -54,13 +60,100 @@ export default function NewGamePage() {
     }
   };
 
+  if (showImmersive) {
+    return (
+      <div className="h-screen w-screen overflow-hidden">
+        <ModernScoringBoard onScoreUpdate={handleScoreUpdate} />
+        
+        {/* Interface Toggle (floating) */}
+        <div className="fixed top-4 left-4 z-20">
+          <InterfaceToggle variant="dark" />
+        </div>
+
+        {/* Game Mode Selector (floating) */}
+        <div className="fixed top-4 left-48 z-20">
+          <div className="flex gap-2 bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+            <button
+              onClick={() => setGameMode("single")}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                gameMode === "single"
+                  ? "bg-zinc-800 text-zinc-100"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Single
+            </button>
+            <button
+              onClick={() => setGameMode("multiplayer")}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                gameMode === "multiplayer"
+                  ? "bg-zinc-800 text-zinc-100"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Multi
+            </button>
+            <button
+              onClick={() => setGameMode("tournament")}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                gameMode === "tournament"
+                  ? "bg-zinc-800 text-zinc-100"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              Tournament
+            </button>
+          </div>
+        </div>
+
+        {/* Save Game Button (floating) */}
+        {gameState?.isComplete && (
+          <div className="fixed bottom-4 left-4 right-4 z-20 flex gap-3">
+            <button
+              onClick={handleSaveGame}
+              disabled={saving}
+              className="flex-1 h-14 rounded-xl font-bold text-lg transition-colors disabled:opacity-50"
+              style={{
+                backgroundColor: "#22c55e",
+                color: "#f4f4f5",
+              }}
+              onMouseEnter={(e) => {
+                if (!saving) e.currentTarget.style.backgroundColor = "#16a34a";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#22c55e";
+              }}
+            >
+              {saving ? "Saving..." : "Save Game"}
+            </button>
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="px-6 h-14 rounded-xl font-semibold transition-colors"
+              style={{
+                backgroundColor: "#27272a",
+                color: "#f4f4f5",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#3f3f46"}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#27272a"}
+            >
+              Dashboard
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            New Game
-          </h1>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              New Game
+            </h1>
+            <InterfaceToggle />
+          </div>
           <div className="mt-4 flex gap-4">
             <button
               onClick={() => setGameMode("single")}
