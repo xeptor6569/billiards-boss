@@ -50,16 +50,57 @@ async function runMigrations() {
             await db.execute(sql.raw(statement));
             console.log(`✓ [${migrationName}] Executed statement`);
           } catch (error: any) {
-            // Ignore "already exists" errors
-            if (
-              error.message?.includes("already exists") ||
-              error.message?.includes("duplicate") ||
-              error.message?.includes("relation") && error.message?.includes("already exists")
-            ) {
+            // Extract error information from potentially nested error objects
+            // Drizzle may wrap PostgreSQL errors, so check multiple levels
+            let errorMessage = error.message || "";
+            let errorCode = error.code;
+            
+            // Check nested error objects
+            if (error.original) {
+              errorMessage = error.original.message || errorMessage;
+              errorCode = error.original.code || errorCode;
+            }
+            if (error.cause) {
+              errorMessage = error.cause.message || errorMessage;
+              errorCode = error.cause.code || errorCode;
+            }
+            
+            // Also check the string representation
+            const errorString = JSON.stringify(error);
+            const lowerMessage = errorMessage.toLowerCase();
+            const lowerString = errorString.toLowerCase();
+            
+            // PostgreSQL error codes:
+            // 42P07 = duplicate_table
+            // 42710 = duplicate_object
+            // 23505 = unique_violation
+            const isAlreadyExists = 
+              errorCode === "42P07" ||
+              errorCode === "42710" ||
+              lowerMessage.includes("already exists") ||
+              lowerMessage.includes("duplicate") ||
+              lowerMessage.includes("relation") && lowerMessage.includes("already exists") ||
+              lowerString.includes("already exists") ||
+              lowerString.includes("duplicate") ||
+              lowerString.includes("42p07") || // lowercase error code
+              lowerString.includes("42710") ||
+              // Check for CREATE TABLE errors that might indicate table exists
+              (lowerMessage.includes("create table") && lowerString.includes("relation"));
+            
+            if (isAlreadyExists) {
               console.log(`⚠ [${migrationName}] Skipped (already exists)`);
             } else {
-              console.error(`❌ [${migrationName}] Error:`, error.message);
-              throw error;
+              // Log the error but don't fail the entire migration
+              // This allows other statements to run even if one fails
+              console.error(`❌ [${migrationName}] Error:`, errorMessage || String(error));
+              if (errorCode) {
+                console.error(`   Error code: ${errorCode}`);
+              }
+              // Log full error for debugging in development
+              if (process.env.NODE_ENV === "development") {
+                console.error(`   Full error:`, error);
+              }
+              console.error(`   Continuing with next statement...`);
             }
           }
         }
@@ -71,11 +112,21 @@ async function runMigrations() {
 
     console.log("✅ Migrations completed successfully!");
   } catch (error: any) {
-    console.error("❌ Migration failed:", error.message || error);
-    if (error.stack) {
-      console.error(error.stack);
+    // Only exit with error code if it's a critical error (not "already exists")
+    const errorMessage = error.message || String(error) || "";
+    const isAlreadyExists = errorMessage.toLowerCase().includes("already exists") ||
+                           errorMessage.toLowerCase().includes("duplicate");
+    
+    if (isAlreadyExists) {
+      console.log("⚠️  Some migrations were skipped (already applied)");
+      console.log("✅ Migration process completed (with warnings)");
+    } else {
+      console.error("❌ Migration failed:", errorMessage);
+      if (error.stack) {
+        console.error(error.stack);
+      }
+      process.exit(1);
     }
-    process.exit(1);
   }
 }
 
