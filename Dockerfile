@@ -33,10 +33,14 @@ COPY --from=builder /app/server.ts ./
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/node_modules ./node_modules
-# Copy source files needed for database seeding and migrations
-# Copy the entire src/lib/db directory (includes seed.ts, index.ts, schema.ts)
+# Copy source files needed for runtime (server.ts dependencies)
+# Copy database files for seeding and migrations
 COPY --from=builder /app/src/lib/db ./src/lib/db
-# Copy tsconfig.json for TypeScript compilation
+# Copy websocket server (needed by server.ts)
+COPY --from=builder /app/src/lib/websocket ./src/lib/websocket
+# Copy game-logic (needed by websocket server and uses @/ alias)
+COPY --from=builder /app/src/lib/game-logic.ts ./src/lib/game-logic.ts
+# Copy tsconfig.json for TypeScript compilation (needed for @/ path aliases)
 COPY --from=builder /app/tsconfig.json ./
 
 # Install wget for healthcheck

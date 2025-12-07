@@ -4,7 +4,7 @@ import next from "next";
 import { initializeWebSocket } from "./src/lib/websocket/server";
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = process.env.HOSTNAME || "localhost";
+const hostname = process.env.HOSTNAME || "0.0.0.0";  // Default to 0.0.0.0 for Docker
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const app = next({ dev, hostname, port });
@@ -25,8 +25,12 @@ app.prepare().then(() => {
   // Initialize WebSocket server
   initializeWebSocket(server);
 
-  server.listen(port, () => {
+  // Explicitly bind to 0.0.0.0 to accept connections from all interfaces (needed for Docker)
+  server.listen(port, "0.0.0.0", () => {
     console.log(`> Ready on http://${hostname}:${port}`);
   });
+}).catch((err) => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
 });
 

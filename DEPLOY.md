@@ -305,11 +305,26 @@ netstat -tulpn | grep 3000
 
 Then retry the deployment.
 
-### Application Not Loading
-1. Check if containers are running: `docker compose ps`
-2. Check logs: `docker compose logs -f app`
-3. Verify Nginx is running: `sudo systemctl status nginx`
-4. Check firewall: `sudo ufw status`
+### Application Not Loading / 502 Bad Gateway
+1. **Check if containers are running**: `docker compose ps`
+2. **Check app logs for errors**: `docker compose logs -f app`
+   - Look for database connection errors
+   - Look for missing environment variables
+   - Look for server startup errors
+3. **Verify the app is listening on the correct interface**:
+   ```bash
+   # Inside the container, check if it's listening
+   docker compose exec app netstat -tuln | grep 3000
+   # Should show: tcp 0 0 0.0.0.0:3000 (not 127.0.0.1:3000)
+   ```
+4. **Test direct connection** (from host):
+   ```bash
+   curl http://10.10.20.44:3000/api/health
+   # Should return: {"status":"ok","timestamp":"..."}
+   ```
+5. **Verify Nginx is running**: `sudo systemctl status nginx`
+6. **Check Nginx error logs**: `sudo tail -f /var/log/nginx/error.log`
+7. **Check firewall**: `sudo ufw status`
 
 ### Database Connection Issues
 1. Verify database is running: `docker compose ps postgres`
