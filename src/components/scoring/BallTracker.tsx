@@ -38,28 +38,39 @@ export default function BallTracker({
 
       <div className="grid grid-cols-5 gap-3">
         {balls.map((ballNumber) => {
-          const isPocketed = ballsPocketed.some(
-            (count) => count >= ballNumber
-          );
-          const isClickable = !disabled && onBallClick && remainingBalls > 0 && ballNumber <= remainingBalls;
+          // Calculate cumulative total of balls pocketed so far
+          const totalPocketed = ballsPocketed.reduce((sum, count) => sum + count, 0);
+          // A ball is visually "pocketed" (green) if its number is <= the total already pocketed
+          const isPocketed = ballNumber <= totalPocketed;
+          
+          // For remaining balls, show balls starting from (totalPocketed + 1) up to 10
+          // These represent the remaining balls that can be pocketed
+          // Clicking on them means pocketing that many balls total (so we'll calculate the difference)
+          const startOfRemaining = totalPocketed + 1;
+          const isRemainingBall = ballNumber >= startOfRemaining && ballNumber <= 10;
+          const isClickable = !disabled && onBallClick && remainingBalls > 0 && isRemainingBall && ballNumber <= (totalPocketed + remainingBalls);
+          
+          // Calculate how many balls to pocket when clicking this ball
+          // If clicking ball 7 after pocketing 6, that means pocketing 1 more (7-6=1)
+          const ballsToPocket = isClickable ? ballNumber - totalPocketed : 0;
 
           return (
             <button
               key={ballNumber}
               type="button"
-              onClick={() => isClickable && onBallClick?.(ballNumber)}
-              disabled={!isClickable || isPocketed}
+              onClick={() => isClickable && onBallClick?.(ballsToPocket)}
+              disabled={!isClickable}
               className={`
                 flex h-12 w-12 items-center justify-center rounded-full
-                text-sm font-bold transition-all
+                text-sm font-bold transition-all relative
                 ${
-                  isPocketed
+                  isClickable
+                    ? "bg-blue-500 text-white hover:bg-blue-600 hover:scale-110 active:scale-95 cursor-pointer shadow-md ring-2 ring-blue-400 ring-offset-1"
+                    : isPocketed
                     ? "bg-green-500 text-white shadow-lg"
-                    : isClickable
-                    ? "bg-blue-500 text-white hover:bg-blue-600 hover:scale-110 active:scale-95 cursor-pointer shadow-md"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400"
                 }
-                ${isClickable && !isPocketed ? "hover:shadow-xl" : ""}
+                ${isClickable ? "hover:shadow-xl" : ""}
               `}
             >
               {ballNumber}
