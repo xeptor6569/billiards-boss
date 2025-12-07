@@ -13,7 +13,15 @@ export default async function DashboardPage() {
   }
 
   // Fetch recent games with error handling
-  let recentGames = [];
+  let recentGames: Array<{
+    id: number;
+    userId: string;
+    gameMode: string;
+    status: string;
+    createdAt: Date;
+    completedAt: Date | null;
+  }> = [];
+  
   try {
     // Ensure session.user exists before accessing id
     if (session?.user?.id) {
