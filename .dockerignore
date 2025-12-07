@@ -14,4 +14,7 @@ README.md
 .cursor
 .vscode
 *.md
+!README.md
+DEPLOY.md
+deploy.sh
 
