@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { db } from "./index";
 import { plans } from "./schema";
 import { eq } from "drizzle-orm";
