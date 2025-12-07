@@ -62,33 +62,59 @@ export default function FrameRibbon({
               `}
             >
               <div
-                className="rounded-lg border-2 p-2 min-w-[60px] text-center"
+                className="rounded-lg border-2 p-2 min-w-[80px] text-center"
                 style={{
                   borderColor: isCurrent ? "#22c55e" : "#27272a",
                   backgroundColor: isCurrent ? "rgba(34, 197, 94, 0.15)" : "#18181b",
                 }}
               >
-                <div className="text-xs mb-1" style={{ color: "#f4f4f5", opacity: 0.7 }}>
-                  {frame.frameNumber}
+                {/* Frame number */}
+                <div className="text-[10px] mb-1.5 font-semibold" style={{ color: "#f4f4f5", opacity: 0.8 }}>
+                  F{frame.frameNumber}
                 </div>
-                <div className="text-lg font-bold mb-1" style={{ color: "#f4f4f5" }}>{display || "—"}</div>
-                <div className="text-xs" style={{ color: "#f4f4f5", opacity: 0.6 }}>
-                  {cumulativeScore > 0 ? cumulativeScore : ""}
+                
+                {/* Main score display (X, /, or total) */}
+                <div className="text-xl font-bold mb-1.5" style={{ color: "#f4f4f5" }}>
+                  {display || "—"}
                 </div>
-                {/* Shot breakdown */}
+                
+                {/* Shot breakdown - horizontal layout */}
                 {frame.ballsPocketed.length > 0 && (
-                  <div className="flex gap-1 justify-center mt-1">
+                  <div className="flex gap-1 justify-center mb-1">
                     {frame.ballsPocketed.map((balls, idx) => (
-                      <span
+                      <div
                         key={idx}
-                        className="text-[10px]"
-                        style={{ color: "#f4f4f5", opacity: 0.5 }}
+                        className="rounded px-1.5 py-0.5 text-sm font-semibold"
+                        style={{
+                          backgroundColor: isCurrent ? "rgba(34, 197, 94, 0.3)" : "rgba(6, 182, 212, 0.2)",
+                          color: "#f4f4f5",
+                          minWidth: "20px",
+                        }}
                       >
-                        {balls === 0 ? "-" : balls}
-                      </span>
+                        {balls === 0 ? "—" : balls}
+                      </div>
                     ))}
+                    {/* Show empty slot for shot 2 if only shot 1 is recorded */}
+                    {frame.ballsPocketed.length === 1 && !frame.isStrike && (
+                      <div
+                        className="rounded px-1.5 py-0.5 text-sm font-semibold"
+                        style={{
+                          backgroundColor: "rgba(39, 39, 42, 0.5)",
+                          color: "#f4f4f5",
+                          opacity: 0.4,
+                          minWidth: "20px",
+                        }}
+                      >
+                        —
+                      </div>
+                    )}
                   </div>
                 )}
+                
+                {/* Cumulative score */}
+                <div className="text-xs font-semibold" style={{ color: "#22c55e", opacity: 0.9 }}>
+                  {cumulativeScore > 0 ? cumulativeScore : ""}
+                </div>
               </div>
             </div>
           );
