@@ -1,15 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { calculateUserStatistics } from "@/lib/statistics";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import StatsChart from "@/components/stats/StatsChart";
 
 export default async function StatsPage() {
   const session = await auth();
@@ -129,15 +121,7 @@ export default async function StatsPage() {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Performance Overview
           </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="value" fill="#4F46E5" />
-            </BarChart>
-          </ResponsiveContainer>
+          <StatsChart chartData={chartData} />
         </div>
       </div>
     </div>
