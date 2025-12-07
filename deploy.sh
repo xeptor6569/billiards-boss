@@ -22,7 +22,7 @@ fi
 
 # Build and start containers
 echo "🐳 Building and starting Docker containers..."
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # Wait for database to be ready
 echo "⏳ Waiting for database to be ready..."
@@ -30,11 +30,11 @@ sleep 10
 
 # Run migrations
 echo "📊 Running database migrations..."
-docker-compose exec -T app npm run db:migrate || echo "⚠️  Migration failed or already applied"
+docker compose exec -T app npm run db:migrate || echo "⚠️  Migration failed or already applied"
 
 # Seed database (idempotent)
 echo "🌱 Seeding database..."
-docker-compose exec -T app npm run db:seed || echo "⚠️  Seeding failed or already done"
+docker compose exec -T app npm run db:seed || echo "⚠️  Seeding failed or already done"
 
 # Check health
 echo "🏥 Checking application health..."
@@ -43,7 +43,7 @@ if curl -f http://localhost:3000/api/health > /dev/null 2>&1; then
     echo "✅ Application is healthy!"
 else
     echo "⚠️  Health check failed, but containers are running"
-    echo "Check logs with: docker-compose logs -f"
+    echo "Check logs with: docker compose logs -f"
 fi
 
 echo ""
@@ -51,8 +51,8 @@ echo "✅ Deployment complete!"
 echo "🌐 Application should be available at: https://dev.billiardsboss.com"
 echo ""
 echo "📋 Useful commands:"
-echo "  View logs: docker-compose logs -f"
-echo "  Stop: docker-compose down"
-echo "  Restart: docker-compose restart"
-echo "  Check status: docker-compose ps"
+echo "  View logs: docker compose logs -f"
+echo "  Stop: docker compose down"
+echo "  Restart: docker compose restart"
+echo "  Check status: docker compose ps"
 
