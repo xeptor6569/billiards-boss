@@ -42,20 +42,33 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 # Wait for database to be ready
 echo "⏳ Waiting for database to be ready..."
-sleep 10
+sleep 15  # Give database more time to be fully ready
+
+# Wait for app container to be healthy
+echo "⏳ Waiting for app container to be ready..."
+timeout=60
+elapsed=0
+while [ $elapsed -lt $timeout ]; do
+    if docker compose ps app | grep -q "running"; then
+        sleep 3  # Give it a moment to fully start
+        break
+    fi
+    sleep 2
+    elapsed=$((elapsed + 2))
+done
 
 # Run migrations
 echo "📊 Running database migrations..."
-docker compose exec -T app npm run db:migrate || echo "⚠️  Migration failed or already applied"
+docker compose exec app npm run db:migrate || echo "⚠️  Migration failed or already applied"
 
 # Seed database (idempotent)
 echo "🌱 Seeding database..."
-docker compose exec -T app npm run db:seed || echo "⚠️  Seeding failed or already done"
+docker compose exec app npm run db:seed || echo "⚠️  Seeding failed or already done"
 
 # Check health
 echo "🏥 Checking application health..."
 sleep 5
-if curl -f http://localhost:3000/api/health > /dev/null 2>&1; then
+if curl -f http://10.10.20.44:3000/api/health > /dev/null 2>&1; then
     echo "✅ Application is healthy!"
 else
     echo "⚠️  Health check failed, but containers are running"
