@@ -7,7 +7,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-billiards}
       POSTGRES_DB: ${POSTGRES_DB:-billiards_boss}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # Host port:Container port - change host port if 5432 is already in use
+      # The app connects via Docker network using service name 'postgres:5432' (internal)
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

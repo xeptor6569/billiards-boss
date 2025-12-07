@@ -21,8 +21,10 @@ sudo apt update && sudo apt upgrade -y
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 
-# Install Docker Compose (if not already installed)
-sudo apt install docker-compose -y
+# Docker Compose V2 is included with Docker Desktop and newer Docker installations
+# If you need to install it separately (older systems):
+# Note: Modern Docker (v20.10+) includes `docker compose` as a plugin
+# For older systems, you may need: sudo apt install docker-compose-plugin -y
 
 # Add your user to docker group (optional, to run without sudo)
 sudo usermod -aG docker $USER
@@ -58,7 +60,7 @@ Create `.env` file:
 POSTGRES_USER=billiards
 POSTGRES_PASSWORD=<generate-strong-password>
 POSTGRES_DB=billiards_boss
-POSTGRES_PORT=5432
+POSTGRES_PORT=5433  # Change if 5432 is already in use by another PostgreSQL instance
 
 # NextAuth
 NEXTAUTH_URL=https://dev.billiardsboss.com
@@ -89,6 +91,8 @@ APP_PORT=3000
 5. Wait for DNS propagation (usually instant with Cloudflare)
 
 ## Step 5: Set Up Reverse Proxy (Nginx)
+
+**Note**: If Nginx is running in a different Docker stack, you'll need to use the VM's LAN IP (10.10.20.44) instead of localhost in the proxy configuration.
 
 Install and configure Nginx to handle SSL and proxy to your app:
 
@@ -128,8 +132,10 @@ server {
     client_max_body_size 10M;
 
     # Proxy to Next.js app
+    # If Nginx is in a different Docker stack, use the VM's LAN IP instead of localhost
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://10.10.20.44:3000;  # Use VM LAN IP if Nginx is in different stack
+        # Alternative: If using Docker networking, use service name: http://billiards-boss-app:3000
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -146,7 +152,7 @@ server {
 
     # Health check endpoint
     location /api/health {
-        proxy_pass http://localhost:3000/api/health;
+        proxy_pass http://10.10.20.44:3000/api/health;  # Use VM LAN IP if Nginx is in different stack
         access_log off;
     }
 }
@@ -177,10 +183,10 @@ sudo certbot --nginx -d dev.billiardsboss.com
 cd /opt/billiards-boss-dev  # or wherever you cloned it
 
 # Build and start services
-docker-compose up -d --build
+docker compose up -d --build
 
 # Check logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## Step 8: Run Database Migrations
@@ -190,10 +196,10 @@ docker-compose logs -f
 sleep 10
 
 # Run migrations
-docker-compose exec app npm run db:migrate
+docker compose exec app npm run db:migrate
 
 # Seed default plans
-docker-compose exec app npm run db:seed
+docker compose exec app npm run db:seed
 ```
 
 ## Step 9: Verify Deployment
@@ -223,8 +229,8 @@ After=docker.service
 Type=oneshot
 RemainAfterExit=yes
 WorkingDirectory=/opt/billiards-boss-dev
-ExecStart=/usr/bin/docker-compose up -d
-ExecStop=/usr/bin/docker-compose down
+ExecStart=/usr/bin/docker compose up -d
+ExecStop=/usr/bin/docker compose down
 TimeoutStartSec=0
 
 [Install]
@@ -249,30 +255,30 @@ cd /opt/billiards-boss-dev
 git pull
 
 # Rebuild and restart
-docker-compose down
-docker-compose up -d --build
+docker compose down
+docker compose up -d --build
 
 # Run any new migrations
-docker-compose exec app npm run db:migrate
+docker compose exec app npm run db:migrate
 ```
 
 ## Monitoring
 
 ### Check Container Status
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### View Logs
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Just the app
-docker-compose logs -f app
+docker compose logs -f app
 
 # Just the database
-docker-compose logs -f postgres
+docker compose logs -f postgres
 ```
 
 ### Check Application Health
@@ -282,16 +288,68 @@ curl https://dev.billiardsboss.com/api/health
 
 ## Troubleshooting
 
+### Port Already in Use Error
+If you see `address already in use` for port 3000:
+
+```bash
+# Option 1: Stop existing containers
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+
+# Option 2: Find and stop the process using port 3000
+lsof -ti:3000 | xargs kill -9
+
+# Option 3: Check what's using the port
+lsof -i:3000
+netstat -tulpn | grep 3000
+```
+
+Then retry the deployment.
+
 ### Application Not Loading
-1. Check if containers are running: `docker-compose ps`
-2. Check logs: `docker-compose logs app`
+1. Check if containers are running: `docker compose ps`
+2. Check logs: `docker compose logs -f app`
 3. Verify Nginx is running: `sudo systemctl status nginx`
 4. Check firewall: `sudo ufw status`
 
 ### Database Connection Issues
-1. Verify database is running: `docker-compose ps postgres`
-2. Check database logs: `docker-compose logs postgres`
-3. Test connection: `docker-compose exec app node -e "require('dotenv').config(); console.log(process.env.DATABASE_URL)"`
+1. Verify database is running: `docker compose ps postgres`
+2. Check database logs: `docker compose logs postgres`
+3. Test connection: `docker compose exec app node -e "require('dotenv').config(); console.log(process.env.DATABASE_URL)"`
+
+### Nginx in Different Docker Stack
+
+If your Nginx reverse proxy is running in a different Docker stack/container:
+
+1. **Update Nginx config** to use the VM's LAN IP:
+   ```nginx
+   proxy_pass http://10.10.20.44:3000;  # Instead of localhost:3000
+   ```
+
+2. **Update docker-compose.prod.yml** to bind to all interfaces:
+   ```yaml
+   ports:
+     - "0.0.0.0:3000:3000"  # Accessible from LAN IP
+   ```
+
+3. **Alternative: Use Docker networking** (better approach):
+   - Create an external Docker network: `docker network create nginx-network`
+   - Connect both stacks to the same network
+   - Use service name in Nginx: `proxy_pass http://billiards-boss-app:3000;`
+
+### PostgreSQL Port Conflicts
+If you have another PostgreSQL instance using port 5432:
+
+```bash
+# Option 1: Use a different host port (recommended)
+# In your .env file, set:
+POSTGRES_PORT=5433
+
+# Option 2: Remove port mapping entirely (if you don't need external access)
+# Edit docker-compose.yml and comment out or remove the ports section for postgres
+# Containers can still communicate via Docker network using service name 'postgres'
+```
+
+**Note**: The app container connects to PostgreSQL via the Docker network using the service name `postgres:5432` (internal port), so changing the host port mapping doesn't affect the app's connection. The host port is only needed if you want to access the database from outside Docker (e.g., for backups, migrations from host machine, etc.).
 
 ### SSL Certificate Issues
 1. Renew certificate: `sudo certbot renew`
@@ -319,9 +377,9 @@ If you prefer not to open ports, use Cloudflare Tunnel:
 
 ```bash
 # Create backup
-docker-compose exec postgres pg_dump -U billiards billiards_boss > backup_$(date +%Y%m%d).sql
+docker compose exec postgres pg_dump -U billiards billiards_boss > backup_$(date +%Y%m%d).sql
 
 # Restore backup
-docker-compose exec -T postgres psql -U billiards billiards_boss < backup_20240101.sql
+docker compose exec -T postgres psql -U billiards billiards_boss < backup_20240101.sql
 ```
 

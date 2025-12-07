@@ -60,13 +60,13 @@
 
 2. **Start Services**
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. **Run Migrations and Seed**
    ```bash
-   docker-compose exec app npm run db:generate
-   docker-compose exec app npm run db:seed
+   docker compose exec app npm run db:generate
+   docker compose exec app npm run db:seed
    ```
 
 ## Database Migrations

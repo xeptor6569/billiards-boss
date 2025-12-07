@@ -1,5 +1,5 @@
 # Production Docker Compose configuration for dev.billiardsboss.com
-# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 services:
   app:
@@ -10,12 +10,12 @@ services:
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL}
     restart: always
-    # Remove port mapping if using reverse proxy (Nginx)
-    # ports:
-    #   - "3000:3000"
-    # Or keep it for direct access during setup
+    # Port mapping for reverse proxy access
+    # If Nginx is in a different Docker stack, bind to all interfaces (0.0.0.0)
+    # so Nginx can reach it via the VM's LAN IP
     ports:
-      - "127.0.0.1:3000:3000"  # Only accessible from localhost
+      - "0.0.0.0:3000:3000"  # Accessible from LAN IP (for Nginx in different stack)
+      # Alternative if Nginx is on same host: "127.0.0.1:3000:3000" (localhost only)
 
   postgres:
     restart: always

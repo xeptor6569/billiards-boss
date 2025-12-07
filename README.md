@@ -94,13 +94,13 @@ cp .env.example .env
 
 2. Build and start services:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 3. Run database migrations:
 ```bash
-docker-compose exec app npm run db:migrate
-docker-compose exec app npm run db:seed
+docker compose exec app npm run db:migrate
+docker compose exec app npm run db:seed
 ```
 
 The application will be available at `http://localhost:3000`.

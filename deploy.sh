@@ -20,6 +20,22 @@ if [ -d .git ]; then
     git pull
 fi
 
+# Stop any existing containers
+echo "🛑 Stopping any existing containers..."
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down 2>/dev/null || true
+
+# Check if port 3000 is in use by another process
+if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+    echo "⚠️  Port 3000 is already in use. Attempting to free it..."
+    # Try to find and stop the process
+    PID=$(lsof -Pi :3000 -sTCP:LISTEN -t 2>/dev/null | head -1)
+    if [ -n "$PID" ]; then
+        echo "   Found process $PID using port 3000. Stopping it..."
+        kill -9 $PID 2>/dev/null || true
+        sleep 2
+    fi
+fi
+
 # Build and start containers
 echo "🐳 Building and starting Docker containers..."
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
