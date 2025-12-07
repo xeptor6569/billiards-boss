@@ -55,9 +55,42 @@ export function addBallToFrame(
     return gameState;
   }
 
-  // Calculate remaining balls before adding this shot
-  const currentTotal = frame.ballsPocketed.reduce((sum, b) => sum + b, 0);
-  const remainingBeforeShot = TOTAL_BALLS - currentTotal;
+  const isTenthFrame = frame.frameNumber === 10;
+  
+  // For 10th frame with strikes: each strike resets available balls to 10
+  // For other frames or non-strike shots: calculate remaining from total
+  let remainingBeforeShot: number;
+  if (isTenthFrame) {
+    // In 10th frame, check if previous shot was a strike
+    const shotIndex = frame.ballsPocketed.length;
+    if (shotIndex === 0) {
+      // First shot: 10 balls available
+      remainingBeforeShot = TOTAL_BALLS;
+    } else if (shotIndex === 1) {
+      // Second shot: if first was strike, reset to 10; otherwise use remaining
+      const firstBall = frame.ballsPocketed[0];
+      remainingBeforeShot = firstBall === TOTAL_BALLS ? TOTAL_BALLS : TOTAL_BALLS - firstBall;
+    } else {
+      // Third shot: if second was strike OR if spare (first+second = 10), reset to 10; otherwise use remaining
+      const firstBall = frame.ballsPocketed[0];
+      const secondBall = frame.ballsPocketed[1];
+      const isSpare = firstBall + secondBall === TOTAL_BALLS && firstBall !== TOTAL_BALLS;
+      
+      if (secondBall === TOTAL_BALLS) {
+        remainingBeforeShot = TOTAL_BALLS; // Strike on shot 2 resets to 10
+      } else if (isSpare) {
+        remainingBeforeShot = TOTAL_BALLS; // Spare resets to 10 for bonus shot
+      } else {
+        // If first was strike, only count second ball; otherwise count both
+        const totalAfterFirst = firstBall === TOTAL_BALLS ? 0 : firstBall;
+        remainingBeforeShot = TOTAL_BALLS - totalAfterFirst - secondBall;
+      }
+    }
+  } else {
+    // Regular frames: calculate remaining from total
+    const currentTotal = frame.ballsPocketed.reduce((sum, b) => sum + b, 0);
+    remainingBeforeShot = TOTAL_BALLS - currentTotal;
+  }
 
   // Validate: can't pocket more than remaining balls
   if (ballsPocketed > remainingBeforeShot) {
@@ -68,24 +101,35 @@ export function addBallToFrame(
   // Add balls to frame (can be 0 for a miss)
   frame.ballsPocketed = [...frame.ballsPocketed, ballsPocketed];
 
-  const isTenthFrame = frame.frameNumber === 10;
-  const firstBall = frame.ballsPocketed[0] || 0;
-  const secondBall = frame.ballsPocketed[1] || 0;
   const totalBalls = frame.ballsPocketed.reduce((sum, b) => sum + b, 0);
 
-  // Check for strike (all 10 balls on first shot)
-  if (firstBall === TOTAL_BALLS && frame.ballsPocketed.length === 1) {
+  // Check for strike (all 10 balls on a shot)
+  // In 10th frame, can have strikes on shots 1, 2, or 3
+  const shotIndex = frame.ballsPocketed.length - 1;
+  const isStrikeOnThisShot = ballsPocketed === TOTAL_BALLS;
+  
+  if (isStrikeOnThisShot && shotIndex === 0) {
+    // Strike on first shot
     frame.isStrike = true;
     if (!isTenthFrame) {
       frame.isComplete = true;
     } else {
-      // 10th frame: strike allows 2 more shots
+      // 10th frame: strike on shot 1 allows 2 more shots
       if (frame.ballsPocketed.length >= 3) {
         frame.isComplete = true;
       }
     }
+  } else if (isTenthFrame && isStrikeOnThisShot && shotIndex === 1) {
+    // Strike on second shot in 10th frame (after first strike)
+    // Frame already marked as strike, just check completion
+    if (frame.ballsPocketed.length >= 3) {
+      frame.isComplete = true;
+    }
+  } else if (isTenthFrame && isStrikeOnThisShot && shotIndex === 2) {
+    // Strike on third shot in 10th frame (after two strikes)
+    frame.isComplete = true;
   }
-  // Check for spare (all 10 balls in 2 shots)
+  // Check for spare (all 10 balls in 2 shots, not a strike)
   else if (
     !frame.isStrike &&
     frame.ballsPocketed.length === 2 &&
@@ -117,6 +161,7 @@ export function addBallToFrame(
   }
 
   // Calculate frame score (base score, strikes/spares calculated later)
+  // For 10th frame with multiple strikes, score is sum of all balls
   frame.score = totalBalls;
 
   frames[frameIndex] = frame;
@@ -146,7 +191,14 @@ export function calculateTotalScore(frames: Frame[]): number {
 
   for (let i = 0; i < frames.length; i++) {
     const frame = frames[i];
+    const isTenthFrame = frame.frameNumber === 10;
     let frameScore = frame.score;
+
+    // For 10th frame, score is just the sum of all balls (no bonus needed)
+    if (isTenthFrame) {
+      total += frameScore;
+      continue;
+    }
 
     // Add strike bonus (next 2 balls)
     if (frame.isStrike && i < frames.length - 1) {
@@ -177,8 +229,50 @@ export function calculateTotalScore(frames: Frame[]): number {
 }
 
 export function getRemainingBalls(frame: Frame): number {
-  const totalPocketed = frame.ballsPocketed.reduce((sum, b) => sum + b, 0);
-  return Math.max(0, TOTAL_BALLS - totalPocketed);
+  const isTenthFrame = frame.frameNumber === 10;
+  
+  if (!isTenthFrame) {
+    // Regular frames: calculate remaining from total
+    const totalPocketed = frame.ballsPocketed.reduce((sum, b) => sum + b, 0);
+    return Math.max(0, TOTAL_BALLS - totalPocketed);
+  }
+  
+  // 10th frame: special handling for strikes
+  const shotIndex = frame.ballsPocketed.length;
+  
+  if (shotIndex === 0) {
+    // First shot: 10 balls available
+    return TOTAL_BALLS;
+  } else if (shotIndex === 1) {
+    // Second shot: if first was strike, reset to 10; otherwise use remaining
+    const firstBall = frame.ballsPocketed[0];
+    if (firstBall === TOTAL_BALLS) {
+      return TOTAL_BALLS; // Strike resets to 10
+    }
+    return TOTAL_BALLS - firstBall;
+  } else if (shotIndex === 2) {
+    // Third shot: if second was strike OR if spare (first+second = 10), reset to 10; otherwise use remaining
+    const firstBall = frame.ballsPocketed[0];
+    const secondBall = frame.ballsPocketed[1];
+    const isSpare = firstBall + secondBall === TOTAL_BALLS && firstBall !== TOTAL_BALLS;
+    
+    if (secondBall === TOTAL_BALLS) {
+      return TOTAL_BALLS; // Strike on shot 2 resets to 10
+    }
+    
+    if (isSpare) {
+      return TOTAL_BALLS; // Spare resets to 10 for bonus shot
+    }
+    
+    // If first was strike, only count second ball; otherwise count both
+    if (firstBall === TOTAL_BALLS) {
+      return TOTAL_BALLS - secondBall;
+    }
+    return TOTAL_BALLS - firstBall - secondBall;
+  }
+  
+  // Frame complete
+  return 0;
 }
 
 /**
@@ -213,7 +307,6 @@ export function reconstructGameStateFromFrames(savedFrames: Array<{
       
       // Determine if frame is complete
       const isTenthFrame = savedFrame.frameNumber === 10;
-      const totalBalls = savedFrame.ballsPocketed.reduce((sum, b) => sum + b, 0);
       
       if (savedFrame.isStrike) {
         frame.isComplete = isTenthFrame ? savedFrame.ballsPocketed.length >= 3 : true;
@@ -281,17 +374,27 @@ export function updateFrameShot(
   const totalBalls = frame.ballsPocketed.reduce((sum, b) => sum + b, 0);
   const isTenthFrame = frame.frameNumber === 10;
   const firstBall = frame.ballsPocketed[0] || 0;
-  const secondBall = frame.ballsPocketed[1] || 0;
   
   // Recalculate strike/spare status
-  frame.isStrike = firstBall === TOTAL_BALLS && frame.ballsPocketed.length === 1;
+  // Strike is when first ball is 10 (for 10th frame, can have multiple strikes)
+  frame.isStrike = firstBall === TOTAL_BALLS;
   frame.isSpare = !frame.isStrike && frame.ballsPocketed.length === 2 && totalBalls === TOTAL_BALLS;
   
   // Recalculate completion status
   if (frame.isStrike) {
-    frame.isComplete = isTenthFrame ? frame.ballsPocketed.length >= 3 : true;
+    if (!isTenthFrame) {
+      frame.isComplete = true;
+    } else {
+      // 10th frame: need 3 shots if strike
+      frame.isComplete = frame.ballsPocketed.length >= 3;
+    }
   } else if (frame.isSpare) {
-    frame.isComplete = isTenthFrame ? frame.ballsPocketed.length >= 3 : true;
+    if (!isTenthFrame) {
+      frame.isComplete = true;
+    } else {
+      // 10th frame: need 3 shots if spare
+      frame.isComplete = frame.ballsPocketed.length >= 3;
+    }
   } else {
     frame.isComplete = frame.ballsPocketed.length >= 2;
   }

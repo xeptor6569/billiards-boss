@@ -3,7 +3,6 @@
 import { useState, useCallback } from "react";
 import {
   GameState,
-  Frame,
   createNewGame,
   addBallToFrame,
   getRemainingBalls,

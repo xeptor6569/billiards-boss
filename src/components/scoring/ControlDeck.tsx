@@ -23,7 +23,15 @@ export default function ControlDeck({
   const [isAnimating, setIsAnimating] = useState(false);
 
   const handleStrike = () => {
-    if (disabled || !isShot1) return;
+    if (disabled) return;
+    // In 10th frame, allow strikes on shot 1, 2, or 3
+    // In other frames, only allow on shot 1
+    const isTenthFrame = currentFrame?.frameNumber === 10;
+    const shotCount = currentFrame?.ballsPocketed.length || 0;
+    const canStrike = isShot1 || (isTenthFrame && (shotCount === 1 || shotCount === 2));
+    
+    if (!canStrike) return;
+    
     setIsAnimating(true);
     // Haptic feedback
     if (navigator.vibrate) {
@@ -104,8 +112,8 @@ export default function ControlDeck({
         ))}
       </div>
 
-      {/* Big Action Button */}
-      {isShot1 && (
+      {/* Big Action Button - Strike */}
+      {(isShot1 || (currentFrame?.frameNumber === 10 && (currentFrame?.ballsPocketed.length === 1 || currentFrame?.ballsPocketed.length === 2))) && (
         <button
           type="button"
           onClick={handleStrike}
