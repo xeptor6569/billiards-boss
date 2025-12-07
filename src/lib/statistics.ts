@@ -1,6 +1,7 @@
 import { db } from "./db";
 import { statistics, games, frames } from "./db/schema";
 import { eq, and, sql } from "drizzle-orm";
+import { calculateTotalScore, Frame } from "./game-logic";
 
 export async function calculateUserStatistics(userId: string) {
   // Get or create statistics record
@@ -22,22 +23,42 @@ export async function calculateUserStatistics(userId: string) {
     0
   );
 
+  // Recalculate scores dynamically from raw shot data
+  const gameScores = completedGames.map((game) => {
+    try {
+      // Parse frames and reconstruct game state
+      const parsedFrames: Frame[] = game.frames
+        .sort((a, b) => a.frameNumber - b.frameNumber)
+        .map((frame) => {
+          const ballsPocketed = JSON.parse(frame.ballsPocketed as string) as number[];
+          return {
+            frameNumber: frame.frameNumber,
+            ballsPocketed,
+            score: frame.score,
+            isStrike: frame.isStrike,
+            isSpare: frame.isSpare,
+            isComplete: true,
+          };
+        });
+      
+      // Calculate total score from raw shot data
+      return calculateTotalScore(parsedFrames);
+    } catch (error) {
+      // Fallback to sum of frame scores if parsing fails (for old data)
+      console.error("Error parsing frame data, using fallback:", error);
+      return game.frames.reduce((sum, frame) => sum + frame.score, 0);
+    }
+  });
+
   // Calculate average score
   let averageScore = 0;
-  if (totalFrames > 0) {
-    const totalScore = completedGames.reduce((sum, game) => {
-      return sum + game.frames.reduce((frameSum, frame) => frameSum + frame.score, 0);
-    }, 0);
+  if (gamesPlayed > 0) {
+    const totalScore = gameScores.reduce((sum, score) => sum + score, 0);
     averageScore = totalScore / gamesPlayed;
   }
 
   // Find best score
-  const bestScore = Math.max(
-    ...completedGames.map((game) =>
-      game.frames.reduce((sum, frame) => sum + frame.score, 0)
-    ),
-    0
-  );
+  const bestScore = Math.max(...gameScores, 0);
 
   // Count strikes and spares
   const strikes = completedGames.reduce(

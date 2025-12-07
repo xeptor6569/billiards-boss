@@ -98,9 +98,9 @@ export default function ModernScoringBoard({
   const isShot2 = currentFrame?.ballsPocketed.length === 1 && !currentFrame.isStrike;
 
   return (
-    <div className="flex flex-col h-screen text-zinc-100 overflow-hidden" style={{ backgroundColor: "#09090b" }}>
+    <div className="relative flex flex-col h-full text-zinc-100 overflow-hidden rounded-lg shadow-2xl" style={{ backgroundColor: "#09090b" }}>
       {/* Top 20%: Frame Ribbon */}
-      <div className="h-[20vh] flex-shrink-0 border-b" style={{ borderColor: "#27272a" }}>
+      <div className="h-[20%] flex-shrink-0 border-b" style={{ borderColor: "#27272a" }}>
         <FrameRibbon
           frames={gameState.frames}
           currentFrameIndex={gameState.currentFrame - 1}
@@ -109,7 +109,7 @@ export default function ModernScoringBoard({
       </div>
 
       {/* Middle 30%: Rack Visualizer */}
-      <div className="h-[30vh] flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "#18181b" }}>
+      <div className="h-[30%] flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "#18181b" }}>
         <RackVisualizer
           totalPocketed={totalPocketed}
           remainingBalls={remainingBalls}
@@ -117,7 +117,7 @@ export default function ModernScoringBoard({
       </div>
 
       {/* Bottom 50%: Control Deck */}
-      <div className="h-[50vh] flex-shrink-0" style={{ backgroundColor: "#09090b" }}>
+      <div className="h-[50%] flex-shrink-0" style={{ backgroundColor: "#09090b" }}>
         <ControlDeck
           isShot1={isShot1}
           isShot2={isShot2}
@@ -128,8 +128,8 @@ export default function ModernScoringBoard({
         />
       </div>
 
-      {/* Total Score Display (floating) */}
-      <div className="fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-10" style={{ backgroundColor: "#22c55e" }}>
+      {/* Total Score Display (positioned relative to board) */}
+      <div className="absolute top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-10" style={{ backgroundColor: "#22c55e" }}>
         <div className="text-xs" style={{ color: "#f4f4f5", opacity: 0.9 }}>Total Score</div>
         <div className="text-2xl font-bold" style={{ color: "#f4f4f5" }}>{gameState.totalScore}</div>
       </div>

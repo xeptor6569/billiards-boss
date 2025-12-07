@@ -57,8 +57,10 @@ export const frames = pgTable("frames", {
   score: integer("score").notNull(),
   isStrike: boolean("is_strike").default(false).notNull(),
   isSpare: boolean("is_spare").default(false).notNull(),
-  ballsPocketed: integer("balls_pocketed").notNull(),
+  // Store individual shots as JSON array: [shot1, shot2, shot3] (e.g., [6, 4] or [10] for strike)
+  ballsPocketed: text("balls_pocketed").notNull(), // JSON array stored as text
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Game participants table (for multiplayer games)

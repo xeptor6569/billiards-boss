@@ -141,7 +141,7 @@ export function addBallToFrame(
   };
 }
 
-function calculateTotalScore(frames: Frame[]): number {
+export function calculateTotalScore(frames: Frame[]): number {
   let total = 0;
 
   for (let i = 0; i < frames.length; i++) {
@@ -179,5 +179,140 @@ function calculateTotalScore(frames: Frame[]): number {
 export function getRemainingBalls(frame: Frame): number {
   const totalPocketed = frame.ballsPocketed.reduce((sum, b) => sum + b, 0);
   return Math.max(0, TOTAL_BALLS - totalPocketed);
+}
+
+/**
+ * Reconstructs a GameState from saved frame data
+ * This allows us to load and edit saved games
+ */
+export function reconstructGameStateFromFrames(savedFrames: Array<{
+  frameNumber: number;
+  ballsPocketed: number[];
+  score: number;
+  isStrike: boolean;
+  isSpare: boolean;
+}>): GameState {
+  const state = createNewGame();
+  
+  // Sort frames by frame number
+  const sortedFrames = [...savedFrames].sort((a, b) => a.frameNumber - b.frameNumber);
+  
+  // Reconstruct each frame
+  for (let i = 0; i < sortedFrames.length && i < MAX_FRAMES; i++) {
+    const savedFrame = sortedFrames[i];
+    const frameIndex = savedFrame.frameNumber - 1;
+    
+    if (frameIndex >= 0 && frameIndex < state.frames.length) {
+      const frame = state.frames[frameIndex];
+      
+      // Restore frame data
+      frame.ballsPocketed = [...savedFrame.ballsPocketed];
+      frame.score = savedFrame.score;
+      frame.isStrike = savedFrame.isStrike;
+      frame.isSpare = savedFrame.isSpare;
+      
+      // Determine if frame is complete
+      const isTenthFrame = savedFrame.frameNumber === 10;
+      const totalBalls = savedFrame.ballsPocketed.reduce((sum, b) => sum + b, 0);
+      
+      if (savedFrame.isStrike) {
+        frame.isComplete = isTenthFrame ? savedFrame.ballsPocketed.length >= 3 : true;
+      } else if (savedFrame.isSpare) {
+        frame.isComplete = isTenthFrame ? savedFrame.ballsPocketed.length >= 3 : true;
+      } else {
+        frame.isComplete = savedFrame.ballsPocketed.length >= 2;
+      }
+    }
+  }
+  
+  // Determine current frame (first incomplete frame, or 11 if all complete)
+  const firstIncompleteIndex = state.frames.findIndex(f => !f.isComplete);
+  state.currentFrame = firstIncompleteIndex >= 0 ? firstIncompleteIndex + 1 : MAX_FRAMES + 1;
+  
+  // Recalculate total score
+  state.totalScore = calculateTotalScore(state.frames);
+  state.isComplete = state.frames.every(f => f.isComplete);
+  
+  return state;
+}
+
+/**
+ * Updates a specific frame's shot data
+ * This allows editing frames after they've been scored
+ */
+export function updateFrameShot(
+  gameState: GameState,
+  frameIndex: number,
+  shotIndex: number,
+  newBallCount: number
+): GameState {
+  const frames = [...gameState.frames];
+  const frame = { ...frames[frameIndex] };
+  
+  // Validate frame and shot indices
+  if (frameIndex < 0 || frameIndex >= frames.length) {
+    throw new Error(`Invalid frame index: ${frameIndex}`);
+  }
+  
+  if (shotIndex < 0 || shotIndex >= frame.ballsPocketed.length) {
+    throw new Error(`Invalid shot index: ${shotIndex}`);
+  }
+  
+  // Validate ball count
+  if (newBallCount < 0 || newBallCount > TOTAL_BALLS) {
+    throw new Error(`Invalid ball count: ${newBallCount}`);
+  }
+  
+  // Calculate remaining balls before this shot
+  const totalBeforeThisShot = frame.ballsPocketed
+    .slice(0, shotIndex)
+    .reduce((sum, b) => sum + b, 0);
+  const remainingBeforeShot = TOTAL_BALLS - totalBeforeThisShot;
+  
+  // Clamp to remaining balls
+  const clampedBalls = Math.min(newBallCount, remainingBeforeShot);
+  
+  // Update the shot
+  const newBallsPocketed = [...frame.ballsPocketed];
+  newBallsPocketed[shotIndex] = clampedBalls;
+  frame.ballsPocketed = newBallsPocketed;
+  
+  // Recalculate frame properties
+  const totalBalls = frame.ballsPocketed.reduce((sum, b) => sum + b, 0);
+  const isTenthFrame = frame.frameNumber === 10;
+  const firstBall = frame.ballsPocketed[0] || 0;
+  const secondBall = frame.ballsPocketed[1] || 0;
+  
+  // Recalculate strike/spare status
+  frame.isStrike = firstBall === TOTAL_BALLS && frame.ballsPocketed.length === 1;
+  frame.isSpare = !frame.isStrike && frame.ballsPocketed.length === 2 && totalBalls === TOTAL_BALLS;
+  
+  // Recalculate completion status
+  if (frame.isStrike) {
+    frame.isComplete = isTenthFrame ? frame.ballsPocketed.length >= 3 : true;
+  } else if (frame.isSpare) {
+    frame.isComplete = isTenthFrame ? frame.ballsPocketed.length >= 3 : true;
+  } else {
+    frame.isComplete = frame.ballsPocketed.length >= 2;
+  }
+  
+  // Recalculate base score
+  frame.score = totalBalls;
+  
+  frames[frameIndex] = frame;
+  
+  // Recalculate total score
+  const totalScore = calculateTotalScore(frames);
+  
+  // Update current frame
+  const firstIncompleteIndex = frames.findIndex(f => !f.isComplete);
+  const currentFrame = firstIncompleteIndex >= 0 ? firstIncompleteIndex + 1 : MAX_FRAMES + 1;
+  
+  return {
+    frames,
+    currentFrame,
+    totalScore,
+    isComplete: frames.every(f => f.isComplete),
+  };
 }
 

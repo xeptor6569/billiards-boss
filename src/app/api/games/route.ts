@@ -83,19 +83,19 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // Save frames if provided
+    // Save frames if provided - store individual shots as JSON array
     if (gameState?.frames) {
-      const frameInserts = gameState.frames.map((frame: any) => ({
-        gameId: newGame.id,
-        frameNumber: frame.frameNumber,
-        score: frame.score,
-        isStrike: frame.isStrike,
-        isSpare: frame.isSpare,
-        ballsPocketed: frame.ballsPocketed.reduce(
-          (sum: number, b: number) => sum + b,
-          0
-        ),
-      }));
+      const frameInserts = gameState.frames
+        .filter((frame: any) => frame.ballsPocketed.length > 0) // Only save frames with shots
+        .map((frame: any) => ({
+          gameId: newGame.id,
+          frameNumber: frame.frameNumber,
+          score: frame.score,
+          isStrike: frame.isStrike,
+          isSpare: frame.isSpare,
+          // Store the full array of individual shots as JSON
+          ballsPocketed: JSON.stringify(frame.ballsPocketed),
+        }));
 
       if (frameInserts.length > 0) {
         await db.insert(frames).values(frameInserts);

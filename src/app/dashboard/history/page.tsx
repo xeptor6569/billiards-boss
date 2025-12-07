@@ -4,6 +4,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { games } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { calculateTotalScore } from "@/lib/game-logic";
 
 export default async function HistoryPage() {
   const session = await auth();
@@ -70,10 +71,27 @@ export default async function HistoryPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
               {allGames.map((game) => {
-                const totalScore = game.frames.reduce(
-                  (sum, frame) => sum + frame.score,
-                  0
-                );
+                // Recalculate score from raw shot data
+                let totalScore = 0;
+                if (game.frames && game.frames.length > 0) {
+                  try {
+                    // Parse frames and reconstruct game state
+                    const parsedFrames = game.frames
+                      .sort((a, b) => a.frameNumber - b.frameNumber)
+                      .map((frame) => ({
+                        frameNumber: frame.frameNumber,
+                        ballsPocketed: JSON.parse(frame.ballsPocketed as string) as number[],
+                        score: frame.score,
+                        isStrike: frame.isStrike,
+                        isSpare: frame.isSpare,
+                        isComplete: true,
+                      }));
+                    totalScore = calculateTotalScore(parsedFrames);
+                  } catch {
+                    // Fallback to sum of frame scores if parsing fails
+                    totalScore = game.frames.reduce((sum, frame) => sum + frame.score, 0);
+                  }
+                }
                 return (
                   <tr key={game.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">

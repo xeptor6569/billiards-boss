@@ -38,7 +38,16 @@ export async function GET(
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    return NextResponse.json(game);
+    // Parse ballsPocketed JSON array for each frame
+    const gameWithParsedFrames = {
+      ...game,
+      frames: game.frames.map((frame) => ({
+        ...frame,
+        ballsPocketed: JSON.parse(frame.ballsPocketed as string),
+      })),
+    };
+
+    return NextResponse.json(gameWithParsedFrames);
   } catch (error) {
     console.error("Error fetching game:", error);
     return NextResponse.json(
@@ -92,23 +101,23 @@ export async function PATCH(
       .where(eq(games.id, gameId))
       .returning();
 
-    // Update frames if provided
+    // Update frames if provided - store individual shots as JSON array
     if (body.gameState?.frames) {
       // Delete existing frames
       await db.delete(frames).where(eq(frames.gameId, gameId));
 
-      // Insert new frames
-      const frameInserts = body.gameState.frames.map((frame: any) => ({
-        gameId,
-        frameNumber: frame.frameNumber,
-        score: frame.score,
-        isStrike: frame.isStrike,
-        isSpare: frame.isSpare,
-        ballsPocketed: frame.ballsPocketed.reduce(
-          (sum: number, b: number) => sum + b,
-          0
-        ),
-      }));
+      // Insert new frames with full shot-by-shot data
+      const frameInserts = body.gameState.frames
+        .filter((frame: any) => frame.ballsPocketed.length > 0) // Only save frames with shots
+        .map((frame: any) => ({
+          gameId,
+          frameNumber: frame.frameNumber,
+          score: frame.score,
+          isStrike: frame.isStrike,
+          isSpare: frame.isSpare,
+          // Store the full array of individual shots as JSON
+          ballsPocketed: JSON.stringify(frame.ballsPocketed),
+        }));
 
       if (frameInserts.length > 0) {
         await db.insert(frames).values(frameInserts);

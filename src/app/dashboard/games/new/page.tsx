@@ -19,7 +19,8 @@ export default function NewGamePage() {
     setGameState(newGameState);
   };
 
-  const showImmersive = isLoaded ? interfaceType === "immersive" : true;
+  // Use interfaceType directly to ensure reactivity
+  const showImmersive = !isLoaded || interfaceType === "immersive";
 
   const handleSaveGame = async () => {
     if (!gameState || !gameState.isComplete) {
@@ -62,84 +63,92 @@ export default function NewGamePage() {
 
   if (showImmersive) {
     return (
-      <div className="h-screen w-screen overflow-hidden">
-        <ModernScoringBoard onScoreUpdate={handleScoreUpdate} />
-        
-        {/* Interface Toggle (floating) */}
-        <div className="fixed top-4 left-4 z-20">
-          <InterfaceToggle variant="dark" />
-        </div>
-
-        {/* Game Mode Selector (floating) */}
-        <div className="fixed top-4 left-48 z-20">
-          <div className="flex gap-2 bg-zinc-900 rounded-lg p-1 border border-zinc-800">
-            <button
-              onClick={() => setGameMode("single")}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                gameMode === "single"
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Single
-            </button>
-            <button
-              onClick={() => setGameMode("multiplayer")}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                gameMode === "multiplayer"
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Multi
-            </button>
-            <button
-              onClick={() => setGameMode("tournament")}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                gameMode === "tournament"
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Tournament
-            </button>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                New Game
+              </h1>
+              <InterfaceToggle variant="light" />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setGameMode("single")}
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  gameMode === "single"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                }`}
+              >
+                Single
+              </button>
+              <button
+                onClick={() => setGameMode("multiplayer")}
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  gameMode === "multiplayer"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                }`}
+              >
+                Multi
+              </button>
+              <button
+                onClick={() => setGameMode("tournament")}
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  gameMode === "tournament"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                }`}
+              >
+                Tournament
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Save Game Button (floating) */}
-        {gameState?.isComplete && (
-          <div className="fixed bottom-4 left-4 right-4 z-20 flex gap-3">
-            <button
-              onClick={handleSaveGame}
-              disabled={saving}
-              className="flex-1 h-14 rounded-xl font-bold text-lg transition-colors disabled:opacity-50"
-              style={{
-                backgroundColor: "#22c55e",
-                color: "#f4f4f5",
-              }}
-              onMouseEnter={(e) => {
-                if (!saving) e.currentTarget.style.backgroundColor = "#16a34a";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#22c55e";
-              }}
-            >
-              {saving ? "Saving..." : "Save Game"}
-            </button>
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="px-6 h-14 rounded-xl font-semibold transition-colors"
-              style={{
-                backgroundColor: "#27272a",
-                color: "#f4f4f5",
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#3f3f46"}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#27272a"}
-            >
-              Dashboard
-            </button>
+          {/* Modern Scoring Board - Contained */}
+          <div className="max-w-4xl mx-auto">
+            <div className="h-[80vh] min-h-[600px] max-h-[900px]">
+              <ModernScoringBoard onScoreUpdate={handleScoreUpdate} />
+            </div>
           </div>
-        )}
+
+          {/* Save Game Button */}
+          {gameState?.isComplete && (
+            <div className="max-w-4xl mx-auto mt-6 flex gap-3 justify-center">
+              <button
+                onClick={handleSaveGame}
+                disabled={saving}
+                className="px-6 py-3 rounded-lg font-bold text-lg transition-colors disabled:opacity-50"
+                style={{
+                  backgroundColor: "#22c55e",
+                  color: "#f4f4f5",
+                }}
+                onMouseEnter={(e) => {
+                  if (!saving) e.currentTarget.style.backgroundColor = "#16a34a";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#22c55e";
+                }}
+              >
+                {saving ? "Saving..." : "Save Game"}
+              </button>
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="px-6 py-3 rounded-lg font-semibold transition-colors"
+                style={{
+                  backgroundColor: "#27272a",
+                  color: "#f4f4f5",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#3f3f46"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#27272a"}
+              >
+                Dashboard
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
