@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ScoringBoard from "@/components/scoring/ScoringBoard";
 import { GameState, createNewGame } from "@/lib/game-logic";
 
-export default function GameDetailPage() {
+function GameDetailContent() {
   const params = useParams();
   const router = useRouter();
   const [game, setGame] = useState<{
@@ -161,6 +161,18 @@ export default function GameDetailPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function GameDetailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading game...</div>
+      </div>
+    }>
+      <GameDetailContent />
+    </Suspense>
   );
 }
 

@@ -20,17 +20,21 @@ export function ScoringInterfaceProvider({ children }: { children: ReactNode }) 
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Load from localStorage on mount
-    const stored = localStorage.getItem(STORAGE_KEY) as ScoringInterface | null;
-    if (stored === "immersive" || stored === "simple") {
-      setInterfaceType(stored);
+    // Only access localStorage on client side
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(STORAGE_KEY) as ScoringInterface | null;
+      if (stored === "immersive" || stored === "simple") {
+        setInterfaceType(stored);
+      }
+      setIsLoaded(true);
     }
-    setIsLoaded(true);
   }, []);
 
   const setInterface = (type: ScoringInterface) => {
     setInterfaceType(type);
-    localStorage.setItem(STORAGE_KEY, type);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, type);
+    }
   };
 
   return (
