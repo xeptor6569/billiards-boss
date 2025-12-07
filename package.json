@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "tsx server.ts",
+    "prebuild": "node scripts/generate-build-id.mjs",
     "build": "next build",
+    "build:info": "node scripts/generate-build-id.mjs",
     "start": "NODE_ENV=production tsx server.ts",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
