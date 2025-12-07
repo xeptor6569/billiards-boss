@@ -195,11 +195,25 @@ docker compose logs -f
 # Wait for database to be ready (about 10 seconds)
 sleep 10
 
-# Run migrations
+# Run migrations (creates all required tables)
 docker compose exec app npm run db:migrate
 
-# Seed default plans
+# Verify migrations ran successfully
+docker compose exec app npm run db:migrate  # Should show "already exists" messages if successful
+
+# Seed default plans (creates Free and Premium plans)
 docker compose exec app npm run db:seed
+```
+
+**Important**: If migrations fail, you can manually check the database:
+```bash
+# Connect to database
+docker compose exec postgres psql -U billiards -d billiards_boss
+
+# Check if tables exist
+\dt
+
+# Should see: users, games, frames, plans, accounts, sessions, verification_tokens, etc.
 ```
 
 ## Step 9: Verify Deployment

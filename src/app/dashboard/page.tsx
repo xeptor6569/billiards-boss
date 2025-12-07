@@ -12,12 +12,19 @@ export default async function DashboardPage() {
     redirect("/auth/signin");
   }
 
-  // Fetch recent games
-  const recentGames = await db.query.games.findMany({
-    where: eq(games.userId, session.user.id),
-    limit: 5,
-    orderBy: (games, { desc }) => [desc(games.createdAt)],
-  });
+  // Fetch recent games with error handling
+  let recentGames = [];
+  try {
+    recentGames = await db.query.games.findMany({
+      where: eq(games.userId, session.user.id),
+      limit: 5,
+      orderBy: (games, { desc }) => [desc(games.createdAt)],
+    });
+  } catch (error) {
+    console.error("Error fetching recent games:", error);
+    // Continue with empty array - don't crash the page
+    recentGames = [];
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
