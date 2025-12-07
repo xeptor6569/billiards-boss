@@ -94,13 +94,16 @@ export default function ModernScoringBoard({
   const totalPocketed = currentFrame
     ? currentFrame.ballsPocketed.reduce((sum, count) => sum + count, 0)
     : 0;
-  const isShot1 = currentFrame?.ballsPocketed.length === 0;
-  const isShot2 = currentFrame?.ballsPocketed.length === 1 && !currentFrame.isStrike;
+  const isTenthFrame = currentFrame?.frameNumber === 10;
+  const shotCount = currentFrame?.ballsPocketed.length || 0;
+  const isShot1 = shotCount === 0;
+  const isShot2 = shotCount === 1 && (!currentFrame?.isStrike || !isTenthFrame);
+  const isShot3 = isTenthFrame && shotCount === 2 && (currentFrame?.isStrike || currentFrame?.isSpare);
 
   return (
     <div className="relative flex flex-col h-full text-zinc-100 overflow-hidden rounded-lg shadow-2xl" style={{ backgroundColor: "#09090b" }}>
-      {/* Top 20%: Frame Ribbon */}
-      <div className="h-[20%] flex-shrink-0 border-b" style={{ borderColor: "#27272a" }}>
+      {/* Top 20%: Frame Ribbon - slightly taller to accommodate scaled frames */}
+      <div className="h-[22%] flex-shrink-0 border-b" style={{ borderColor: "#27272a" }}>
         <FrameRibbon
           frames={gameState.frames}
           currentFrameIndex={gameState.currentFrame - 1}
@@ -108,8 +111,8 @@ export default function ModernScoringBoard({
         />
       </div>
 
-      {/* Middle 30%: Rack Visualizer */}
-      <div className="h-[30%] flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "#18181b" }}>
+      {/* Middle 28%: Rack Visualizer - adjusted to compensate for ribbon height */}
+      <div className="h-[28%] flex-shrink-0 flex items-center justify-center" style={{ backgroundColor: "#18181b" }}>
         <RackVisualizer
           totalPocketed={totalPocketed}
           remainingBalls={remainingBalls}
@@ -120,7 +123,7 @@ export default function ModernScoringBoard({
       <div className="h-[50%] flex-shrink-0" style={{ backgroundColor: "#09090b" }}>
         <ControlDeck
           isShot1={isShot1}
-          isShot2={isShot2}
+          isShot2={isShot2 || isShot3}
           remainingBalls={remainingBalls}
           onBallPocketed={handleBallPocketed}
           disabled={disabled}
