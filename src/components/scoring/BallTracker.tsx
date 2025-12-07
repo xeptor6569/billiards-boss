@@ -16,17 +16,32 @@ export default function BallTracker({
   const totalBalls = 10;
   const balls = Array.from({ length: totalBalls }, (_, i) => i + 1);
 
+  const canRecordMiss = !disabled && onBallClick && ballsPocketed.length < 2;
+  const shotNumber = ballsPocketed.length + 1;
+
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
         Balls Remaining: {remainingBalls}
       </div>
+      
+      {/* Miss button - always available for first 2 shots */}
+      {canRecordMiss && (
+        <button
+          type="button"
+          onClick={() => onBallClick?.(0)}
+          className="px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors font-semibold shadow-md"
+        >
+          Miss (0 balls)
+        </button>
+      )}
+
       <div className="grid grid-cols-5 gap-3">
         {balls.map((ballNumber) => {
           const isPocketed = ballsPocketed.some(
             (count) => count >= ballNumber
           );
-          const isClickable = !disabled && onBallClick && remainingBalls > 0;
+          const isClickable = !disabled && onBallClick && remainingBalls > 0 && ballNumber <= remainingBalls;
 
           return (
             <button
@@ -56,6 +71,11 @@ export default function BallTracker({
         <div className="text-xs text-gray-600 dark:text-gray-400">
           Shot {ballsPocketed.length}: {ballsPocketed[ballsPocketed.length - 1]} ball
           {ballsPocketed[ballsPocketed.length - 1] !== 1 ? "s" : ""} pocketed
+        </div>
+      )}
+      {ballsPocketed.length === 0 && (
+        <div className="text-xs text-gray-600 dark:text-gray-400">
+          Ready for shot {shotNumber}
         </div>
       )}
     </div>

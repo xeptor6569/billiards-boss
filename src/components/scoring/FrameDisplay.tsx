@@ -42,7 +42,7 @@ export default function FrameDisplay({
             key={idx}
             className="flex-1 rounded bg-blue-100 px-1 text-center dark:bg-blue-900/30"
           >
-            {balls}
+            {balls === 0 ? "-" : balls}
           </div>
         ))}
       </div>

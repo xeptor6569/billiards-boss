@@ -37,8 +37,17 @@ export default function ScoringBoard({
         return;
       }
 
+      // Allow 0 for miss, or validate against remaining balls
       const remainingBalls = getRemainingBalls(currentFrame);
-      const ballsToAdd = Math.min(ballCount, remainingBalls);
+      let ballsToAdd: number;
+      
+      if (ballCount === 0) {
+        // Explicit miss - record 0 balls
+        ballsToAdd = 0;
+      } else {
+        // Clamp to remaining balls (handled in addBallToFrame too, but good to do here)
+        ballsToAdd = Math.min(ballCount, remainingBalls);
+      }
 
       const newGameState = addBallToFrame(
         gameState,

@@ -45,7 +45,7 @@ export function addBallToFrame(
   const frames = [...gameState.frames];
   const frame = { ...frames[frameIndex] };
 
-  // Validate ball count
+  // Validate ball count (allow 0 for miss)
   if (ballsPocketed < 0 || ballsPocketed > TOTAL_BALLS) {
     throw new Error(`Invalid ball count: ${ballsPocketed}`);
   }
@@ -55,7 +55,17 @@ export function addBallToFrame(
     return gameState;
   }
 
-  // Add balls to frame
+  // Calculate remaining balls before adding this shot
+  const currentTotal = frame.ballsPocketed.reduce((sum, b) => sum + b, 0);
+  const remainingBeforeShot = TOTAL_BALLS - currentTotal;
+
+  // Validate: can't pocket more than remaining balls
+  if (ballsPocketed > remainingBeforeShot) {
+    // Clamp to remaining balls
+    ballsPocketed = remainingBeforeShot;
+  }
+
+  // Add balls to frame (can be 0 for a miss)
   frame.ballsPocketed = [...frame.ballsPocketed, ballsPocketed];
 
   const isTenthFrame = frame.frameNumber === 10;
@@ -91,7 +101,7 @@ export function addBallToFrame(
       }
     }
   }
-  // Regular frame completion (2 shots, not all 10)
+  // Regular frame completion (2 shots, not all 10) - including when second shot is 0
   else if (frame.ballsPocketed.length >= MAX_BALLS_PER_FRAME && !isTenthFrame) {
     frame.isComplete = true;
   }
