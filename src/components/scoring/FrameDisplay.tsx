@@ -22,7 +22,7 @@ export default function FrameDisplay({
   return (
     <div
       className={`
-        flex flex-col rounded-lg border-2 p-3 transition-all
+        flex flex-col rounded-lg border-2 p-2 sm:p-3 transition-all min-w-0
         ${
           isCurrent
             ? "border-indigo-500 bg-indigo-50 shadow-lg dark:bg-indigo-900/20 dark:border-indigo-400"
@@ -33,7 +33,7 @@ export default function FrameDisplay({
       <div className="text-center text-xs font-semibold text-gray-600 dark:text-gray-400">
         Frame {frame.frameNumber}
       </div>
-      <div className="my-2 flex h-16 items-center justify-center rounded border border-gray-300 bg-gray-50 text-2xl font-bold dark:border-gray-600 dark:bg-gray-700">
+      <div className="my-1 sm:my-2 flex h-12 sm:h-16 items-center justify-center rounded border border-gray-300 bg-gray-50 text-xl sm:text-2xl font-bold dark:border-gray-600 dark:bg-gray-700">
         {getDisplayScore()}
       </div>
       <div className="flex gap-1 text-xs">
