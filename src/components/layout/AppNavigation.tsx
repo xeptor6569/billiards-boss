@@ -127,6 +127,18 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                             const active = isActive(item.href);
 
                             if (item.isPrimary) {
+                                // Hide the circular button when already on the new game page
+                                if (active) {
+                                    return (
+                                        <div key={item.href} className="flex flex-col items-center justify-center w-full h-full space-y-1">
+                                            <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}>
+                                                {item.icon}
+                                            </div>
+                                            <span className="text-[10px] font-medium" style={{ color: 'var(--color-primary)' }}>{item.label}</span>
+                                        </div>
+                                    );
+                                }
+                                
                                 return (
                                     <Link
                                         key={item.href}
