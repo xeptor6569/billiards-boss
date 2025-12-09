@@ -5,8 +5,7 @@ import { db } from "@/lib/db";
 import { games } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { calculateTotalScore } from "@/lib/game-logic";
-
-
+import HistoryTableRow from "@/components/history/HistoryTableRow";
 
 import { Suspense } from "react";
 
@@ -33,14 +32,8 @@ async function HistoryList() {
         </p>
         <Link
           href="/dashboard/games/new"
-          className="inline-block px-6 py-3 rounded-md transition-colors"
+          className="inline-block px-6 py-3 rounded-md transition-opacity hover:opacity-90"
           style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = '0.9';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = '1';
-          }}
         >
           New Game
         </Link>
@@ -97,56 +90,11 @@ async function HistoryList() {
               }
             }
             return (
-              <tr 
-                key={game.id} 
-                style={{ borderColor: 'var(--color-border)' }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = 'var(--color-border)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }}
-              >
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" style={{ color: 'var(--color-textPrimary)' }}>
-                  #{game.id}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                  {game.gameMode}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
-                    style={{
-                      backgroundColor: game.status === "completed" 
-                        ? 'var(--color-success)' 
-                        : 'var(--color-accent)',
-                      color: '#ffffff'
-                    }}
-                  >
-                    {game.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--color-textPrimary)' }}>
-                  {totalScore}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm" style={{ color: 'var(--color-textSecondary)' }}>
-                  {new Date(game.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <Link
-                    href={`/dashboard/games/${game.id}`}
-                    style={{ color: 'var(--color-primary)' }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.opacity = '0.8';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.opacity = '1';
-                    }}
-                  >
-                    View
-                  </Link>
-                </td>
-              </tr>
+              <HistoryTableRow
+                key={game.id}
+                game={game}
+                totalScore={totalScore}
+              />
             );
           })}
         </tbody>
