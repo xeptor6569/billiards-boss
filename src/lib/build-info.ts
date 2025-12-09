@@ -3,8 +3,8 @@
 
 export const BUILD_INFO = {
   version: "0.1.0",
-  buildNumber: 29,
-  commitHash: "8b2a170",
-  buildDate: "2025-12-09T12:29:11.605Z",
-  display: "v0.1.0.29",
+  buildNumber: 30,
+  commitHash: "cbfdedf",
+  buildDate: "2025-12-09T13:52:55.491Z",
+  display: "v0.1.0.30",
 } as const;
