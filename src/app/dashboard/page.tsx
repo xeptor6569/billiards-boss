@@ -5,7 +5,9 @@ import { db } from "@/lib/db";
 import { games } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-export default async function DashboardPage() {
+import { Suspense } from "react";
+
+async function DashboardContent() {
   const session = await auth();
 
   if (!session) {
@@ -21,7 +23,7 @@ export default async function DashboardPage() {
     createdAt: Date;
     completedAt: Date | null;
   }> = [];
-  
+
   try {
     // Ensure session.user exists before accessing id
     if (session?.user?.id) {
@@ -38,7 +40,7 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Welcome back, {session.user?.name || session.user?.email}!
@@ -119,6 +121,16 @@ export default async function DashboardPage() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Suspense fallback={<div className="text-center py-12">Loading dashboard...</div>}>
+        <DashboardContent />
+      </Suspense>
     </div>
   );
 }

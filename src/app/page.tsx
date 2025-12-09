@@ -1,8 +1,23 @@
 import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { Suspense } from "react";
+
+async function AuthCheck() {
+  const session = await auth();
+  if (session) {
+    redirect("/dashboard");
+  }
+  return null;
+}
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <Suspense fallback={null}>
+        <AuthCheck />
+      </Suspense>
+
       {/* Navigation */}
       <nav className="bg-white/80 backdrop-blur-sm shadow-sm dark:bg-gray-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

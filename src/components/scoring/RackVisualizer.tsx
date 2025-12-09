@@ -27,8 +27,8 @@ export default function RackVisualizer({
   ];
 
   return (
-    <div className="w-full h-full flex items-center justify-center relative" style={{ backgroundColor: "#18181b" }}>
-      <div className="relative" style={{ width: "280px", height: "140px" }}>
+    <div className="w-full h-full flex flex-col items-center justify-center relative">
+      <div className="relative w-[300px] h-[150px] scale-90 sm:scale-100 transition-transform duration-500">
         {balls.map((ballNumber, index) => {
           const isPocketed = ballNumber <= totalPocketed;
           const position = rackPositions[index];
@@ -36,33 +36,30 @@ export default function RackVisualizer({
           return (
             <div
               key={ballNumber}
-              className="absolute rounded-full w-10 h-10 flex items-center justify-center text-xs font-bold transition-all duration-500"
+              className="absolute rounded-full w-10 h-10 flex items-center justify-center text-xs font-bold transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)"
               style={{
                 left: `${(position.col / 8) * 100}%`,
                 top: `${(position.row / 4) * 100}%`,
-                transform: `translate(-50%, -50%) ${isPocketed ? "scale(0.6)" : "scale(1)"}`,
-                backgroundColor: isPocketed ? "#27272a" : "#22c55e",
-                border: `2px solid ${isPocketed ? "#3f3f46" : "#16a34a"}`,
-                opacity: isPocketed ? 0.2 : 1,
-                boxShadow: isPocketed ? "none" : "0 4px 6px -1px rgba(34, 197, 94, 0.3)",
+                transform: `translate(-50%, -50%) ${isPocketed ? "scale(0.5)" : "scale(1)"}`,
+                backgroundColor: isPocketed ? "var(--game-border)" : "var(--game-accent)",
+                border: `2px solid ${isPocketed ? "var(--game-surface)" : "var(--game-strike)"}`,
+                opacity: isPocketed ? 0.3 : 1,
+                boxShadow: isPocketed ? "none" : "0 4px 12px -2px var(--game-accent-dim)",
               }}
             >
               {!isPocketed && (
-                <span className="font-bold" style={{ color: "#09090b" }}>{ballNumber}</span>
+                <span className="font-bold text-[var(--game-bg)]">{ballNumber}</span>
               )}
             </div>
           );
         })}
       </div>
-      {/* Status text */}
-      <div className="absolute bottom-2 left-0 right-0 text-center">
-        <div className="text-base font-semibold" style={{ color: "#f4f4f5" }}>
-          {totalPocketed === 0
-            ? "Ready to break"
-            : remainingBalls > 0
-            ? `${remainingBalls} ball${remainingBalls !== 1 ? "s" : ""} remaining`
-            : "Frame complete"}
-        </div>
+
+      {/* Status Text overlay or below */}
+      <div className="mt-4 text-center">
+        <p className="text-[var(--game-text-secondary)] font-medium text-sm">
+          {totalPocketed === 10 ? "All Clear" : `${remainingBalls} Remaining`}
+        </p>
       </div>
     </div>
   );

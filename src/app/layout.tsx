@@ -1,7 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ScoringInterfaceProviderWrapper from "@/components/ScoringInterfaceProviderWrapper";
+
 import BuildInfo from "@/components/BuildInfo";
 
 const geistSans = Geist({
@@ -19,6 +19,17 @@ export const metadata: Metadata = {
   description: "Track your billiards bowling scores completely free. Real-time multiplayer, detailed statistics, and unlimited game saving.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#09090b" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,9 +40,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ScoringInterfaceProviderWrapper>
-          {children}
-        </ScoringInterfaceProviderWrapper>
+        {children}
         <BuildInfo />
       </body>
     </html>

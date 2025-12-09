@@ -2,25 +2,51 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import ScoringBoard from "@/components/scoring/ScoringBoard";
-import ModernScoringBoard from "@/components/scoring/ModernScoringBoard";
-import { GameState } from "@/lib/game-logic";
-import { useScoringInterface } from "@/hooks/useScoringInterface";
-import InterfaceToggle from "@/components/scoring/InterfaceToggle";
+import { GameState, createNewGame, addBallToFrame, getRemainingBalls } from "@/lib/game-logic";
+import GameLayout from "@/components/scoring/GameLayout";
+import FrameRibbon from "@/components/scoring/FrameRibbon";
+import RackVisualizer from "@/components/scoring/RackVisualizer";
+import InputKeypad from "@/components/scoring/InputKeypad";
 
 export default function NewGamePage() {
   const router = useRouter();
   const [gameMode, setGameMode] = useState<"single" | "multiplayer" | "tournament">("single");
   const [saving, setSaving] = useState(false);
-  const [gameState, setGameState] = useState<GameState | null>(null);
-  const { interfaceType, isLoaded } = useScoringInterface();
+  const [gameState, setGameState] = useState<GameState>(createNewGame());
 
-  const handleScoreUpdate = (newGameState: GameState) => {
+  const handleScoreInput = (balls: number) => {
+    if (gameState.isComplete) return;
+    const currentFrameIndex = gameState.currentFrame - 1;
+    // Calculate remaining (logic duplicated for now, should be shared)
+    const currentFrame = gameState.frames[currentFrameIndex];
+    const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
+
+    const ballsToAdd = Math.min(balls, remainingBalls);
+    const newGameState = addBallToFrame(gameState, currentFrameIndex, ballsToAdd);
     setGameState(newGameState);
   };
 
-  // Use interfaceType directly to ensure reactivity
-  const showImmersive = !isLoaded || interfaceType === "immersive";
+  const currentFrame = gameState.frames[gameState.currentFrame - 1];
+  const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
+  const totalPocketed = currentFrame
+    ? currentFrame.ballsPocketed.reduce((sum, count) => sum + count, 0)
+    : 0;
+  const isTenthFrame = currentFrame?.frameNumber === 10;
+  const shotCount = currentFrame?.ballsPocketed.length || 0;
+
+  // Keypad mode logic (duplicated)
+  let keypadMode: "shot1" | "shot2" | "break" = "shot1";
+  if (shotCount === 0) {
+    keypadMode = "break";
+  } else if (!isTenthFrame) {
+    keypadMode = "shot2";
+  } else {
+    if (currentFrame.isStrike || currentFrame.isSpare) {
+      keypadMode = "shot1";
+    } else {
+      keypadMode = "shot2";
+    }
+  }
 
   const handleSaveGame = async () => {
     if (!gameState || !gameState.isComplete) {
@@ -61,163 +87,66 @@ export default function NewGamePage() {
     }
   };
 
-  if (showImmersive) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                New Game
-              </h1>
-              <InterfaceToggle variant="light" />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setGameMode("single")}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                  gameMode === "single"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                }`}
-              >
-                Single
-              </button>
-              <button
-                onClick={() => setGameMode("multiplayer")}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                  gameMode === "multiplayer"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                }`}
-              >
-                Multi
-              </button>
-              <button
-                onClick={() => setGameMode("tournament")}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                  gameMode === "tournament"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                }`}
-              >
-                Tournament
-              </button>
-            </div>
-          </div>
+  const HeaderCmp = (
+    <div className="flex justify-between items-center w-full">
+      <div>
+        <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">New Game</div>
+        <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
+      </div>
+      <button
+        onClick={() => router.push("/dashboard")}
+        className="text-sm font-bold text-[var(--game-text-secondary)] hover:text-white"
+      >
+        EXIT
+      </button>
+    </div>
+  );
 
-          {/* Modern Scoring Board - Contained */}
-          <div className="max-w-4xl mx-auto">
-            <div className="h-[80vh] min-h-[600px] max-h-[900px]">
-              <ModernScoringBoard onScoreUpdate={handleScoreUpdate} />
-            </div>
-          </div>
-
-          {/* Save Game Button */}
-          {gameState?.isComplete && (
-            <div className="max-w-4xl mx-auto mt-6 flex gap-3 justify-center">
-              <button
-                onClick={handleSaveGame}
-                disabled={saving}
-                className="px-6 py-3 rounded-lg font-bold text-lg transition-colors disabled:opacity-50"
-                style={{
-                  backgroundColor: "#22c55e",
-                  color: "#f4f4f5",
-                }}
-                onMouseEnter={(e) => {
-                  if (!saving) e.currentTarget.style.backgroundColor = "#16a34a";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#22c55e";
-                }}
-              >
-                {saving ? "Saving..." : "Save Game"}
-              </button>
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="px-6 py-3 rounded-lg font-semibold transition-colors"
-                style={{
-                  backgroundColor: "#27272a",
-                  color: "#f4f4f5",
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#3f3f46"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#27272a"}
-              >
-                Dashboard
-              </button>
+  return (
+    <GameLayout
+      header={HeaderCmp}
+      frameStrip={
+        <FrameRibbon
+          frames={gameState.frames}
+          currentFrameIndex={gameState.currentFrame - 1}
+          calculateCumulativeScore={() => 0}
+        />
+      }
+      visualizer={
+        <div className="w-full h-full flex flex-col justify-center">
+          <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
+          {gameState.isComplete && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-50">
+              <div className="text-center p-6 bg-[var(--game-surface)] rounded-xl border border-[var(--game-border)] shadow-2xl">
+                <h2 className="text-2xl font-bold mb-2 text-white">Game Complete!</h2>
+                <div className="text-4xl font-black text-[var(--game-accent)] mb-6">{gameState.totalScore}</div>
+                <button
+                  onClick={handleSaveGame}
+                  disabled={saving}
+                  className="w-full py-3 bg-[var(--game-strike)] text-white font-bold rounded-lg mb-3 disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : "Save to History"}
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className="block w-full text-sm text-[var(--game-text-secondary)] hover:text-white mt-2"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              New Game
-            </h1>
-            <InterfaceToggle />
-          </div>
-          <div className="mt-4 flex gap-4">
-            <button
-              onClick={() => setGameMode("single")}
-              className={`px-4 py-2 rounded-md ${
-                gameMode === "single"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-              }`}
-            >
-              Single Player
-            </button>
-            <button
-              onClick={() => setGameMode("multiplayer")}
-              className={`px-4 py-2 rounded-md ${
-                gameMode === "multiplayer"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-              }`}
-            >
-              Multiplayer
-            </button>
-            <button
-              onClick={() => setGameMode("tournament")}
-              className={`px-4 py-2 rounded-md ${
-                gameMode === "tournament"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-              }`}
-            >
-              Tournament
-            </button>
-          </div>
-        </div>
-
-        <ScoringBoard onScoreUpdate={handleScoreUpdate} />
-
-        {gameState?.isComplete && (
-          <div className="mt-8 flex justify-center gap-4">
-            <button
-              onClick={handleSaveGame}
-              disabled={saving}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? "Saving..." : "Save Game"}
-            </button>
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300"
-            >
-              Back to Dashboard
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+      }
+      controls={
+        <InputKeypad
+          mode={keypadMode}
+          remainingBalls={remainingBalls}
+          onInput={handleScoreInput}
+          disabled={gameState.isComplete || saving}
+        />
+      }
+    />
   );
 }
 
