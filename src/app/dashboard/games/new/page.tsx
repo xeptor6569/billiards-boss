@@ -8,6 +8,7 @@ import FrameRibbon from "@/components/scoring/FrameRibbon";
 import RackVisualizer from "@/components/scoring/RackVisualizer";
 import InputKeypad from "@/components/scoring/InputKeypad";
 import FrameEditModal from "@/components/scoring/FrameEditModal";
+import GameSaveSuccessModal from "@/components/scoring/GameSaveSuccessModal";
 import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
 
 export default function NewGamePage() {
@@ -16,6 +17,8 @@ export default function NewGamePage() {
   const [saving, setSaving] = useState(false);
   const [gameState, setGameState] = useState<GameState>(createNewGame());
   const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [savedGameId, setSavedGameId] = useState<number | null>(null);
 
   const handleScoreInput = (balls: number) => {
     if (gameState.isComplete) return;
@@ -94,13 +97,20 @@ export default function NewGamePage() {
       }
 
       const game = await response.json();
-      router.push(`/dashboard/games/${game.id}`);
+      setSavedGameId(game.id);
+      setShowSuccessModal(true);
     } catch (error) {
       console.error("Error saving game:", error);
       alert("Failed to save game. Please try again.");
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleNewGame = () => {
+    setGameState(createNewGame());
+    setShowSuccessModal(false);
+    setSavedGameId(null);
   };
 
   const HeaderCmp = (
@@ -140,7 +150,7 @@ export default function NewGamePage() {
         visualizer={
           <div className="w-full h-full flex flex-col justify-center">
             <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
-            {gameState.isComplete && (
+            {gameState.isComplete && !showSuccessModal && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-50">
                 <div className="text-center p-6 bg-[var(--game-surface)] rounded-xl border border-[var(--game-border)] shadow-2xl">
                   <h2 className="text-2xl font-bold mb-2 text-white">Game Complete!</h2>
@@ -182,6 +192,13 @@ export default function NewGamePage() {
           onSave={handleModalSave}
         />
       )}
+      <GameSaveSuccessModal
+        isOpen={showSuccessModal}
+        totalScore={gameState.totalScore}
+        gameId={savedGameId || undefined}
+        onNewGame={handleNewGame}
+        onDashboard={() => router.push("/dashboard")}
+      />
     </>
   );
 }

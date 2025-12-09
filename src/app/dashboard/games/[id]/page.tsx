@@ -8,6 +8,7 @@ import FrameRibbon from "@/components/scoring/FrameRibbon";
 import RackVisualizer from "@/components/scoring/RackVisualizer";
 import InputKeypad from "@/components/scoring/InputKeypad";
 import FrameEditModal from "@/components/scoring/FrameEditModal";
+import GameSaveSuccessModal from "@/components/scoring/GameSaveSuccessModal";
 import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
 
 function GameDetailContent() {
@@ -30,6 +31,7 @@ function GameDetailContent() {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -99,7 +101,13 @@ function GameDetailContent() {
       }
       const updatedGame = await response.json();
       setGame({ ...game, status: updatedGame.status || game.status });
-      alert("Game saved successfully!");
+      
+      // Show success modal if game is completed, otherwise just show alert
+      if (gameState.isComplete) {
+        setShowSuccessModal(true);
+      } else {
+        alert("Game saved successfully!");
+      }
     } catch (error) {
       console.error("Error saving game:", error);
       alert("Failed to save game. Please try again.");
@@ -209,6 +217,16 @@ function GameDetailContent() {
           gameState={gameState}
           onClose={handleModalClose}
           onSave={handleModalSave}
+        />
+      )}
+      {gameState && (
+        <GameSaveSuccessModal
+          isOpen={showSuccessModal}
+          totalScore={gameState.totalScore}
+          gameId={game?.id}
+          onViewGame={() => setShowSuccessModal(false)}
+          onNewGame={() => router.push("/dashboard/games/new")}
+          onDashboard={() => router.push("/dashboard")}
         />
       )}
     </>

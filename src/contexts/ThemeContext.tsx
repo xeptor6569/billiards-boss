@@ -81,18 +81,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  if (!mounted) {
-    // Return default theme during SSR
-    return <>{children}</>;
-  }
-
-  const theme = themes[themeName];
+  // Use current theme or default during SSR
+  const theme = themes[themeName] || themes[defaultTheme];
 
   return (
     <ThemeContext.Provider
       value={{
         theme,
-        themeName,
+        themeName: mounted ? themeName : defaultTheme,
         setTheme,
         availableThemes: Object.values(themes),
       }}
