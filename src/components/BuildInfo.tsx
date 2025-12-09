@@ -19,9 +19,21 @@ export default function BuildInfo() {
     <div
       className={`fixed bottom-0 right-0 m-2 z-50 transition-all duration-300 ${
         isMinimized 
-          ? 'bg-gray-900/30 hover:bg-gray-900/50 p-1.5 rounded-full border border-gray-700/50' 
-          : 'bg-gray-900/90 hover:bg-gray-800/95 p-2 rounded border border-gray-700 shadow-lg'
+          ? 'p-1.5 rounded-full border' 
+          : 'p-2 rounded border shadow-lg'
       }`}
+      style={{
+        backgroundColor: isMinimized 
+          ? 'var(--color-surface)' 
+          : 'var(--color-surface)',
+        borderColor: 'var(--color-border)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = 'var(--color-border)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = 'var(--color-surface)';
+      }}
       title={isMinimized ? `Build: ${BUILD_INFO.display}\nClick to expand` : `Version: ${BUILD_INFO.version}\nBuild: ${BUILD_INFO.buildNumber}\nCommit: ${BUILD_INFO.commitHash}\nDate: ${buildDate}\nClick to minimize`}
       onClick={() => setIsMinimized(!isMinimized)}
       role="button"
@@ -35,16 +47,16 @@ export default function BuildInfo() {
     >
       {isMinimized ? (
         <div className="flex items-center justify-center min-w-[24px] min-h-[24px]">
-          <span className="text-green-400 font-semibold text-[10px] leading-none">
+          <span className="font-semibold text-[10px] leading-none" style={{ color: 'var(--color-success)' }}>
             {BUILD_INFO.buildNumber}
           </span>
         </div>
       ) : (
-        <div className="flex items-center gap-2 text-white text-xs font-mono">
-          <span className="text-gray-400">Build:</span>
-          <span className="text-green-400 font-semibold">{BUILD_INFO.display}</span>
-          <span className="text-gray-500">•</span>
-          <span className="text-gray-400" title={`Commit: ${BUILD_INFO.commitHash}`}>
+        <div className="flex items-center gap-2 text-xs font-mono" style={{ color: 'var(--color-textPrimary)' }}>
+          <span style={{ color: 'var(--color-textSecondary)' }}>Build:</span>
+          <span className="font-semibold" style={{ color: 'var(--color-success)' }}>{BUILD_INFO.display}</span>
+          <span style={{ color: 'var(--color-textSecondary)' }}>•</span>
+          <span style={{ color: 'var(--color-textSecondary)' }} title={`Commit: ${BUILD_INFO.commitHash}`}>
             {BUILD_INFO.commitHash}
           </span>
         </div>

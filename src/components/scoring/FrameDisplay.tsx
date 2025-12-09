@@ -38,17 +38,26 @@ export default function FrameDisplay({
       onClick={handleClick}
       className={`
         flex flex-col rounded-lg border-2 p-2 sm:p-3 transition-all min-w-0
-        ${
-          isCurrent
-            ? "border-indigo-500 bg-indigo-50 shadow-lg dark:bg-indigo-900/20 dark:border-indigo-400"
-            : "border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800"
-        }
-        ${
-          canEdit
-            ? "cursor-pointer hover:border-indigo-400 hover:shadow-md active:scale-95 dark:hover:border-indigo-500"
-            : ""
-        }
+        ${isCurrent ? "shadow-lg" : ""}
+        ${canEdit ? "cursor-pointer hover:shadow-md active:scale-95" : ""}
       `}
+      style={{
+        borderColor: isCurrent ? 'var(--color-primary)' : 'var(--color-border)',
+        backgroundColor: isCurrent 
+          ? 'var(--color-primary)' 
+          : 'var(--color-surface)',
+        opacity: isCurrent ? 0.15 : 1,
+      }}
+      onMouseEnter={(e) => {
+        if (canEdit) {
+          e.currentTarget.style.borderColor = 'var(--color-primary)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (canEdit && !isCurrent) {
+          e.currentTarget.style.borderColor = 'var(--color-border)';
+        }
+      }}
       role={canEdit ? "button" : undefined}
       tabIndex={canEdit ? 0 : undefined}
       onKeyDown={(e) => {
@@ -59,7 +68,7 @@ export default function FrameDisplay({
       }}
     >
       {/* Frame number */}
-      <div className="text-center text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+      <div className="text-center text-xs font-semibold mb-1" style={{ color: 'var(--color-textSecondary)' }}>
         Frame {frame.frameNumber}
         {canEdit && (
           <span className="ml-1 text-[10px] opacity-60" title="Click to edit">
@@ -69,7 +78,14 @@ export default function FrameDisplay({
       </div>
 
       {/* Frame score (top, smaller) */}
-      <div className="flex h-8 sm:h-10 items-center justify-center rounded border border-gray-300 bg-gray-50 text-sm sm:text-base font-semibold dark:border-gray-600 dark:bg-gray-700 mb-2">
+      <div 
+        className="flex h-8 sm:h-10 items-center justify-center rounded border text-sm sm:text-base font-semibold mb-2"
+        style={{ 
+          borderColor: 'var(--color-border)',
+          backgroundColor: 'var(--color-surface)',
+          color: 'var(--color-textPrimary)',
+        }}
+      >
         {getDisplayScore() || "—"}
       </div>
 
@@ -106,10 +122,22 @@ export default function FrameDisplay({
         </div>
       ) : (
         <div className="flex gap-1.5 sm:gap-2 mb-2">
-          <div className="flex-1 rounded-md px-1.5 sm:px-2 py-1.5 sm:py-2 text-center text-base sm:text-lg font-bold bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600">
+          <div 
+            className="flex-1 rounded-md px-1.5 sm:px-2 py-1.5 sm:py-2 text-center text-base sm:text-lg font-bold"
+            style={{
+              backgroundColor: 'var(--color-border)',
+              color: 'var(--color-textSecondary)',
+            }}
+          >
             —
           </div>
-          <div className="flex-1 rounded-md px-1.5 sm:px-2 py-1.5 sm:py-2 text-center text-base sm:text-lg font-bold bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600">
+          <div 
+            className="flex-1 rounded-md px-1.5 sm:px-2 py-1.5 sm:py-2 text-center text-base sm:text-lg font-bold"
+            style={{
+              backgroundColor: 'var(--color-border)',
+              color: 'var(--color-textSecondary)',
+            }}
+          >
             —
           </div>
         </div>
@@ -117,7 +145,13 @@ export default function FrameDisplay({
 
       {/* Cumulative score (bottom) */}
       {cumulativeScore !== undefined && cumulativeScore > 0 && (
-        <div className="mt-auto text-center text-xs font-semibold text-gray-700 dark:text-gray-300 pt-1 border-t border-gray-200 dark:border-gray-700">
+        <div 
+          className="mt-auto text-center text-xs font-semibold pt-1 border-t"
+          style={{
+            color: 'var(--color-textPrimary)',
+            borderColor: 'var(--color-border)',
+          }}
+        >
           {cumulativeScore}
         </div>
       )}

@@ -2,15 +2,15 @@
 
 :root {
   /* Default theme colors - will be overridden by ThemeProvider */
-  --color-primary: #1a5f3f;
+  --color-primary: #2563eb;
   --color-accent: #f59e0b;
-  --color-background: #f9fafb;
-  --color-surface: #ffffff;
-  --color-textPrimary: #1f2937;
-  --color-textSecondary: #6b7280;
+  --color-background: #ffffff;
+  --color-surface: #f8fafc;
+  --color-textPrimary: #0f172a;
+  --color-textSecondary: #64748b;
   --color-success: #10b981;
   --color-error: #ef4444;
-  --color-border: #e5e7eb;
+  --color-border: #e2e8f0;
 
   /* Legacy variables for backward compatibility */
   --background: var(--color-background);

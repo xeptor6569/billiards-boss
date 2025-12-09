@@ -21,7 +21,7 @@ export default function BallTracker({
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <div className="text-sm font-medium" style={{ color: 'var(--color-textPrimary)' }}>
         Balls Remaining: {remainingBalls}
       </div>
       
@@ -68,10 +68,14 @@ export default function BallTracker({
                     ? "bg-blue-500 text-white hover:bg-blue-600 hover:scale-110 active:scale-95 cursor-pointer shadow-md ring-2 ring-blue-400 ring-offset-1"
                     : isPocketed
                     ? "bg-green-500 text-white shadow-lg"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400"
+                    : "cursor-not-allowed"
                 }
                 ${isClickable ? "hover:shadow-xl" : ""}
               `}
+              style={!isClickable && !isPocketed ? {
+                backgroundColor: 'var(--color-border)',
+                color: 'var(--color-textSecondary)',
+              } : undefined}
             >
               {ballNumber}
             </button>
@@ -79,13 +83,13 @@ export default function BallTracker({
         })}
       </div>
       {ballsPocketed.length > 0 && (
-        <div className="text-xs text-gray-600 dark:text-gray-400">
+        <div className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>
           Shot {ballsPocketed.length}: {ballsPocketed[ballsPocketed.length - 1]} ball
           {ballsPocketed[ballsPocketed.length - 1] !== 1 ? "s" : ""} pocketed
         </div>
       )}
       {ballsPocketed.length === 0 && (
-        <div className="text-xs text-gray-600 dark:text-gray-400">
+        <div className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>
           Ready for shot {shotNumber}
         </div>
       )}

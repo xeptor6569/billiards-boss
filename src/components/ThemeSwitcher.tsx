@@ -11,14 +11,26 @@ export default function ThemeSwitcher() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors"
+        style={{
+          borderColor: 'var(--color-border)',
+          backgroundColor: 'var(--color-surface)',
+          color: 'var(--color-textPrimary)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--color-border)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = 'var(--color-surface)';
+        }}
         aria-label="Change theme"
       >
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+        <span className="text-sm font-medium">
           {availableThemes.find((t) => t.name === themeName)?.displayName || "Theme"}
         </span>
         <svg
-          className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`w-4 h-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          style={{ color: 'var(--color-textSecondary)' }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -38,7 +50,13 @@ export default function ThemeSwitcher() {
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg z-50">
+          <div 
+            className="absolute right-0 mt-2 w-48 rounded-lg border shadow-lg z-50"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+            }}
+          >
             <div className="py-1">
               {availableThemes.map((theme) => (
                 <button
@@ -47,16 +65,33 @@ export default function ThemeSwitcher() {
                     setTheme(theme.name as any);
                     setIsOpen(false);
                   }}
-                  className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                    themeName === theme.name
-                      ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
+                  className="w-full text-left px-4 py-2 text-sm transition-colors"
+                  style={{
+                    backgroundColor: themeName === theme.name 
+                      ? 'var(--color-primary)' 
+                      : 'transparent',
+                    color: themeName === theme.name 
+                      ? '#ffffff' 
+                      : 'var(--color-textPrimary)',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (themeName !== theme.name) {
+                      e.currentTarget.style.backgroundColor = 'var(--color-border)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (themeName !== theme.name) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-4 h-4 rounded-full border-2 border-gray-300 dark:border-gray-600"
-                      style={{ backgroundColor: theme.colors.primary }}
+                      className="w-4 h-4 rounded-full border-2"
+                      style={{ 
+                        backgroundColor: theme.colors.primary,
+                        borderColor: 'var(--color-border)',
+                      }}
                     />
                     <span>{theme.displayName}</span>
                     {themeName === theme.name && (

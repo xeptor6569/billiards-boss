@@ -34,9 +34,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Apply theme to CSS variables
     const root = document.documentElement;
     Object.entries(theme.colors).forEach(([key, value]) => {
-      // Convert camelCase to kebab-case for CSS variables
-      const cssKey = key.replace(/([A-Z])/g, "-$1").toLowerCase();
-      root.style.setProperty(`--color-${cssKey}`, value);
+      // Keep camelCase for CSS variables to match globals.css
+      root.style.setProperty(`--color-${key}`, value);
     });
 
     // Set unified game variables to use the same colors as the rest of the site
