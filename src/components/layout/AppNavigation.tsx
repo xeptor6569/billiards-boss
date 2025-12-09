@@ -50,83 +50,86 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
     ];
 
     return (
-        <div className="flex flex-col h-[100dvh]">
-            {/* Main Content Area - Scrollable */}
-            <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-                <div className="md:hidden pt-4 pb-2 px-4 flex justify-between items-center bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-10">
-                    <h1 className="text-xl font-bold text-indigo-600 dark:text-indigo-400">Billiards Boss</h1>
-                    {/* Placeholder for Profile/Settings icon if needed */}
-                </div>
-                {children}
-            </main>
-
-            {/* Desktop Top Nav (Hidden on Mobile) */}
-            <header className="hidden md:block bg-white shadow-sm dark:bg-gray-800">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-8">
-                        <Link href="/dashboard" className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                            Billiards Boss
-                        </Link>
-                        <nav className="flex space-x-4">
-                            {navItems.filter(item => !item.isPrimary).map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive(item.href) && item.href !== '/dashboard/games/new'
-                                            ? "bg-indigo-50 text-indigo-700 dark:bg-gray-700 dark:text-white"
-                                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700"
-                                        }`}
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </nav>
-                    </div>
-
-                    <Link
-                        href="/dashboard/games/new"
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-                    >
-                        New Game
+        <div className="flex h-[100dvh] bg-gray-50 dark:bg-gray-900">
+            {/* Desktop Sidebar (Hidden on Mobile) */}
+            <aside className="hidden md:flex w-64 flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+                <div className="p-6">
+                    <Link href="/dashboard" className="flex items-center gap-2 text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                        <span>🎱</span> Billiards Boss
                     </Link>
                 </div>
-            </header>
 
+                <nav className="flex-1 px-4 space-y-2">
+                    {navItems.map((item) => (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive(item.href) && item.href !== '/dashboard/games/new'
+                                ? "bg-indigo-50 text-indigo-700 dark:bg-gray-700 dark:text-white"
+                                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                                } ${item.isPrimary ? "mt-6 bg-indigo-600 !text-white hover:!bg-indigo-700 shadow-md justify-center" : ""}`}
+                        >
+                            {item.icon}
+                            <span>{item.label}</span>
+                        </Link>
+                    ))}
+                </nav>
 
-            {/* Mobile Bottom Nav (Persistent) */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe z-50">
-                <div className="flex justify-around items-end h-16 pb-2">
-                    {navItems.map((item) => {
-                        const active = isActive(item.href);
+                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+                    {/* Placeholder for User Profile / Sign Out if needed in future */}
+                    <div className="text-xs text-center text-gray-400">
+                        v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'}
+                    </div>
+                </div>
+            </aside>
 
-                        if (item.isPrimary) {
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+                {/* Mobile Top Bar */}
+                <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                    <h1 className="text-xl font-bold text-indigo-600 dark:text-indigo-400">Billiards Boss</h1>
+                </header>
+
+                <main className="flex-1 overflow-y-auto pb-safe">
+                    {children}
+                </main>
+
+                {/* Mobile Bottom Nav (Persistent) */}
+                <nav className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe">
+                    <div className="flex justify-around items-end h-16 pb-2">
+                        {navItems.map((item) => {
+                            const active = isActive(item.href);
+
+                            if (item.isPrimary) {
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className="relative -top-5 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-transform active:scale-95"
+                                    >
+                                        {item.icon}
+                                    </Link>
+                                )
+                            }
+
                             return (
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className="relative -top-5 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-transform active:scale-95"
-                                >
-                                    {item.icon}
-                                </Link>
-                            )
-                        }
-
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${active
+                                    className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${active
                                         ? "text-indigo-600 dark:text-indigo-400"
                                         : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                                    }`}
-                            >
-                                {item.icon}
-                                <span className="text-[10px] font-medium">{item.label}</span>
-                            </Link>
-                        );
-                    })}
-                </div>
-            </nav>
+                                        }`}
+                                >
+                                    {item.icon}
+                                    <span className="text-[10px] font-medium">{item.label}</span>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </nav>
+            </div>
         </div>
     );
 }
+
