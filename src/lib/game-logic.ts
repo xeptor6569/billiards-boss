@@ -419,3 +419,29 @@ export function updateFrameShot(
   };
 }
 
+/**
+ * Switches the current frame to a specified frame index
+ * This allows users to jump to any frame for editing
+ */
+export function switchToFrame(
+  gameState: GameState,
+  frameIndex: number
+): GameState {
+  // Validate frame index
+  if (frameIndex < 0 || frameIndex >= gameState.frames.length) {
+    return gameState;
+  }
+
+  // Only allow switching to frames that have at least one shot
+  const targetFrame = gameState.frames[frameIndex];
+  if (!targetFrame || targetFrame.ballsPocketed.length === 0) {
+    return gameState;
+  }
+
+  // Update current frame
+  return {
+    ...gameState,
+    currentFrame: frameIndex + 1,
+  };
+}
+

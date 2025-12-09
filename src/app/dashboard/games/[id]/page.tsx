@@ -7,6 +7,7 @@ import GameLayout from "@/components/scoring/GameLayout";
 import FrameRibbon from "@/components/scoring/FrameRibbon";
 import RackVisualizer from "@/components/scoring/RackVisualizer";
 import InputKeypad from "@/components/scoring/InputKeypad";
+import FrameEditModal from "@/components/scoring/FrameEditModal";
 
 function GameDetailContent() {
   const params = useParams();
@@ -27,6 +28,7 @@ function GameDetailContent() {
   const [loading, setLoading] = useState(true);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [saving, setSaving] = useState(false);
+  const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -57,12 +59,23 @@ function GameDetailContent() {
     const currentFrame = gameState.frames[currentFrameIndex];
     if (!currentFrame) return;
 
-    const { getRemainingBalls, addBallToFrame } = require("@/lib/game-logic"); // Using require for now or I need to import them at top
-    // Ideally importing at top is better, fixing this in next step
     const remainingBalls = getRemainingBalls(currentFrame);
     const ballsToAdd = Math.min(balls, remainingBalls);
     const newGameState = addBallToFrame(gameState, currentFrameIndex, ballsToAdd);
     setGameState(newGameState);
+  };
+
+  const handleFrameClick = (frameIndex: number) => {
+    if (!gameState || gameState.isComplete) return;
+    setEditingFrameIndex(frameIndex);
+  };
+
+  const handleModalClose = () => {
+    setEditingFrameIndex(null);
+  };
+
+  const handleModalSave = (updatedGameState: GameState) => {
+    setGameState(updatedGameState);
   };
 
   const handleSaveGame = async () => {
@@ -105,6 +118,26 @@ function GameDetailContent() {
   // For now I will assume imports are present.
 
   const isComplete = gameState.isComplete;
+  const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
+  const totalPocketed = currentFrame
+    ? currentFrame.ballsPocketed.reduce((sum, count) => sum + count, 0)
+    : 0;
+  const isTenthFrame = currentFrame?.frameNumber === 10;
+  const shotCount = currentFrame?.ballsPocketed.length || 0;
+
+  // Keypad mode logic
+  let keypadMode: "shot1" | "shot2" | "break" = "shot1";
+  if (shotCount === 0) {
+    keypadMode = "break";
+  } else if (!isTenthFrame) {
+    keypadMode = "shot2";
+  } else {
+    if (currentFrame.isStrike || currentFrame.isSpare) {
+      keypadMode = "shot1";
+    } else {
+      keypadMode = "shot2";
+    }
+  }
 
   const HeaderCmp = (
     <div className="flex justify-between items-center w-full">
@@ -125,40 +158,58 @@ function GameDetailContent() {
     </div>
   );
 
-  // Safe helper usage requires importing them. Code below assumes imports.
-  // I will inject imports in a separate tool call to be safe or assuming I do it right after.
+  const editingFrame =
+    editingFrameIndex !== null && gameState
+      ? gameState.frames[editingFrameIndex]
+      : null;
 
   return (
-    <GameLayout
-      header={HeaderCmp}
-      frameStrip={
-        <FrameRibbon
-          frames={gameState.frames}
-          currentFrameIndex={gameState.currentFrame - 1}
-          calculateCumulativeScore={() => 0}
+    <>
+      <GameLayout
+        header={HeaderCmp}
+        frameStrip={
+          <FrameRibbon
+            frames={gameState.frames}
+            currentFrameIndex={gameState.currentFrame - 1}
+            calculateCumulativeScore={() => 0}
+            onFrameClick={handleFrameClick}
+            isEditable={!isComplete}
+          />
+        }
+        visualizer={
+          <div className="w-full h-full flex flex-col justify-center">
+            <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
+          </div>
+        }
+        controls={
+          isComplete ? (
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+              <div className="text-xl font-bold">Game Complete</div>
+              <button onClick={() => router.push("/dashboard")} className="px-6 py-3 bg-[var(--game-surface)] border border-[var(--game-border)] rounded-lg">
+                Return to Dashboard
+              </button>
+            </div>
+          ) : (
+            <InputKeypad
+              mode={keypadMode}
+              remainingBalls={remainingBalls}
+              onInput={handleScoreInput}
+              disabled={saving}
+            />
+          )
+        }
+      />
+      {editingFrameIndex !== null && editingFrame && gameState && (
+        <FrameEditModal
+          isOpen={editingFrameIndex !== null}
+          frame={editingFrame}
+          frameIndex={editingFrameIndex}
+          gameState={gameState}
+          onClose={handleModalClose}
+          onSave={handleModalSave}
         />
-      }
-      visualizer={
-        <div className="w-full h-full flex items-center justify-center">
-          {/* Simplified visualizer for now or need remainingBalls logic */}
-          <div className="text-[var(--game-text-secondary)]">Visualizer unavailable in edit mode yet</div>
-        </div>
-      }
-      controls={
-        isComplete ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="text-xl font-bold">Game Complete</div>
-            <button onClick={() => router.push("/dashboard")} className="px-6 py-3 bg-[var(--game-surface)] border border-[var(--game-border)] rounded-lg">
-              Return to Dashboard
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-full text-[var(--game-text-secondary)]">
-            Editing active game... (Keypad integration pending imports)
-          </div>
-        )
-      }
-    />
+      )}
+    </>
   );
 }
 

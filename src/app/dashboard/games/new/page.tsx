@@ -7,12 +7,14 @@ import GameLayout from "@/components/scoring/GameLayout";
 import FrameRibbon from "@/components/scoring/FrameRibbon";
 import RackVisualizer from "@/components/scoring/RackVisualizer";
 import InputKeypad from "@/components/scoring/InputKeypad";
+import FrameEditModal from "@/components/scoring/FrameEditModal";
 
 export default function NewGamePage() {
   const router = useRouter();
   const [gameMode, setGameMode] = useState<"single" | "multiplayer" | "tournament">("single");
   const [saving, setSaving] = useState(false);
   const [gameState, setGameState] = useState<GameState>(createNewGame());
+  const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
 
   const handleScoreInput = (balls: number) => {
     if (gameState.isComplete) return;
@@ -24,6 +26,19 @@ export default function NewGamePage() {
     const ballsToAdd = Math.min(balls, remainingBalls);
     const newGameState = addBallToFrame(gameState, currentFrameIndex, ballsToAdd);
     setGameState(newGameState);
+  };
+
+  const handleFrameClick = (frameIndex: number) => {
+    if (gameState.isComplete) return;
+    setEditingFrameIndex(frameIndex);
+  };
+
+  const handleModalClose = () => {
+    setEditingFrameIndex(null);
+  };
+
+  const handleModalSave = (updatedGameState: GameState) => {
+    setGameState(updatedGameState);
   };
 
   const currentFrame = gameState.frames[gameState.currentFrame - 1];
@@ -102,51 +117,68 @@ export default function NewGamePage() {
     </div>
   );
 
+  const editingFrame =
+    editingFrameIndex !== null ? gameState.frames[editingFrameIndex] : null;
+
   return (
-    <GameLayout
-      header={HeaderCmp}
-      frameStrip={
-        <FrameRibbon
-          frames={gameState.frames}
-          currentFrameIndex={gameState.currentFrame - 1}
-          calculateCumulativeScore={() => 0}
-        />
-      }
-      visualizer={
-        <div className="w-full h-full flex flex-col justify-center">
-          <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
-          {gameState.isComplete && (
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-50">
-              <div className="text-center p-6 bg-[var(--game-surface)] rounded-xl border border-[var(--game-border)] shadow-2xl">
-                <h2 className="text-2xl font-bold mb-2 text-white">Game Complete!</h2>
-                <div className="text-4xl font-black text-[var(--game-accent)] mb-6">{gameState.totalScore}</div>
-                <button
-                  onClick={handleSaveGame}
-                  disabled={saving}
-                  className="w-full py-3 bg-[var(--game-strike)] text-white font-bold rounded-lg mb-3 disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : "Save to History"}
-                </button>
-                <button
-                  onClick={() => router.push("/dashboard")}
-                  className="block w-full text-sm text-[var(--game-text-secondary)] hover:text-white mt-2"
-                >
-                  Cancel
-                </button>
+    <>
+      <GameLayout
+        header={HeaderCmp}
+        frameStrip={
+          <FrameRibbon
+            frames={gameState.frames}
+            currentFrameIndex={gameState.currentFrame - 1}
+            calculateCumulativeScore={() => 0}
+            onFrameClick={handleFrameClick}
+            isEditable={!gameState.isComplete}
+          />
+        }
+        visualizer={
+          <div className="w-full h-full flex flex-col justify-center">
+            <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
+            {gameState.isComplete && (
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-50">
+                <div className="text-center p-6 bg-[var(--game-surface)] rounded-xl border border-[var(--game-border)] shadow-2xl">
+                  <h2 className="text-2xl font-bold mb-2 text-white">Game Complete!</h2>
+                  <div className="text-4xl font-black text-[var(--game-accent)] mb-6">{gameState.totalScore}</div>
+                  <button
+                    onClick={handleSaveGame}
+                    disabled={saving}
+                    className="w-full py-3 bg-[var(--game-strike)] text-white font-bold rounded-lg mb-3 disabled:opacity-50"
+                  >
+                    {saving ? "Saving..." : "Save to History"}
+                  </button>
+                  <button
+                    onClick={() => router.push("/dashboard")}
+                    className="block w-full text-sm text-[var(--game-text-secondary)] hover:text-white mt-2"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      }
-      controls={
-        <InputKeypad
-          mode={keypadMode}
-          remainingBalls={remainingBalls}
-          onInput={handleScoreInput}
-          disabled={gameState.isComplete || saving}
+            )}
+          </div>
+        }
+        controls={
+          <InputKeypad
+            mode={keypadMode}
+            remainingBalls={remainingBalls}
+            onInput={handleScoreInput}
+            disabled={gameState.isComplete || saving}
+          />
+        }
+      />
+      {editingFrameIndex !== null && editingFrame && (
+        <FrameEditModal
+          isOpen={editingFrameIndex !== null}
+          frame={editingFrame}
+          frameIndex={editingFrameIndex}
+          gameState={gameState}
+          onClose={handleModalClose}
+          onSave={handleModalSave}
         />
-      }
-    />
+      )}
+    </>
   );
 }
 

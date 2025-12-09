@@ -7,12 +7,16 @@ interface FrameRibbonProps {
   frames: Frame[];
   currentFrameIndex: number;
   calculateCumulativeScore: (index: number) => number;
+  onFrameClick?: (frameIndex: number) => void;
+  isEditable?: boolean;
 }
 
 export default function FrameRibbon({
   frames,
   currentFrameIndex,
   calculateCumulativeScore,
+  onFrameClick,
+  isEditable = false,
 }: FrameRibbonProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentFrameRef = useRef<HTMLDivElement>(null);
@@ -38,8 +42,16 @@ export default function FrameRibbon({
     if (frame.isSpare) return "/";
     if (frame.ballsPocketed.length === 0) return "";
     return frame.score;
+  };
 
-
+  const handleFrameClick = (frameIndex: number) => {
+    if (isEditable && onFrameClick) {
+      const frame = frames[frameIndex];
+      // Only allow clicking frames that have at least one shot
+      if (frame && frame.ballsPocketed.length > 0) {
+        onFrameClick(frameIndex);
+      }
+    }
   };
 
   return (
@@ -55,6 +67,8 @@ export default function FrameRibbon({
           const isCurrent = index === currentFrameIndex;
           const cumulativeScore = calculateCumulativeScore(index);
           const display = getFrameDisplay(frame, index);
+          const hasShots = frame.ballsPocketed.length > 0;
+          const canEdit = isEditable && hasShots && onFrameClick;
 
           return (
             <div
@@ -66,44 +80,80 @@ export default function FrameRibbon({
               `}
             >
               <div
+                onClick={() => handleFrameClick(index)}
                 className={`
-                  rounded-lg border-2 p-2 min-w-[70px] text-center
+                  rounded-lg border-2 p-2 min-w-[80px] text-center transition-all
                   ${isCurrent ? "border-[var(--game-accent)] bg-[var(--game-surface)]" : "border-[var(--game-border)] bg-[var(--game-bg)]"}
+                  ${canEdit ? "cursor-pointer hover:border-[var(--game-accent)] hover:shadow-md active:scale-95" : ""}
                 `}
+                role={canEdit ? "button" : undefined}
+                tabIndex={canEdit ? 0 : undefined}
+                onKeyDown={(e) => {
+                  if (canEdit && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    handleFrameClick(index);
+                  }
+                }}
               >
                 {/* Frame number */}
                 <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--game-text-secondary)] mb-1">
                   Frame {frame.frameNumber}
+                  {canEdit && (
+                    <span className="ml-0.5 text-[8px] opacity-60" title="Click to edit">
+                      ✎
+                    </span>
+                  )}
                 </div>
 
-                {/* Main score display */}
-                <div className="text-2xl font-black text-[var(--game-text-primary)] leading-none mb-1">
+                {/* Frame score (top, smaller) */}
+                <div className="text-sm font-semibold text-[var(--game-text-primary)] leading-none mb-1.5">
                   {display || "—"}
                 </div>
 
-                {/* Shot breakdown */}
-                {frame.ballsPocketed.length > 0 && (
-                  <div className="flex gap-1 justify-center mt-1">
+                {/* Shot breakdown (prominent) */}
+                {hasShots ? (
+                  <div className="flex gap-1 justify-center mb-1">
                     {frame.ballsPocketed.map((balls, idx) => {
                       const isStrike = balls === 10;
-                      const isSpare = idx === 1 && frame.ballsPocketed.length >= 2 && !frame.isStrike && frame.ballsPocketed[0] + balls === 10;
+                      const isSpare =
+                        idx === 1 &&
+                        frame.ballsPocketed.length >= 2 &&
+                        !frame.isStrike &&
+                        frame.ballsPocketed[0] + balls === 10;
 
                       return (
                         <div
                           key={idx}
                           className={`
-                            rounded h-1.5 w-1.5
-                            ${isStrike ? "bg-[var(--game-strike)]" : isSpare ? "bg-[var(--game-spare)]" : "bg-[var(--game-text-secondary)]"}
+                            rounded px-1.5 py-0.5 text-xs font-bold min-w-[20px] text-center
+                            ${
+                              isStrike
+                                ? "bg-[var(--game-strike)] text-white"
+                                : isSpare
+                                ? "bg-[var(--game-spare)] text-white"
+                                : "bg-[var(--game-text-secondary)]/20 text-[var(--game-text-primary)]"
+                            }
                           `}
-                        />
+                        >
+                          {isStrike ? "X" : isSpare ? "/" : balls === 0 ? "—" : balls}
+                        </div>
                       );
                     })}
+                  </div>
+                ) : (
+                  <div className="flex gap-1 justify-center mb-1">
+                    <div className="rounded px-1.5 py-0.5 text-xs font-bold min-w-[20px] text-center bg-[var(--game-text-secondary)]/10 text-[var(--game-text-secondary)]">
+                      —
+                    </div>
+                    <div className="rounded px-1.5 py-0.5 text-xs font-bold min-w-[20px] text-center bg-[var(--game-text-secondary)]/10 text-[var(--game-text-secondary)]">
+                      —
+                    </div>
                   </div>
                 )}
 
                 {/* Cumulative score */}
                 {cumulativeScore > 0 && (
-                  <div className="text-xs font-bold text-[var(--game-accent)] mt-1">
+                  <div className="text-[10px] font-bold text-[var(--game-accent)] mt-0.5">
                     {cumulativeScore}
                   </div>
                 )}
