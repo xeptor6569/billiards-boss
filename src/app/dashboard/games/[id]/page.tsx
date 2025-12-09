@@ -8,6 +8,7 @@ import FrameRibbon from "@/components/scoring/FrameRibbon";
 import RackVisualizer from "@/components/scoring/RackVisualizer";
 import InputKeypad from "@/components/scoring/InputKeypad";
 import FrameEditModal from "@/components/scoring/FrameEditModal";
+import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
 
 function GameDetailContent() {
   const params = useParams();
@@ -145,7 +146,8 @@ function GameDetailContent() {
         <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Game #{game.id}</div>
         <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
+        <ThemeSwitcherCompact />
         {(!isComplete || game.status !== 'completed') && (
           <button onClick={handleSaveGame} disabled={saving} className="text-sm font-bold text-[var(--game-strike)] hover:text-white px-2">
             {saving ? "SAVING..." : "SAVE"}

@@ -8,6 +8,7 @@ import FrameRibbon from "@/components/scoring/FrameRibbon";
 import RackVisualizer from "@/components/scoring/RackVisualizer";
 import InputKeypad from "@/components/scoring/InputKeypad";
 import FrameEditModal from "@/components/scoring/FrameEditModal";
+import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
 
 export default function NewGamePage() {
   const router = useRouter();
@@ -108,12 +109,15 @@ export default function NewGamePage() {
         <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">New Game</div>
         <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
       </div>
-      <button
-        onClick={() => router.push("/dashboard")}
-        className="text-sm font-bold text-[var(--game-text-secondary)] hover:text-white"
-      >
-        EXIT
-      </button>
+      <div className="flex items-center gap-3">
+        <ThemeSwitcherCompact />
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="text-sm font-bold text-[var(--game-text-secondary)] hover:text-white"
+        >
+          EXIT
+        </button>
+      </div>
     </div>
   );
 

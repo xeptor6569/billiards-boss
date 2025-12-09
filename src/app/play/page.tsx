@@ -7,6 +7,7 @@ import FrameRibbon from "@/components/scoring/FrameRibbon";
 import RackVisualizer from "@/components/scoring/RackVisualizer";
 import InputKeypad from "@/components/scoring/InputKeypad";
 import FrameEditModal from "@/components/scoring/FrameEditModal";
+import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -90,7 +91,8 @@ export default function PlayPage() {
         <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Total Score</div>
         <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
       </div>
-      <div>
+      <div className="flex items-center gap-3">
+        <ThemeSwitcherCompact />
         <Link href="/" className="text-sm font-bold text-[var(--game-text-secondary)] hover:text-white">
           EXIT
         </Link>

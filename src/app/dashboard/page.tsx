@@ -42,10 +42,10 @@ async function DashboardContent() {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-textPrimary)' }}>
           Welcome back, {session.user?.name || session.user?.email}!
         </h1>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
+        <p className="mt-2" style={{ color: 'var(--color-textSecondary)' }}>
           Start a new game or view your history and statistics.
         </p>
       </div>
@@ -53,36 +53,39 @@ async function DashboardContent() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Link
           href="/dashboard/games/new"
-          className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow dark:bg-gray-800"
+          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          style={{ backgroundColor: 'var(--color-surface)' }}
         >
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
             New Game
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p style={{ color: 'var(--color-textSecondary)' }}>
             Start a new billiards bowling game
           </p>
         </Link>
 
         <Link
           href="/dashboard/history"
-          className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow dark:bg-gray-800"
+          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          style={{ backgroundColor: 'var(--color-surface)' }}
         >
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
             Game History
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p style={{ color: 'var(--color-textSecondary)' }}>
             View your past games and scores
           </p>
         </Link>
 
         <Link
           href="/dashboard/stats"
-          className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow dark:bg-gray-800"
+          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
+          style={{ backgroundColor: 'var(--color-surface)' }}
         >
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
             Statistics
           </h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p style={{ color: 'var(--color-textSecondary)' }}>
             Track your performance and progress
           </p>
         </Link>
@@ -90,27 +93,36 @@ async function DashboardContent() {
 
       {recentGames.length > 0 && (
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-textPrimary)' }}>
             Recent Games
           </h2>
-          <div className="bg-white rounded-lg shadow-md dark:bg-gray-800 overflow-hidden">
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+          <div className="rounded-lg shadow-md overflow-hidden" style={{ backgroundColor: 'var(--color-surface)' }}>
+            <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
               {recentGames.map((game) => (
-                <li key={game.id}>
+                <li key={game.id} style={{ borderColor: 'var(--color-border)' }}>
                   <Link
                     href={`/dashboard/games/${game.id}`}
-                    className="block px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="block px-6 py-4 transition-colors"
+                    style={{ 
+                      color: 'var(--color-textPrimary)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--color-border)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        <p className="text-sm font-medium" style={{ color: 'var(--color-textPrimary)' }}>
                           Game #{game.id} - {game.gameMode}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                        <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
                           {new Date(game.createdAt).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
                         {game.status}
                       </div>
                     </div>

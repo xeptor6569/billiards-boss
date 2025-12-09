@@ -13,30 +13,44 @@ async function AuthCheck() {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
       <Suspense fallback={null}>
         <AuthCheck />
       </Suspense>
 
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-sm shadow-sm dark:bg-gray-800/80">
+      <nav className="backdrop-blur-sm shadow-sm" style={{ backgroundColor: 'var(--color-surface)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-16 items-center">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+              <h1 className="text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
                 Billiards Boss
               </h1>
             </div>
             <div className="flex items-center space-x-4">
               <Link
                 href="/auth/signin"
-                className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                className="transition-colors"
+                style={{ color: 'var(--color-textSecondary)' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--color-textPrimary)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'var(--color-textSecondary)';
+                }}
               >
                 Sign In
               </Link>
               <Link
                 href="/auth/signup"
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+                className="px-4 py-2 rounded-md transition-colors"
+                style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '1';
+                }}
               >
                 Get Started
               </Link>
@@ -48,14 +62,14 @@ export default function Home() {
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="text-center">
-          <h2 className="text-5xl font-extrabold text-gray-900 dark:text-white sm:text-6xl">
+          <h2 className="text-5xl font-extrabold sm:text-6xl" style={{ color: 'var(--color-textPrimary)' }}>
             Free Billiards Bowling
             <br />
-            <span className="text-indigo-600 dark:text-indigo-400">
+            <span style={{ color: 'var(--color-primary)' }}>
               Scoring System
             </span>
           </h2>
-          <p className="mt-6 max-w-2xl mx-auto text-xl text-gray-600 dark:text-gray-400">
+          <p className="mt-6 max-w-2xl mx-auto text-xl" style={{ color: 'var(--color-textSecondary)' }}>
             Track your billiards bowling scores completely free. No hidden fees,
             no limits on your passion. Compete with friends, track your stats,
             and improve your game.
@@ -63,19 +77,40 @@ export default function Home() {
           <div className="mt-10 flex justify-center gap-4">
             <Link
               href="/play"
-              className="px-8 py-4 bg-indigo-600 text-white text-lg font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg"
+              className="px-8 py-4 text-white text-lg font-semibold rounded-lg transition-colors shadow-lg"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.9';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
             >
               Try It Free
             </Link>
             <Link
               href="/auth/signup"
-              className="px-8 py-4 bg-white text-indigo-600 text-lg font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-lg dark:bg-gray-800 dark:text-indigo-400 dark:hover:bg-gray-700"
+              className="px-8 py-4 text-lg font-semibold rounded-lg transition-colors shadow-lg"
+              style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-primary)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-border)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-surface)';
+              }}
             >
               Sign Up to Save
             </Link>
             <Link
               href="/auth/signin"
-              className="px-8 py-4 bg-gray-200 text-gray-700 text-lg font-semibold rounded-lg hover:bg-gray-300 transition-colors shadow-lg dark:bg-gray-700 dark:text-gray-300"
+              className="px-8 py-4 text-lg font-semibold rounded-lg transition-colors shadow-lg"
+              style={{ backgroundColor: 'var(--color-border)', color: 'var(--color-textPrimary)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-textSecondary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--color-border)';
+              }}
             >
               Sign In
             </Link>
@@ -86,34 +121,34 @@ export default function Home() {
       {/* Features */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white rounded-lg shadow-lg p-8 dark:bg-gray-800">
+          <div className="rounded-lg shadow-lg p-8" style={{ backgroundColor: 'var(--color-surface)' }}>
             <div className="text-4xl mb-4">🎱</div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
               Free Score Saving
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p style={{ color: 'var(--color-textSecondary)' }}>
               Save unlimited games for free. No subscription required, no hidden
               fees. Your scores, your data.
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-8 dark:bg-gray-800">
+          <div className="rounded-lg shadow-lg p-8" style={{ backgroundColor: 'var(--color-surface)' }}>
             <div className="text-4xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
               Track Statistics
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p style={{ color: 'var(--color-textSecondary)' }}>
               Monitor your performance with detailed statistics, strike rates,
               and progress over time.
             </p>
           </div>
 
-          <div className="bg-white rounded-lg shadow-lg p-8 dark:bg-gray-800">
+          <div className="rounded-lg shadow-lg p-8" style={{ backgroundColor: 'var(--color-surface)' }}>
             <div className="text-4xl mb-4">👥</div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
               Real-time Multiplayer
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p style={{ color: 'var(--color-textSecondary)' }}>
               Play with friends in real-time. See scores update instantly as
               players take their turns.
             </p>
@@ -123,16 +158,16 @@ export default function Home() {
 
       {/* Comparison */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="bg-white rounded-lg shadow-xl p-12 dark:bg-gray-800">
-          <h3 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-8">
+        <div className="rounded-lg shadow-xl p-12" style={{ backgroundColor: 'var(--color-surface)' }}>
+          <h3 className="text-3xl font-bold text-center mb-8" style={{ color: 'var(--color-textPrimary)' }}>
             Why Choose Billiards Boss?
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h4 className="text-xl font-semibold text-green-600 dark:text-green-400 mb-4">
+              <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-success)' }}>
                 Billiards Boss
               </h4>
-              <ul className="space-y-2 text-gray-700 dark:text-gray-300">
+              <ul className="space-y-2" style={{ color: 'var(--color-textPrimary)' }}>
                 <li>✅ Free score saving</li>
                 <li>✅ Unlimited games (free plan)</li>
                 <li>✅ Modern, intuitive UI</li>
@@ -142,10 +177,10 @@ export default function Home() {
               </ul>
             </div>
             <div>
-              <h4 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-4">
+              <h4 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-textSecondary)' }}>
                 Other Platforms
               </h4>
-              <ul className="space-y-2 text-gray-500 dark:text-gray-500">
+              <ul className="space-y-2" style={{ color: 'var(--color-textSecondary)' }}>
                 <li>❌ Paid score saving</li>
                 <li>❌ Limited free games</li>
                 <li>❌ Outdated interface</li>
@@ -160,17 +195,24 @@ export default function Home() {
 
       {/* CTA */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="bg-indigo-600 rounded-lg shadow-xl p-12 text-center">
+        <div className="rounded-lg shadow-xl p-12 text-center" style={{ backgroundColor: 'var(--color-primary)' }}>
           <h3 className="text-3xl font-bold text-white mb-4">
             Ready to Start Scoring?
           </h3>
-          <p className="text-indigo-100 mb-8 text-lg">
+          <p className="mb-8 text-lg" style={{ color: 'rgba(255, 255, 255, 0.9)' }}>
             Join thousands of players tracking their billiards bowling scores
             for free.
           </p>
           <Link
             href="/auth/signup"
-            className="inline-block px-8 py-4 bg-white text-indigo-600 text-lg font-semibold rounded-lg hover:bg-gray-50 transition-colors shadow-lg"
+            className="inline-block px-8 py-4 text-lg font-semibold rounded-lg transition-colors shadow-lg"
+            style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-primary)' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'var(--color-surface)';
+            }}
           >
             Get Started Free
           </Link>
@@ -178,7 +220,7 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
+      <footer className="py-12" style={{ backgroundColor: 'var(--color-textPrimary)', color: 'var(--color-background)' }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p>&copy; 2025 Billiards Boss. All rights reserved.</p>
         </div>

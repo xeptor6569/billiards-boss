@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 
 export default function AppNavigation({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -50,34 +51,58 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
     ];
 
     return (
-        <div className="flex h-[100dvh] bg-gray-50 dark:bg-gray-900">
+        <div className="flex h-[100dvh]" style={{ backgroundColor: 'var(--color-background)' }}>
             {/* Desktop Sidebar (Hidden on Mobile) */}
-            <aside className="hidden md:flex w-64 flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+            <aside className="hidden md:flex w-64 flex-col border-r" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
                 <div className="p-6">
-                    <Link href="/dashboard" className="flex items-center gap-2 text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                    <Link href="/dashboard" className="flex items-center gap-2 text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
                         <span>🎱</span> Billiards Boss
                     </Link>
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2">
-                    {navItems.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${isActive(item.href) && item.href !== '/dashboard/games/new'
-                                ? "bg-indigo-50 text-indigo-700 dark:bg-gray-700 dark:text-white"
-                                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
-                                } ${item.isPrimary ? "mt-6 bg-indigo-600 !text-white hover:!bg-indigo-700 shadow-md justify-center" : ""}`}
-                        >
-                            {item.icon}
-                            <span>{item.label}</span>
-                        </Link>
-                    ))}
+                    {navItems.map((item) => {
+                        const active = isActive(item.href) && item.href !== '/dashboard/games/new';
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                                    item.isPrimary ? "mt-6 shadow-md justify-center" : ""
+                                }`}
+                                style={{
+                                    backgroundColor: item.isPrimary 
+                                        ? 'var(--color-primary)' 
+                                        : active 
+                                            ? 'var(--color-primary)' 
+                                            : 'transparent',
+                                    color: item.isPrimary || active 
+                                        ? '#ffffff' 
+                                        : 'var(--color-textSecondary)',
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (!item.isPrimary && !active) {
+                                        e.currentTarget.style.backgroundColor = 'var(--color-border)';
+                                        e.currentTarget.style.color = 'var(--color-textPrimary)';
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (!item.isPrimary && !active) {
+                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                        e.currentTarget.style.color = 'var(--color-textSecondary)';
+                                    }
+                                }}
+                            >
+                                {item.icon}
+                                <span>{item.label}</span>
+                            </Link>
+                        );
+                    })}
                 </nav>
 
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                    {/* Placeholder for User Profile / Sign Out if needed in future */}
-                    <div className="text-xs text-center text-gray-400">
+                <div className="p-4 border-t space-y-3" style={{ borderColor: 'var(--color-border)' }}>
+                    <ThemeSwitcher />
+                    <div className="text-xs text-center" style={{ color: 'var(--color-textSecondary)' }}>
                         v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'}
                     </div>
                 </div>
@@ -86,8 +111,9 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Mobile Top Bar */}
-                <header className="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                    <h1 className="text-xl font-bold text-indigo-600 dark:text-indigo-400">Billiards Boss</h1>
+                <header className="md:hidden flex items-center justify-between p-4 border-b" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                    <h1 className="text-xl font-bold" style={{ color: 'var(--color-primary)' }}>Billiards Boss</h1>
+                    <ThemeSwitcher />
                 </header>
 
                 <main className="flex-1 overflow-y-auto pb-safe">
@@ -95,7 +121,7 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                 </main>
 
                 {/* Mobile Bottom Nav (Persistent) */}
-                <nav className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 pb-safe">
+                <nav className="md:hidden border-t pb-safe" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
                     <div className="flex justify-around items-end h-16 pb-2">
                         {navItems.map((item) => {
                             const active = isActive(item.href);
@@ -105,7 +131,14 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className="relative -top-5 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-transform active:scale-95"
+                                        className="relative -top-5 p-4 rounded-full shadow-lg transition-transform active:scale-95"
+                                        style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.opacity = '0.9';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.opacity = '1';
+                                        }}
                                     >
                                         {item.icon}
                                     </Link>
@@ -116,10 +149,18 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                                 <Link
                                     key={item.href}
                                     href={item.href}
-                                    className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${active
-                                        ? "text-indigo-600 dark:text-indigo-400"
-                                        : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                                        }`}
+                                    className="flex flex-col items-center justify-center w-full h-full space-y-1"
+                                    style={{ color: active ? 'var(--color-primary)' : 'var(--color-textSecondary)' }}
+                                    onMouseEnter={(e) => {
+                                        if (!active) {
+                                            e.currentTarget.style.color = 'var(--color-textPrimary)';
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (!active) {
+                                            e.currentTarget.style.color = 'var(--color-textSecondary)';
+                                        }
+                                    }}
                                 >
                                     {item.icon}
                                     <span className="text-[10px] font-medium">{item.label}</span>
