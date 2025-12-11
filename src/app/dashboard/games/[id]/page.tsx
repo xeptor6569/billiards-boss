@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { GameState, createNewGame, addBallToFrame, getRemainingBalls } from "@/lib/game-logic";
 import GameLayout from "@/components/scoring/GameLayout";
@@ -10,6 +10,7 @@ import InputKeypad from "@/components/scoring/InputKeypad";
 import FrameEditModal from "@/components/scoring/FrameEditModal";
 import GameSaveSuccessModal from "@/components/scoring/GameSaveSuccessModal";
 import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
+import GameSummary from "@/components/scoring/GameSummary";
 
 function GameDetailContent() {
   const params = useParams();
@@ -32,6 +33,9 @@ function GameDetailContent() {
   const [saving, setSaving] = useState(false);
   const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const autoSaveInProgressRef = useRef(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const gameStateRef = useRef<GameState | null>(null);
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -56,6 +60,58 @@ function GameDetailContent() {
     if (params.id) fetchGame();
   }, [params.id, router]);
 
+  // Keep gameState ref updated
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
+  // Save on component unmount (backup for navigation)
+  useEffect(() => {
+    return () => {
+      // Also save on component unmount if navigating away (only for active games)
+      const currentState = gameStateRef.current;
+      if (game?.status === 'active' && currentState && !currentState.isComplete && !autoSaveInProgressRef.current) {
+        autoSaveInProgressRef.current = true;
+        autoSaveGame(currentState);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game]);
+
+  // Handle game completion - mark as completed in database
+  useEffect(() => {
+    if (gameState?.isComplete && game?.status === 'active') {
+      // Game just completed, update status to completed
+      handleSaveGame();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState?.isComplete]);
+
+  const autoSaveGame = async (stateToSave?: GameState) => {
+    if (!game || game.status !== 'active') return; // Only auto-save active games
+    const state = stateToSave || gameState;
+    if (!state || state.isComplete || autoSaveInProgressRef.current) return;
+    
+    const hasProgress = state.frames.some(f => f.ballsPocketed.length > 0);
+    if (!hasProgress) return;
+
+    autoSaveInProgressRef.current = true;
+    try {
+      await fetch(`/api/games/${params.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gameState: state,
+          status: "active",
+        }),
+      });
+    } catch (error) {
+      console.error("Error auto-saving game:", error);
+    } finally {
+      autoSaveInProgressRef.current = false;
+    }
+  };
+
   const handleScoreInput = (balls: number) => {
     if (!gameState || gameState.isComplete) return;
     const currentFrameIndex = gameState.currentFrame - 1;
@@ -66,6 +122,16 @@ function GameDetailContent() {
     const ballsToAdd = Math.min(balls, remainingBalls);
     const newGameState = addBallToFrame(gameState, currentFrameIndex, ballsToAdd);
     setGameState(newGameState);
+    
+    // Auto-save after each shot (debounced) - only for active games
+    if (game?.status === 'active') {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        autoSaveGame(newGameState);
+      }, 1000);
+    }
   };
 
   const handleFrameClick = (frameIndex: number) => {
@@ -118,14 +184,45 @@ function GameDetailContent() {
 
   if (loading || !game || !gameState) return <div className="p-8 text-center">Loading...</div>;
 
-  const currentFrame = gameState.frames[gameState.currentFrame - 1] || gameState.frames[9]; // Fallback to last frame if complete?
-  // If complete, currentFrame might be out of bounds if currentFrame is > 10.
-  // Actually createNewGame initializes 10 frames.
-  // If complete, we show 10th frame or summary.
+  // If game is completed, show summary view instead of scorekeeper
+  if (game.status === 'completed') {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="container mx-auto py-8">
+          <div className="flex items-center justify-between w-full mb-6 px-4">
+            {/* Back button on left */}
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="flex items-center gap-2 text-[var(--game-text-secondary)] hover:text-white transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              <span className="text-sm font-semibold">Back</span>
+            </button>
 
-  // Need to import helpers.
-  // For now I will assume imports are present.
+            {/* Game # in center */}
+            <div className="text-center flex-1">
+              <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Game #{game.id}</div>
+            </div>
 
+            {/* Theme switcher on right */}
+            <div className="flex items-center gap-4">
+              <ThemeSwitcherCompact />
+            </div>
+          </div>
+          <GameSummary 
+            gameState={gameState} 
+            gameId={game.id} 
+            createdAt={game.createdAt}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Active game - show scorekeeper interface
+  const currentFrame = gameState.frames[gameState.currentFrame - 1] || gameState.frames[9];
   const isComplete = gameState.isComplete;
   const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
   const totalPocketed = currentFrame
@@ -148,22 +245,44 @@ function GameDetailContent() {
     }
   }
 
+  const handleBack = async () => {
+    // Auto-save before navigating back (only for active games)
+    if (game?.status === 'active' && gameState && !gameState.isComplete) {
+      // Clear any pending auto-save
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
+      await autoSaveGame(gameState);
+    }
+    router.push("/dashboard");
+  };
+
   const HeaderCmp = (
-    <div className="flex justify-between items-center w-full">
-      <div>
+    <div className="flex items-center justify-between w-full">
+      {/* Back button on left */}
+      <button
+        onClick={handleBack}
+        className="flex items-center gap-2 text-[var(--game-text-secondary)] hover:text-white transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+        </svg>
+        <span className="text-sm font-semibold">Back</span>
+      </button>
+
+      {/* Game # in center */}
+      <div className="text-center flex-1">
         <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Game #{game.id}</div>
-        <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
       </div>
-      <div className="flex items-center gap-2">
+
+      {/* Score and theme switcher on right */}
+      <div className="flex items-center gap-4">
+        <div className="text-right">
+          <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Score</div>
+          <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
+        </div>
         <ThemeSwitcherCompact />
-        {(!isComplete || game.status !== 'completed') && (
-          <button onClick={handleSaveGame} disabled={saving} className="text-sm font-bold text-[var(--game-strike)] hover:text-white px-2">
-            {saving ? "SAVING..." : "SAVE"}
-          </button>
-        )}
-        <button onClick={() => router.push("/dashboard")} className="text-sm font-bold text-[var(--game-text-secondary)] hover:text-white px-2">
-          EXIT
-        </button>
       </div>
     </div>
   );

@@ -1,0 +1,110 @@
+"use client";
+
+import { GameState, Frame } from "@/lib/game-logic";
+import FrameDisplay from "./FrameDisplay";
+
+interface GameSummaryProps {
+  gameState: GameState;
+  gameId: number;
+  createdAt: string;
+}
+
+// Calculate cumulative score up to a given frame index
+// This properly handles strike/spare bonuses by looking ahead
+function calculateCumulativeScore(frames: Frame[], upToIndex: number): number {
+  if (upToIndex < 0 || upToIndex >= frames.length) return 0;
+  
+  let total = 0;
+  
+  for (let i = 0; i <= upToIndex; i++) {
+    const frame = frames[i];
+    const isTenthFrame = frame.frameNumber === 10;
+    let frameScore = frame.score;
+    
+    // For 10th frame, score is just the sum of all balls (no bonus needed)
+    if (isTenthFrame) {
+      total += frameScore;
+      continue;
+    }
+    
+    // Add strike bonus (next 2 balls)
+    if (frame.isStrike && i < frames.length - 1) {
+      const nextFrame = frames[i + 1];
+      if (nextFrame.ballsPocketed.length >= 2) {
+        frameScore += nextFrame.ballsPocketed[0] + nextFrame.ballsPocketed[1];
+      } else if (nextFrame.ballsPocketed.length >= 1 && i < frames.length - 2) {
+        // Need to look at frame after next
+        const frameAfterNext = frames[i + 2];
+        frameScore += nextFrame.ballsPocketed[0] + (frameAfterNext.ballsPocketed[0] || 0);
+      }
+    }
+    // Add spare bonus (next 1 ball)
+    else if (frame.isSpare && i < frames.length - 1) {
+      const nextFrame = frames[i + 1];
+      if (nextFrame.ballsPocketed.length >= 1) {
+        frameScore += nextFrame.ballsPocketed[0];
+      }
+    }
+    
+    total += frameScore;
+  }
+  
+  return total;
+}
+
+export default function GameSummary({ gameState, gameId, createdAt }: GameSummaryProps) {
+  const strikes = gameState.frames.filter(f => f.isStrike).length;
+  const spares = gameState.frames.filter(f => f.isSpare && !f.isStrike).length;
+  const date = new Date(createdAt);
+  const formattedDate = date.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+
+  return (
+    <div className="w-full max-w-4xl mx-auto p-4 space-y-6">
+      {/* Header Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-[var(--game-surface)] border border-[var(--game-border)] rounded-lg p-4 text-center">
+          <div className="text-xs text-[var(--game-text-secondary)] uppercase tracking-wider mb-1">Total Score</div>
+          <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
+        </div>
+        <div className="bg-[var(--game-surface)] border border-[var(--game-border)] rounded-lg p-4 text-center">
+          <div className="text-xs text-[var(--game-text-secondary)] uppercase tracking-wider mb-1">Strikes</div>
+          <div className="text-3xl font-black text-[var(--game-strike)]">{strikes}</div>
+        </div>
+        <div className="bg-[var(--game-surface)] border border-[var(--game-border)] rounded-lg p-4 text-center">
+          <div className="text-xs text-[var(--game-text-secondary)] uppercase tracking-wider mb-1">Spares</div>
+          <div className="text-3xl font-black text-[var(--game-spare)]">{spares}</div>
+        </div>
+        <div className="bg-[var(--game-surface)] border border-[var(--game-border)] rounded-lg p-4 text-center">
+          <div className="text-xs text-[var(--game-text-secondary)] uppercase tracking-wider mb-1">Date</div>
+          <div className="text-sm font-semibold text-[var(--game-text-primary)]">{formattedDate}</div>
+        </div>
+      </div>
+
+      {/* Scoresheet */}
+      <div className="bg-[var(--game-surface)] border border-[var(--game-border)] rounded-lg p-6">
+        <h2 className="text-lg font-bold text-[var(--game-text-primary)] mb-4">Scoresheet</h2>
+        <div className="grid grid-cols-5 md:grid-cols-10 gap-2 md:gap-4">
+          {gameState.frames.map((frame, index) => {
+            const cumulativeScore = calculateCumulativeScore(gameState.frames, index);
+            return (
+              <FrameDisplay
+                key={frame.frameNumber}
+                frame={frame}
+                isCurrent={false}
+                cumulativeScore={cumulativeScore}
+                isEditable={false}
+              />
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+

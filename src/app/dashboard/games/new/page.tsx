@@ -366,35 +366,32 @@ export default function NewGamePage() {
   }
 
   const HeaderCmp = (
-    <div className="flex justify-between items-center w-full">
-      <div>
-        <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">New Game</div>
-        <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
-      </div>
-      <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between w-full">
+      {/* Back button on left */}
+      <button
+        onClick={handleExit}
+        className="flex items-center gap-2 text-[var(--game-text-secondary)] hover:text-white transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+        </svg>
+        <span className="text-sm font-semibold">Back</span>
+      </button>
+
+      {/* Game # in center */}
+      {savedGameId && (
+        <div className="text-center flex-1">
+          <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Game #{savedGameId}</div>
+        </div>
+      )}
+
+      {/* Score and theme switcher on right */}
+      <div className="flex items-center gap-4">
+        <div className="text-right">
+          <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Score</div>
+          <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
+        </div>
         <ThemeSwitcherCompact />
-        {/* Debug: Manual save button - remove in production */}
-        {process.env.NODE_ENV === 'development' && (
-          <button
-            onClick={async () => {
-              console.log("Manual save triggered");
-              const currentState = gameState || gameStateRef.current;
-              if (currentState) {
-                await autoSaveGame(currentState);
-                alert("Save triggered!");
-              }
-            }}
-            className="text-xs font-bold text-[var(--game-text-secondary)] hover:text-white px-2"
-          >
-            TEST SAVE
-          </button>
-        )}
-        <button
-          onClick={handleExit}
-          className="text-sm font-bold text-[var(--game-text-secondary)] hover:text-white"
-        >
-          EXIT
-        </button>
       </div>
     </div>
   );
