@@ -120,67 +120,57 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                     {children}
                 </main>
 
-                {/* Mobile Bottom Nav (Persistent) */}
-                <nav className="md:hidden border-t pb-safe" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-                    <div className="flex justify-around items-end h-16 pb-2">
-                        {navItems.map((item) => {
-                            const active = isActive(item.href);
+                {/* Mobile Bottom Nav (Hidden during gameplay) */}
+                {!pathname.startsWith('/dashboard/games/') && (
+                    <nav className="md:hidden border-t pb-safe" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                        <div className="flex justify-around items-end h-16 pb-2">
+                            {navItems.map((item) => {
+                                const active = isActive(item.href);
 
-                            if (item.isPrimary) {
-                                // Hide the circular button when already on the new game page
-                                if (active) {
+                                if (item.isPrimary) {
                                     return (
-                                        <div key={item.href} className="flex flex-col items-center justify-center w-full h-full space-y-1">
-                                            <div className="p-2 rounded-full" style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}>
-                                                {item.icon}
-                                            </div>
-                                            <span className="text-[10px] font-medium" style={{ color: 'var(--color-primary)' }}>{item.label}</span>
-                                        </div>
-                                    );
+                                        <Link
+                                            key={item.href}
+                                            href={item.href}
+                                            className="relative -top-5 p-4 rounded-full shadow-lg transition-transform active:scale-95"
+                                            style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.opacity = '0.9';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.opacity = '1';
+                                            }}
+                                        >
+                                            {item.icon}
+                                        </Link>
+                                    )
                                 }
-                                
+
                                 return (
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className="relative -top-5 p-4 rounded-full shadow-lg transition-transform active:scale-95"
-                                        style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
+                                        className="flex flex-col items-center justify-center w-full h-full space-y-1"
+                                        style={{ color: active ? 'var(--color-primary)' : 'var(--color-textSecondary)' }}
                                         onMouseEnter={(e) => {
-                                            e.currentTarget.style.opacity = '0.9';
+                                            if (!active) {
+                                                e.currentTarget.style.color = 'var(--color-textPrimary)';
+                                            }
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.currentTarget.style.opacity = '1';
+                                            if (!active) {
+                                                e.currentTarget.style.color = 'var(--color-textSecondary)';
+                                            }
                                         }}
                                     >
                                         {item.icon}
+                                        <span className="text-[10px] font-medium">{item.label}</span>
                                     </Link>
-                                )
-                            }
-
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className="flex flex-col items-center justify-center w-full h-full space-y-1"
-                                    style={{ color: active ? 'var(--color-primary)' : 'var(--color-textSecondary)' }}
-                                    onMouseEnter={(e) => {
-                                        if (!active) {
-                                            e.currentTarget.style.color = 'var(--color-textPrimary)';
-                                        }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        if (!active) {
-                                            e.currentTarget.style.color = 'var(--color-textSecondary)';
-                                        }
-                                    }}
-                                >
-                                    {item.icon}
-                                    <span className="text-[10px] font-medium">{item.label}</span>
-                                </Link>
-                            );
-                        })}
-                    </div>
-                </nav>
+                                );
+                            })}
+                        </div>
+                    </nav>
+                )}
             </div>
         </div>
     );
