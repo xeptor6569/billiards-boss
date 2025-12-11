@@ -59,6 +59,12 @@ export default function NewGamePage() {
       setSavedGameId(null);
       savedGameIdRef.current = null;
       hasShotsRef.current = false;
+      // Reset auto-save state
+      autoSaveInProgressRef.current = false;
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
       setLoading(false);
     };
 
@@ -127,13 +133,23 @@ export default function NewGamePage() {
     savedGameIdRef.current = savedGameId;
     gameModeRef.current = gameMode;
     
-    // If gameState is a fresh new game (no shots), clear savedGameId
+    // If gameState is a fresh new game (no shots), clear savedGameId and reset auto-save state
     if (gameState && gameState.frames.every(f => f.ballsPocketed.length === 0)) {
       if (savedGameId) {
         console.log("Clearing savedGameId - fresh game detected (no shots)");
         setSavedGameId(null);
         savedGameIdRef.current = null;
       }
+      // Reset auto-save state for fresh games
+      if (autoSaveInProgressRef.current) {
+        console.log("Resetting autoSaveInProgress - fresh game detected");
+        autoSaveInProgressRef.current = false;
+      }
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
+      hasShotsRef.current = false;
     }
   }, [gameState, savedGameId, gameMode]);
 
@@ -391,7 +407,13 @@ export default function NewGamePage() {
     setSavedGameId(null);
     savedGameIdRef.current = null;
     hasShotsRef.current = false;
-    console.log("New game started - cleared savedGameId");
+    // Reset auto-save state
+    autoSaveInProgressRef.current = false;
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+      autoSaveTimeoutRef.current = null;
+    }
+    console.log("New game started - cleared all state and refs");
   };
 
   const handleExit = async () => {

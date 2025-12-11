@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { GameState, Frame } from "@/lib/game-logic";
 import FrameDisplay from "./FrameDisplay";
 
@@ -53,6 +54,7 @@ function calculateCumulativeScore(frames: Frame[], upToIndex: number): number {
 }
 
 export default function GameSummary({ gameState, gameId, createdAt }: GameSummaryProps) {
+  const router = useRouter();
   const strikes = gameState.frames.filter(f => f.isStrike).length;
   const spares = gameState.frames.filter(f => f.isSpare && !f.isStrike).length;
   const date = new Date(createdAt);
@@ -103,6 +105,22 @@ export default function GameSummary({ gameState, gameId, createdAt }: GameSummar
             );
           })}
         </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <button
+          onClick={() => router.push("/dashboard/games/new")}
+          className="px-6 py-3 bg-[var(--accent)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
+        >
+          Start New Game
+        </button>
+        <button
+          onClick={() => router.push("/dashboard")}
+          className="px-6 py-3 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+        >
+          Back to Dashboard
+        </button>
       </div>
     </div>
   );
