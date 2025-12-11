@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  TooltipProps,
 } from "recharts";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -19,8 +18,18 @@ interface StatsChartProps {
   }>;
 }
 
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    name: string;
+    dataKey: string;
+  }>;
+  label?: string;
+}
+
 // Custom tooltip component that supports dark mode
-function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   const { mode } = useTheme();
   const isDark = mode === "dark";
 
