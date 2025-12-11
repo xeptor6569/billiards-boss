@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { games } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import RecentGameItem from "@/components/dashboard/RecentGameItem";
+import StartNewGameButton from "@/components/dashboard/StartNewGameButton";
 
 import { Suspense } from "react";
 
@@ -15,7 +16,16 @@ async function DashboardContent() {
     redirect("/auth/signin");
   }
 
-  // Fetch recent games with error handling
+  // Fetch active games and recent games with error handling
+  let activeGames: Array<{
+    id: number;
+    userId: string;
+    gameMode: string;
+    status: string;
+    createdAt: Date;
+    completedAt: Date | null;
+  }> = [];
+
   let recentGames: Array<{
     id: number;
     userId: string;
@@ -28,17 +38,23 @@ async function DashboardContent() {
   try {
     // Ensure session.user exists before accessing id
     if (session?.user?.id) {
-      recentGames = await db.query.games.findMany({
+      // Fetch active games
+      const allGames = await db.query.games.findMany({
         where: eq(games.userId, session.user.id),
-        limit: 5,
         orderBy: (games, { desc }) => [desc(games.createdAt)],
       });
+      
+      activeGames = allGames.filter(g => g.status === "active");
+      recentGames = allGames.filter(g => g.status !== "active").slice(0, 5);
     }
   } catch (error) {
-    console.error("Error fetching recent games:", error);
-    // Continue with empty array - don't crash the page
+    console.error("Error fetching games:", error);
+    // Continue with empty arrays - don't crash the page
+    activeGames = [];
     recentGames = [];
   }
+
+  const activeGame = activeGames.length > 0 ? activeGames[0] : null;
 
   return (
     <>
@@ -51,6 +67,35 @@ async function DashboardContent() {
         </p>
       </div>
 
+      {/* Active Game Section */}
+      {activeGame && (
+        <div className="mb-8 p-6 rounded-lg shadow-md" style={{ backgroundColor: 'var(--color-surface)', border: '2px solid var(--color-primary)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold mb-1" style={{ color: 'var(--color-textPrimary)' }}>
+                Active Game
+              </h2>
+              <p className="text-sm mb-2" style={{ color: 'var(--color-textSecondary)' }}>
+                Game #{activeGame.id} - {activeGame.gameMode}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>
+                Started {new Date(activeGame.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Link
+                href={`/dashboard/games/${activeGame.id}`}
+                className="px-6 py-2 rounded-lg font-semibold text-white transition-opacity hover:opacity-90"
+                style={{ backgroundColor: 'var(--color-primary)' }}
+              >
+                Resume Game
+              </Link>
+              <StartNewGameButton activeGameId={activeGame.id} />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Link
           href="/dashboard/games/new"
@@ -58,10 +103,10 @@ async function DashboardContent() {
           style={{ backgroundColor: 'var(--color-surface)' }}
         >
           <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
-            New Game
+            {activeGame ? "New Game" : "New Game"}
           </h2>
           <p style={{ color: 'var(--color-textSecondary)' }}>
-            Start a new billiards bowling game
+            {activeGame ? "Start a fresh game (abandons current)" : "Start a new billiards bowling game"}
           </p>
         </Link>
 

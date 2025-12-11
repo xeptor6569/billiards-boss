@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { GameState, createNewGame, addBallToFrame, getRemainingBalls } from "@/lib/game-logic";
+import { GameState, createNewGame, addBallToFrame, getRemainingBalls, reconstructGameStateFromFrames } from "@/lib/game-logic";
 import GameLayout from "@/components/scoring/GameLayout";
 import FrameRibbon from "@/components/scoring/FrameRibbon";
 import RackVisualizer from "@/components/scoring/RackVisualizer";
@@ -15,13 +15,119 @@ export default function NewGamePage() {
   const router = useRouter();
   const [gameMode, setGameMode] = useState<"single" | "multiplayer" | "tournament">("single");
   const [saving, setSaving] = useState(false);
-  const [gameState, setGameState] = useState<GameState>(createNewGame());
+  const [gameState, setGameState] = useState<GameState | null>(null);
+  const [loading, setLoading] = useState(true);
   const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [savedGameId, setSavedGameId] = useState<number | null>(null);
+  const hasShotsRef = useRef(false);
+  const autoSaveInProgressRef = useRef(false);
+  const gameStateRef = useRef<GameState | null>(null);
+
+  // Check for active game on mount
+  useEffect(() => {
+    const checkActiveGame = async () => {
+      try {
+        const response = await fetch("/api/games?status=active&limit=1");
+        if (response.ok) {
+          const activeGames = await response.json();
+          if (activeGames.length > 0) {
+            const activeGame = activeGames[0];
+            // Fetch full game data with frames
+            const gameResponse = await fetch(`/api/games/${activeGame.id}`);
+            if (gameResponse.ok) {
+              const gameData = await response.json();
+              if (gameData.frames && gameData.frames.length > 0) {
+                const restoredState = reconstructGameStateFromFrames(gameData.frames);
+                setGameState(restoredState);
+                setSavedGameId(activeGame.id);
+                hasShotsRef.current = true;
+                setLoading(false);
+                return;
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error checking for active game:", error);
+      }
+      // No active game found, start fresh
+      setGameState(createNewGame());
+      setLoading(false);
+    };
+
+    checkActiveGame();
+  }, []);
+
+  // Keep gameState ref updated
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
+  // Auto-save on exit
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      const currentState = gameStateRef.current;
+      if (hasShotsRef.current && currentState && !currentState.isComplete && !autoSaveInProgressRef.current) {
+        autoSaveInProgressRef.current = true;
+        await autoSaveGame(currentState);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      // Also save on component unmount if navigating away
+      const currentState = gameStateRef.current;
+      if (hasShotsRef.current && currentState && !currentState.isComplete && !autoSaveInProgressRef.current) {
+        autoSaveInProgressRef.current = true;
+        autoSaveGame(currentState);
+      }
+    };
+  }, []);
+
+  const autoSaveGame = async (stateToSave?: GameState) => {
+    const state = stateToSave || gameState;
+    if (!state || state.isComplete || autoSaveInProgressRef.current) return;
+    
+    const hasProgress = state.frames.some(f => f.ballsPocketed.length > 0);
+    if (!hasProgress) return;
+
+    try {
+      if (savedGameId) {
+        // Update existing game
+        await fetch(`/api/games/${savedGameId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameState: state,
+            status: "active",
+          }),
+        });
+      } else {
+        // Create new active game
+        const response = await fetch("/api/games", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameMode,
+            gameState: state,
+          }),
+        });
+        if (response.ok) {
+          const game = await response.json();
+          setSavedGameId(game.id);
+        }
+      }
+    } catch (error) {
+      console.error("Error auto-saving game:", error);
+    } finally {
+      autoSaveInProgressRef.current = false;
+    }
+  };
 
   const handleScoreInput = (balls: number) => {
-    if (gameState.isComplete) return;
+    if (!gameState || gameState.isComplete) return;
     const currentFrameIndex = gameState.currentFrame - 1;
     // Calculate remaining (logic duplicated for now, should be shared)
     const currentFrame = gameState.frames[currentFrameIndex];
@@ -30,6 +136,7 @@ export default function NewGamePage() {
     const ballsToAdd = Math.min(balls, remainingBalls);
     const newGameState = addBallToFrame(gameState, currentFrameIndex, ballsToAdd);
     setGameState(newGameState);
+    hasShotsRef.current = true;
   };
 
   const handleFrameClick = (frameIndex: number) => {
@@ -44,28 +151,6 @@ export default function NewGamePage() {
   const handleModalSave = (updatedGameState: GameState) => {
     setGameState(updatedGameState);
   };
-
-  const currentFrame = gameState.frames[gameState.currentFrame - 1];
-  const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
-  const totalPocketed = currentFrame
-    ? currentFrame.ballsPocketed.reduce((sum, count) => sum + count, 0)
-    : 0;
-  const isTenthFrame = currentFrame?.frameNumber === 10;
-  const shotCount = currentFrame?.ballsPocketed.length || 0;
-
-  // Keypad mode logic (duplicated)
-  let keypadMode: "shot1" | "shot2" | "break" = "shot1";
-  if (shotCount === 0) {
-    keypadMode = "break";
-  } else if (!isTenthFrame) {
-    keypadMode = "shot2";
-  } else {
-    if (currentFrame.isStrike || currentFrame.isSpare) {
-      keypadMode = "shot1";
-    } else {
-      keypadMode = "shot2";
-    }
-  }
 
   const handleSaveGame = async () => {
     if (!gameState || !gameState.isComplete) {
@@ -107,11 +192,68 @@ export default function NewGamePage() {
     }
   };
 
-  const handleNewGame = () => {
+  const handleNewGame = async () => {
+    // Abandon current game if it exists
+    if (savedGameId) {
+      try {
+        await fetch(`/api/games/${savedGameId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "abandoned",
+          }),
+        });
+      } catch (error) {
+        console.error("Error abandoning game:", error);
+      }
+    }
     setGameState(createNewGame());
     setShowSuccessModal(false);
     setSavedGameId(null);
+    hasShotsRef.current = false;
   };
+
+  const handleExit = async () => {
+    // Auto-save before exiting
+    if (hasShotsRef.current && gameState && !gameState.isComplete) {
+      await autoSaveGame(gameState);
+    }
+    router.push("/dashboard");
+  };
+
+  const editingFrame =
+    editingFrameIndex !== null && gameState ? gameState.frames[editingFrameIndex] : null;
+
+  if (loading || !gameState) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-[var(--game-bg)]">
+        <div className="text-[var(--game-text-primary)]">Loading game...</div>
+      </div>
+    );
+  }
+
+  // Calculate derived state after loading check
+  const currentFrame = gameState.frames[gameState.currentFrame - 1];
+  const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
+  const totalPocketed = currentFrame
+    ? currentFrame.ballsPocketed.reduce((sum, count) => sum + count, 0)
+    : 0;
+  const isTenthFrame = currentFrame?.frameNumber === 10;
+  const shotCount = currentFrame?.ballsPocketed.length || 0;
+
+  // Keypad mode logic (duplicated)
+  let keypadMode: "shot1" | "shot2" | "break" = "shot1";
+  if (shotCount === 0) {
+    keypadMode = "break";
+  } else if (!isTenthFrame) {
+    keypadMode = "shot2";
+  } else {
+    if (currentFrame.isStrike || currentFrame.isSpare) {
+      keypadMode = "shot1";
+    } else {
+      keypadMode = "shot2";
+    }
+  }
 
   const HeaderCmp = (
     <div className="flex justify-between items-center w-full">
@@ -122,7 +264,7 @@ export default function NewGamePage() {
       <div className="flex items-center gap-3">
         <ThemeSwitcherCompact />
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={handleExit}
           className="text-sm font-bold text-[var(--game-text-secondary)] hover:text-white"
         >
           EXIT
@@ -130,9 +272,6 @@ export default function NewGamePage() {
       </div>
     </div>
   );
-
-  const editingFrame =
-    editingFrameIndex !== null ? gameState.frames[editingFrameIndex] : null;
 
   return (
     <>
@@ -192,13 +331,15 @@ export default function NewGamePage() {
           onSave={handleModalSave}
         />
       )}
-      <GameSaveSuccessModal
-        isOpen={showSuccessModal}
-        totalScore={gameState.totalScore}
-        gameId={savedGameId || undefined}
-        onNewGame={handleNewGame}
-        onDashboard={() => router.push("/dashboard")}
-      />
+      {gameState && (
+        <GameSaveSuccessModal
+          isOpen={showSuccessModal}
+          totalScore={gameState.totalScore}
+          gameId={savedGameId || undefined}
+          onNewGame={handleNewGame}
+          onDashboard={() => router.push("/dashboard")}
+        />
+      )}
     </>
   );
 }
