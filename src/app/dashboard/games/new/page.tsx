@@ -56,6 +56,9 @@ export default function NewGamePage() {
       }
       // No active game found, start fresh
       setGameState(createNewGame());
+      setSavedGameId(null);
+      savedGameIdRef.current = null;
+      hasShotsRef.current = false;
       setLoading(false);
     };
 
@@ -84,6 +87,9 @@ export default function NewGamePage() {
         });
         if (response.ok) {
           console.log("Game saved as completed (updated existing)");
+          // Clear savedGameId since this game is now completed
+          setSavedGameId(null);
+          savedGameIdRef.current = null;
         } else {
           const errorText = await response.text();
           console.error("Failed to save completed game:", errorText);
@@ -100,8 +106,11 @@ export default function NewGamePage() {
         });
         if (response.ok) {
           const game = await response.json();
-          setSavedGameId(game.id);
+          // Don't set savedGameId for completed games - it should be null for new games
           console.log("Game saved as completed, created new game:", game.id);
+          // Clear savedGameId to ensure next game creates a new one
+          setSavedGameId(null);
+          savedGameIdRef.current = null;
         } else {
           const errorText = await response.text();
           console.error("Failed to create completed game:", errorText);
@@ -117,6 +126,15 @@ export default function NewGamePage() {
     gameStateRef.current = gameState;
     savedGameIdRef.current = savedGameId;
     gameModeRef.current = gameMode;
+    
+    // If gameState is a fresh new game (no shots), clear savedGameId
+    if (gameState && gameState.frames.every(f => f.ballsPocketed.length === 0)) {
+      if (savedGameId) {
+        console.log("Clearing savedGameId - fresh game detected (no shots)");
+        setSavedGameId(null);
+        savedGameIdRef.current = null;
+      }
+    }
   }, [gameState, savedGameId, gameMode]);
 
   // Keep gameState ref updated and handle completion
@@ -171,38 +189,87 @@ export default function NewGamePage() {
   }, []);
 
   const autoSaveGame = async (stateToSave?: GameState) => {
-    const state = stateToSave || gameState;
-    if (!state || state.isComplete || autoSaveInProgressRef.current) return;
+    const state = stateToSave || gameStateRef.current || gameState;
+    if (!state || state.isComplete || autoSaveInProgressRef.current) {
+      console.log("Auto-save skipped: state check failed", {
+        hasState: !!state,
+        isComplete: state?.isComplete,
+        inProgress: autoSaveInProgressRef.current
+      });
+      return;
+    }
     
     const hasProgress = state.frames.some(f => f.ballsPocketed.length > 0);
-    if (!hasProgress) return;
+    if (!hasProgress) {
+      console.log("Auto-save skipped: no progress");
+      return;
+    }
 
     autoSaveInProgressRef.current = true;
     try {
-      if (savedGameId) {
-        // Update existing game
-        await fetch(`/api/games/${savedGameId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gameState: state,
-            status: "active",
-          }),
-        });
-      } else {
-        // Create new active game
-        const response = await fetch("/api/games", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            gameMode,
-            gameState: state,
-          }),
-        });
-        if (response.ok) {
-          const game = await response.json();
-          setSavedGameId(game.id);
+      const currentSavedId = savedGameIdRef.current || savedGameId;
+      if (currentSavedId) {
+        // Check if the saved game is still active (not completed/abandoned)
+        // If it's completed, we should create a new game instead
+        try {
+          const checkResponse = await fetch(`/api/games/${currentSavedId}`);
+          if (checkResponse.ok) {
+            const existingGame = await checkResponse.json();
+            if (existingGame.status === 'completed' || existingGame.status === 'abandoned') {
+              console.log("Auto-saving: Saved game is completed/abandoned, creating new game instead", { 
+                gameId: currentSavedId, 
+                status: existingGame.status 
+              });
+              // Clear the savedGameId and create a new game
+              setSavedGameId(null);
+              savedGameIdRef.current = null;
+              // Fall through to create new game
+            } else {
+              // Update existing active game
+              console.log("Auto-saving: Updating existing game", { gameId: currentSavedId });
+              const response = await fetch(`/api/games/${currentSavedId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  gameState: state,
+                  status: "active",
+                }),
+              });
+              if (response.ok) {
+                console.log("Auto-save successful: Updated game", { gameId: currentSavedId });
+                autoSaveInProgressRef.current = false;
+                return;
+              } else {
+                const errorText = await response.text();
+                console.error("Auto-save failed: Update error", { gameId: currentSavedId, status: response.status, error: errorText });
+                // Fall through to create new game if update failed
+              }
+            }
+          }
+        } catch (checkError) {
+          console.error("Error checking existing game:", checkError);
+          // Fall through to create new game if check failed
         }
+      }
+      
+      // Create new active game (either no savedGameId or saved game is completed)
+      console.log("Auto-saving: Creating new game");
+      const response = await fetch("/api/games", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          gameMode: gameModeRef.current,
+          gameState: state,
+        }),
+      });
+      if (response.ok) {
+        const game = await response.json();
+        console.log("Auto-save successful: Created new game", { gameId: game.id });
+        setSavedGameId(game.id);
+        savedGameIdRef.current = game.id;
+      } else {
+        const errorText = await response.text();
+        console.error("Auto-save failed: Create error", { status: response.status, error: errorText });
       }
     } catch (error) {
       console.error("Error auto-saving game:", error);
@@ -304,9 +371,10 @@ export default function NewGamePage() {
 
   const handleNewGame = async () => {
     // Abandon current game if it exists
-    if (savedGameId) {
+    const currentSavedId = savedGameIdRef.current || savedGameId;
+    if (currentSavedId) {
       try {
-        await fetch(`/api/games/${savedGameId}`, {
+        await fetch(`/api/games/${currentSavedId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -317,16 +385,44 @@ export default function NewGamePage() {
         console.error("Error abandoning game:", error);
       }
     }
+    // Clear all game state and start fresh
     setGameState(createNewGame());
     setShowSuccessModal(false);
     setSavedGameId(null);
+    savedGameIdRef.current = null;
     hasShotsRef.current = false;
+    console.log("New game started - cleared savedGameId");
   };
 
   const handleExit = async () => {
-    // Auto-save before exiting - simple approach that worked before
-    if (hasShotsRef.current && gameState && !gameState.isComplete) {
-      await autoSaveGame(gameState);
+    // Auto-save before exiting - use refs to get latest values
+    const currentState = gameStateRef.current || gameState;
+    const hasProgress = currentState?.frames.some(f => f.ballsPocketed.length > 0);
+    
+    console.log("handleExit called", {
+      hasShotsRef: hasShotsRef.current,
+      hasState: !!currentState,
+      isComplete: currentState?.isComplete,
+      hasProgress,
+      savedGameId: savedGameIdRef.current || savedGameId
+    });
+    
+    if (currentState && !currentState.isComplete && hasProgress) {
+      // Clear any pending auto-save
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
+      console.log("handleExit: Triggering auto-save before navigation");
+      await autoSaveGame(currentState);
+      // Small delay to ensure save completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } else {
+      console.log("handleExit: Skipping save", {
+        hasState: !!currentState,
+        isComplete: currentState?.isComplete,
+        hasProgress
+      });
     }
     router.push("/dashboard");
   };

@@ -36,6 +36,7 @@ function GameDetailContent() {
   const autoSaveInProgressRef = useRef(false);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const gameStateRef = useRef<GameState | null>(null);
+  const gameRef = useRef<typeof game>(null);
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -60,23 +61,38 @@ function GameDetailContent() {
     if (params.id) fetchGame();
   }, [params.id, router]);
 
-  // Keep gameState ref updated
+  // Keep refs updated
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
+
+  useEffect(() => {
+    gameRef.current = game;
+  }, [game]);
 
   // Save on component unmount (backup for navigation)
   useEffect(() => {
     return () => {
       // Also save on component unmount if navigating away (only for active games)
+      const currentGame = gameRef.current;
       const currentState = gameStateRef.current;
-      if (game?.status === 'active' && currentState && !currentState.isComplete && !autoSaveInProgressRef.current) {
+      const gameId = params.id;
+      if (currentGame?.status === 'active' && currentState && !currentState.isComplete && !autoSaveInProgressRef.current) {
+        console.log("Unmount: Triggering auto-save", { gameId });
         autoSaveInProgressRef.current = true;
-        autoSaveGame(currentState);
+        // Use keepalive for unmount saves
+        fetch(`/api/games/${gameId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameState: currentState,
+            status: "active",
+          }),
+          keepalive: true,
+        }).catch(err => console.error("Unmount save error:", err));
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game]);
+  }, [params.id]);
 
   // Handle game completion - mark as completed in database
   useEffect(() => {
@@ -87,17 +103,36 @@ function GameDetailContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState?.isComplete]);
 
-  const autoSaveGame = async (stateToSave?: GameState) => {
-    if (!game || game.status !== 'active') return; // Only auto-save active games
-    const state = stateToSave || gameState;
-    if (!state || state.isComplete || autoSaveInProgressRef.current) return;
+  const autoSaveGame = async (stateToSave?: GameState, skipProgressCheck = false, skipStatusCheck = false) => {
+    // Use refs to get latest values
+    const currentGame = gameRef.current || game;
+    if (!skipStatusCheck && (!currentGame || currentGame.status !== 'active')) {
+      console.log("Auto-save skipped: game not active", { gameId: params.id, status: currentGame?.status, hasGame: !!currentGame });
+      return; // Only auto-save active games
+    }
     
-    const hasProgress = state.frames.some(f => f.ballsPocketed.length > 0);
-    if (!hasProgress) return;
+    const state = stateToSave || gameStateRef.current || gameState;
+    if (!state || state.isComplete || autoSaveInProgressRef.current) {
+      console.log("Auto-save skipped: state check failed", { 
+        hasState: !!state, 
+        isComplete: state?.isComplete, 
+        inProgress: autoSaveInProgressRef.current 
+      });
+      return;
+    }
+    
+    if (!skipProgressCheck) {
+      const hasProgress = state.frames.some(f => f.ballsPocketed.length > 0);
+      if (!hasProgress) {
+        console.log("Auto-save skipped: no progress");
+        return;
+      }
+    }
 
     autoSaveInProgressRef.current = true;
     try {
-      await fetch(`/api/games/${params.id}`, {
+      console.log("Auto-saving game", { gameId: params.id, skipStatusCheck, skipProgressCheck });
+      const response = await fetch(`/api/games/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -105,6 +140,12 @@ function GameDetailContent() {
           status: "active",
         }),
       });
+      if (response.ok) {
+        console.log("Auto-save successful", { gameId: params.id });
+      } else {
+        const errorText = await response.text();
+        console.error("Auto-save failed", { gameId: params.id, status: response.status, error: errorText });
+      }
     } catch (error) {
       console.error("Error auto-saving game:", error);
     } finally {
@@ -247,13 +288,40 @@ function GameDetailContent() {
 
   const handleBack = async () => {
     // Auto-save before navigating back (only for active games)
-    if (game?.status === 'active' && gameState && !gameState.isComplete) {
+    // Use refs to get latest values in case state hasn't updated
+    const currentGame = gameRef.current || game;
+    const currentState = gameStateRef.current || gameState;
+    
+    console.log("handleBack called", { 
+      gameId: params.id,
+      hasGame: !!currentGame,
+      gameStatus: currentGame?.status,
+      hasState: !!currentState,
+      isComplete: currentState?.isComplete,
+      hasProgress: currentState?.frames.some(f => f.ballsPocketed.length > 0)
+    });
+    
+    if (currentState && !currentState.isComplete) {
       // Clear any pending auto-save
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
         autoSaveTimeoutRef.current = null;
       }
-      await autoSaveGame(gameState);
+      console.log("handleBack: Triggering auto-save before navigation", { 
+        gameId: params.id, 
+        gameStatus: currentGame?.status,
+        hasProgress: currentState.frames.some(f => f.ballsPocketed.length > 0)
+      });
+      // Skip both progress and status checks since we're explicitly saving on exit
+      // The game might not have status set yet if it was just created
+      await autoSaveGame(currentState, true, true);
+      // Small delay to ensure save completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } else {
+      console.log("handleBack: Skipping save", { 
+        hasState: !!currentState, 
+        isComplete: currentState?.isComplete 
+      });
     }
     router.push("/dashboard");
   };
