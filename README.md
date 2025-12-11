@@ -26,7 +26,7 @@ The application is production-ready with Docker deployment, comprehensive error 
   - 10th frame special rules (up to 3 shots with multiple strikes)
   - Automatic score calculation with strike/spare bonuses
 - 📱 **Mobile-Optimized**: Responsive design that works beautifully on phones, tablets, and desktops
-- 🎨 **Dark Mode Support**: Automatic theme detection with manual toggle
+- 🎨 **Flexible Theming**: Light/Dark mode toggle with independent accent color selection (Blue, Green, Purple, Orange)
 
 ### Account & Data Management
 - 🔒 **Secure Authentication**: NextAuth.js v5 with email/password authentication
@@ -60,7 +60,7 @@ The application is production-ready with Docker deployment, comprehensive error 
 - **ORM**: Drizzle ORM
 - **Auth**: NextAuth.js v5
 - **Real-time**: Socket.io
-- **Styling**: Tailwind CSS v4
+- **Styling**: Tailwind CSS v4 with built-in dark mode and dynamic accent colors
 - **Charts**: Recharts
 
 ## Getting Started
@@ -184,13 +184,26 @@ src/
 │   └── layout.tsx          # Root layout with providers
 ├── components/
 │   ├── scoring/            # Scoring interface components
-│   │   ├── ScoringBoard.tsx        # Simple interface
-│   │   ├── ModernScoringBoard.tsx   # Immersive interface
+│   │   ├── GameLayout.tsx           # Main game layout container
 │   │   ├── FrameRibbon.tsx          # Frame navigation ribbon
+│   │   ├── FrameDisplay.tsx         # Individual frame display
+│   │   ├── FrameEditModal.tsx       # Frame editing modal
 │   │   ├── RackVisualizer.tsx       # Visual ball rack
-│   │   ├── ControlDeck.tsx          # Ball entry controls
-│   │   └── InterfaceToggle.tsx      # UI mode switcher
-│   └── stats/              # Statistics components
+│   │   ├── InputKeypad.tsx          # Ball entry controls
+│   │   ├── BallTracker.tsx          # Ball tracking component
+│   │   ├── GameSummary.tsx          # Completed game summary
+│   │   └── GameSaveSuccessModal.tsx # Post-save success modal
+│   ├── layout/             # Layout components
+│   │   └── AppNavigation.tsx        # Main navigation (sidebar + mobile)
+│   ├── dashboard/          # Dashboard components
+│   │   ├── RecentGameItem.tsx       # Recent game list item
+│   │   └── StartNewGameButton.tsx   # New game button with confirmation
+│   ├── history/            # History components
+│   │   └── HistoryTableRow.tsx      # History table row
+│   ├── stats/              # Statistics components
+│   │   └── StatsChart.tsx           # Performance charts
+│   ├── ThemeSwitcher.tsx            # Full theme selector
+│   └── ThemeSwitcherCompact.tsx     # Compact theme selector
 ├── lib/
 │   ├── db/                 # Database configuration
 │   │   ├── schema.ts       # Drizzle ORM schema
@@ -204,7 +217,10 @@ src/
 ├── hooks/                  # React hooks
 │   └── useScoringInterface.ts  # Scoring UI state management
 ├── contexts/               # React contexts
+│   ├── ThemeContext.tsx    # Theme management (mode + accent)
 │   └── ScoringInterfaceContext.tsx  # Global UI state
+├── lib/
+│   └── themes.ts           # Theme definitions (accent colors)
 └── server.ts               # Custom server with WebSocket support
 ```
 
@@ -225,6 +241,24 @@ src/
 See `.env.example` for all required environment variables.
 
 ## Features in Detail
+
+### Theming System
+
+Billiards Boss features a flexible theming system built on Tailwind CSS v4:
+
+- **Mode Selection**: Toggle between Light and Dark mode independently
+- **Accent Colors**: Choose from 4 accent colors that work with both modes:
+  - **Blue**: Classic professional look
+  - **Green**: Billiards table-inspired theme
+  - **Purple**: Modern, vibrant option
+  - **Orange**: Warm, energetic choice
+- **Unified Experience**: Theme preferences apply across the entire application (dashboard, scorekeeper, stats, etc.)
+- **Persistent Settings**: Your theme choice is saved and remembered across sessions
+
+The theme switcher is accessible from:
+- Desktop sidebar (full theme selector)
+- Mobile header (compact theme selector)
+- Game interfaces (compact theme selector)
 
 ### Scoring System
 
@@ -286,7 +320,7 @@ The application includes a plan system infrastructure for future monetization:
 - Production deployment guide
 - Error handling and user feedback
 - Mobile-responsive design
-- Dark mode support
+- Flexible theming system (Light/Dark mode + accent colors)
 
 ### 🚧 In Progress / Planned
 - Real-time multiplayer game implementation
