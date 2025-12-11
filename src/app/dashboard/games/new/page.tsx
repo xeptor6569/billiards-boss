@@ -336,8 +336,8 @@ export default function NewGamePage() {
 
   if (loading || !gameState) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-[var(--game-bg)]">
-        <div className="text-[var(--game-text-primary)]">Loading game...</div>
+      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-slate-900">
+        <div className="text-slate-900 dark:text-slate-100">Loading game...</div>
       </div>
     );
   }
@@ -370,7 +370,7 @@ export default function NewGamePage() {
       {/* Back button on left */}
       <button
         onClick={handleExit}
-        className="flex items-center gap-2 text-[var(--game-text-secondary)] hover:text-white transition-colors"
+        className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
           <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -381,15 +381,15 @@ export default function NewGamePage() {
       {/* Game # in center */}
       {savedGameId && (
         <div className="text-center flex-1">
-          <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Game #{savedGameId}</div>
+          <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Game #{savedGameId}</div>
         </div>
       )}
 
       {/* Score and theme switcher on right */}
       <div className="flex items-center gap-4">
         <div className="text-right">
-          <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Score</div>
-          <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
+          <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Score</div>
+          <div className="text-3xl font-black text-[var(--accent)]">{gameState.totalScore}</div>
         </div>
         <ThemeSwitcherCompact />
       </div>
@@ -414,21 +414,21 @@ export default function NewGamePage() {
             <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
             {gameState.isComplete && !showSuccessModal && (
               <div className="fixed inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-[100]" style={{ position: 'fixed' }}>
-                <div className="text-center p-6 bg-[var(--game-surface)] rounded-xl border border-[var(--game-border)] shadow-2xl max-w-md mx-4">
-                  <h2 className="text-2xl font-bold mb-2 text-white">Game Complete!</h2>
-                  <div className="text-4xl font-black text-[var(--game-accent)] mb-6">{gameState.totalScore}</div>
+                <div className="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md mx-4">
+                  <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">Game Complete!</h2>
+                  <div className="text-4xl font-black text-[var(--accent)] mb-6">{gameState.totalScore}</div>
                   <button
                     type="button"
                     onClick={handleSaveGame}
                     disabled={saving}
-                    className="w-full py-3 bg-[var(--game-strike)] text-white font-bold rounded-lg mb-3 disabled:opacity-50"
+                    className="w-full py-3 bg-amber-500 text-white font-bold rounded-lg mb-3 disabled:opacity-50 hover:opacity-90 transition-opacity"
                   >
                     {saving ? "Saving..." : "Save to History"}
                   </button>
                   <button
                     type="button"
                     onClick={() => router.push("/dashboard")}
-                    className="block w-full text-sm text-[var(--game-text-secondary)] hover:text-white mt-2"
+                    className="block w-full text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mt-2"
                   >
                     Cancel
                   </button>

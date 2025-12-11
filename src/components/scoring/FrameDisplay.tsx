@@ -32,26 +32,9 @@ export default function FrameDisplay({
       onClick={handleClick}
       className={`
         flex flex-col rounded-lg border-2 p-2 sm:p-3 transition-all aspect-square w-full
-        ${isCurrent ? "shadow-lg" : ""}
-        ${canEdit ? "cursor-pointer hover:shadow-md active:scale-95" : ""}
+        ${isCurrent ? "shadow-lg border-[var(--accent)] bg-[var(--accent)]/15" : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"}
+        ${canEdit ? "cursor-pointer hover:shadow-md active:scale-95 hover:border-[var(--accent)]" : ""}
       `}
-      style={{
-        borderColor: isCurrent ? 'var(--color-primary)' : 'var(--color-border)',
-        backgroundColor: isCurrent 
-          ? 'var(--color-primary)' 
-          : 'var(--color-surface)',
-        opacity: isCurrent ? 0.15 : 1,
-      }}
-      onMouseEnter={(e) => {
-        if (canEdit) {
-          e.currentTarget.style.borderColor = 'var(--color-primary)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (canEdit && !isCurrent) {
-          e.currentTarget.style.borderColor = 'var(--color-border)';
-        }
-      }}
       role={canEdit ? "button" : undefined}
       tabIndex={canEdit ? 0 : undefined}
       onKeyDown={(e) => {
@@ -93,45 +76,21 @@ export default function FrameDisplay({
             })}
             {/* For 10th frame, show empty shot 3 box if needed */}
             {frame.frameNumber === 10 && frame.ballsPocketed.length < 3 && (
-              <div 
-                className="rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold min-w-[24px] text-center"
-                style={{
-                  backgroundColor: 'var(--color-border)',
-                  color: 'var(--color-textSecondary)',
-                }}
-              >
+              <div className="rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold min-w-[24px] text-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
                 —
               </div>
             )}
           </>
         ) : (
           <>
-            <div 
-              className="rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold min-w-[24px] text-center"
-              style={{
-                backgroundColor: 'var(--color-border)',
-                color: 'var(--color-textSecondary)',
-              }}
-            >
+            <div className="rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold min-w-[24px] text-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
               —
             </div>
-            <div 
-              className="rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold min-w-[24px] text-center"
-              style={{
-                backgroundColor: 'var(--color-border)',
-                color: 'var(--color-textSecondary)',
-              }}
-            >
+            <div className="rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold min-w-[24px] text-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
               —
             </div>
             {frame.frameNumber === 10 && (
-              <div 
-                className="rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold min-w-[24px] text-center"
-                style={{
-                  backgroundColor: 'var(--color-border)',
-                  color: 'var(--color-textSecondary)',
-                }}
-              >
+              <div className="rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 text-xs sm:text-sm font-bold min-w-[24px] text-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
                 —
               </div>
             )}
@@ -142,49 +101,23 @@ export default function FrameDisplay({
       {/* Cumulative score or strike/spare symbol (bottom center, large) */}
       <div className="mt-auto flex items-center justify-center">
         {cumulativeScore !== undefined && cumulativeScore > 0 ? (
-          <div 
-            className="text-center text-lg sm:text-xl font-bold"
-            style={{
-              color: 'var(--color-textPrimary)',
-            }}
-          >
+          <div className="text-center text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">
             {cumulativeScore}
           </div>
         ) : frame.isStrike ? (
-          <div 
-            className="text-center text-3xl sm:text-4xl font-bold"
-            style={{
-              color: 'var(--color-primary)',
-            }}
-          >
+          <div className="text-center text-3xl sm:text-4xl font-bold text-[var(--accent)]">
             X
           </div>
         ) : frame.isSpare ? (
-          <div 
-            className="text-center text-3xl sm:text-4xl font-bold"
-            style={{
-              color: 'var(--color-primary)',
-            }}
-          >
+          <div className="text-center text-3xl sm:text-4xl font-bold text-[var(--accent)]">
             /
           </div>
         ) : frame.score > 0 ? (
-          <div 
-            className="text-center text-lg sm:text-xl font-bold"
-            style={{
-              color: 'var(--color-textPrimary)',
-            }}
-          >
+          <div className="text-center text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100">
             {frame.score}
           </div>
         ) : (
-          <div 
-            className="text-center text-lg sm:text-xl font-bold"
-            style={{
-              color: 'var(--color-textSecondary)',
-              opacity: 0.3,
-            }}
-          >
+          <div className="text-center text-lg sm:text-xl font-bold text-slate-600 dark:text-slate-400 opacity-30">
             —
           </div>
         )}

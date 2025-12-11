@@ -4,7 +4,7 @@ import HomeContent from "@/components/HomeContent";
 
 export default function Home() {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+    <div className="min-h-screen bg-white dark:bg-slate-900">
       <Suspense fallback={null}>
         <AuthCheck />
       </Suspense>

@@ -249,16 +249,16 @@ export default function FrameEditModal({
       onClick={handleCancel}
     >
       <div
-        className="bg-[var(--game-surface)] rounded-xl border border-[var(--game-border)] shadow-2xl max-w-md w-full p-6"
+        className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md w-full p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-white">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
             Edit Frame {frame.frameNumber}
           </h2>
           <button
             onClick={handleCancel}
-            className="text-[var(--game-text-secondary)] hover:text-white text-2xl leading-none"
+            className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 text-2xl leading-none"
             aria-label="Close"
           >
             ×
@@ -305,7 +305,7 @@ export default function FrameEditModal({
 
             return (
               <div key={idx} className="flex items-center gap-3">
-                <label className="text-sm font-semibold text-[var(--game-text-secondary)] min-w-[80px]">
+                <label className="text-sm font-semibold text-slate-600 dark:text-slate-400 min-w-[80px]">
                   Shot {idx + 1}:
                 </label>
                 <div className="flex-1 flex items-center gap-2">
@@ -318,18 +318,17 @@ export default function FrameEditModal({
                       const value = parseInt(e.target.value) || 0;
                       handleShotChange(idx, value);
                     }}
-                    className="flex-1 px-3 py-2 bg-[var(--game-bg)] border border-[var(--game-border)] rounded-lg text-white font-bold text-center focus:outline-none focus:ring-2 focus:ring-[var(--game-accent)]"
+                    className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 font-bold text-center focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                   />
-                  <div className="text-xs text-[var(--game-text-secondary)] min-w-[60px]">
+                  <div className="text-xs text-slate-600 dark:text-slate-400 min-w-[60px]">
                     Max: {remainingBeforeShot}
                   </div>
                 </div>
                 {(isStrike || isSpare) && (
                   <div
-                    className={`
-                      px-2 py-1 rounded text-xs font-bold
-                      ${isStrike ? "bg-[var(--game-strike)]" : "bg-[var(--game-spare)]"}
-                    `}
+                    className={`px-2 py-1 rounded text-xs font-bold text-white ${
+                      isStrike ? "bg-amber-500" : "bg-green-600 dark:bg-green-400"
+                    }`}
                   >
                     {isStrike ? "X" : "/"}
                   </div>
@@ -342,14 +341,14 @@ export default function FrameEditModal({
         <div className="flex gap-3">
           <button
             onClick={handleCancel}
-            className="flex-1 px-4 py-2 bg-[var(--game-bg)] border border-[var(--game-border)] text-[var(--game-text-secondary)] rounded-lg hover:bg-[var(--game-border)] transition-colors"
+            className="flex-1 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!isDirty}
-            className="flex-1 px-4 py-2 bg-[var(--game-strike)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity font-bold"
+            className="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity font-bold"
           >
             Save Changes
           </button>

@@ -34,7 +34,7 @@ export default function InputKeypad({ mode, remainingBalls, onInput, disabled }:
   };
 
   const btnBase = "relative flex items-center justify-center rounded-xl font-bold transition-all active:scale-95 touch-manipulation select-none";
-  const btnSurface = "bg-[var(--game-surface)] border-2 border-[var(--game-border)] text-[var(--game-text-primary)]";
+  const btnSurface = "bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100";
   const btnAction = "text-white shadow-lg";
 
   // Grid generation
@@ -49,7 +49,7 @@ export default function InputKeypad({ mode, remainingBalls, onInput, disabled }:
         {mode === "shot1" || mode === "break" ? (
           <button
             onClick={() => handlePress("X")}
-            className={`${btnBase} ${btnAction} w-full h-full text-3xl tracking-widest bg-[var(--game-strike)] shadow-[var(--game-strike)]/30`}
+            className={`${btnBase} ${btnAction} w-full h-full text-3xl tracking-widest bg-amber-500 shadow-amber-500/30`}
           >
             STRIKE
           </button>
@@ -58,14 +58,14 @@ export default function InputKeypad({ mode, remainingBalls, onInput, disabled }:
             {remainingBalls > 0 && (
               <button
                 onClick={() => handlePress("/")}
-                className={`${btnBase} ${btnAction} flex-1 text-2xl bg-[var(--game-spare)] shadow-[var(--game-spare)]/30`}
+                className={`${btnBase} ${btnAction} flex-1 text-2xl bg-green-600 dark:bg-green-400 shadow-green-600/30 dark:shadow-green-400/30`}
               >
                 SPARE
               </button>
             )}
             <button
               onClick={() => handlePress("MISS")}
-              className={`${btnBase} ${btnAction} ${remainingBalls > 0 ? "w-[30%]" : "w-full"} text-xl bg-[var(--game-miss)] shadow-[var(--game-miss)]/30`}
+              className={`${btnBase} ${btnAction} ${remainingBalls > 0 ? "w-[30%]" : "w-full"} text-xl bg-red-600 dark:bg-red-400 shadow-red-600/30 dark:shadow-red-400/30`}
             >
               MISS
             </button>
@@ -105,7 +105,7 @@ export default function InputKeypad({ mode, remainingBalls, onInput, disabled }:
               disabled={disabled}
               className={`
                 ${btnBase} ${btnSurface} text-xl
-                ${activeKey === num ? "bg-[var(--game-border)]" : ""}
+                ${activeKey === num ? "bg-slate-200 dark:bg-slate-700" : ""}
               `}
             >
               {num}

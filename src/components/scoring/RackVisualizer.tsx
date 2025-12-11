@@ -36,19 +36,19 @@ export default function RackVisualizer({
           return (
             <div
               key={ballNumber}
-              className="absolute rounded-full w-10 h-10 flex items-center justify-center text-xs font-bold transition-all duration-500 cubic-bezier(0.34, 1.56, 0.64, 1)"
+              className={`absolute rounded-full w-10 h-10 flex items-center justify-center text-xs font-bold transition-all duration-500 ${
+                isPocketed 
+                  ? "bg-slate-200 dark:bg-slate-700 border-2 border-slate-50 dark:border-slate-800 opacity-30" 
+                  : "bg-[var(--accent)] border-2 border-amber-500 shadow-[0_4px_12px_-2px_var(--accent-dim)]"
+              }`}
               style={{
                 left: `${(position.col / 8) * 100}%`,
                 top: `${(position.row / 4) * 100}%`,
                 transform: `translate(-50%, -50%) ${isPocketed ? "scale(0.5)" : "scale(1)"}`,
-                backgroundColor: isPocketed ? "var(--game-border)" : "var(--game-accent)",
-                border: `2px solid ${isPocketed ? "var(--game-surface)" : "var(--game-strike)"}`,
-                opacity: isPocketed ? 0.3 : 1,
-                boxShadow: isPocketed ? "none" : "0 4px 12px -2px var(--game-accent-dim)",
               }}
             >
               {!isPocketed && (
-                <span className="font-bold text-[var(--game-bg)]">{ballNumber}</span>
+                <span className="font-bold text-white">{ballNumber}</span>
               )}
             </div>
           );
@@ -57,7 +57,7 @@ export default function RackVisualizer({
 
       {/* Status Text overlay or below */}
       <div className="mt-4 text-center">
-        <p className="text-[var(--game-text-secondary)] font-medium text-sm">
+        <p className="text-slate-600 dark:text-slate-400 font-medium text-sm">
           {totalPocketed === 10 ? "All Clear" : `${remainingBalls} Remaining`}
         </p>
       </div>

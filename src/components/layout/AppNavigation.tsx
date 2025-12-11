@@ -51,11 +51,11 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
     ];
 
     return (
-        <div className="flex h-[100dvh]" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="flex h-[100dvh] bg-white dark:bg-slate-900">
             {/* Desktop Sidebar (Hidden on Mobile) */}
-            <aside className="hidden md:flex w-64 flex-col border-r" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+            <aside className="hidden md:flex w-64 flex-col border-r border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                 <div className="p-6">
-                    <Link href="/dashboard" className="flex items-center gap-2 text-2xl font-bold" style={{ color: 'var(--color-primary)' }}>
+                    <Link href="/dashboard" className="flex items-center gap-2 text-2xl font-bold text-[var(--accent)]">
                         <span>🎱</span> Billiards Boss
                     </Link>
                 </div>
@@ -68,30 +68,12 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                                    item.isPrimary ? "mt-6 shadow-md justify-center" : ""
+                                    item.isPrimary 
+                                        ? "mt-6 shadow-md justify-center bg-[var(--accent)] text-white hover:opacity-90" 
+                                        : active
+                                        ? "bg-[var(--accent)] text-white"
+                                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100"
                                 }`}
-                                style={{
-                                    backgroundColor: item.isPrimary 
-                                        ? 'var(--color-primary)' 
-                                        : active 
-                                            ? 'var(--color-primary)' 
-                                            : 'transparent',
-                                    color: item.isPrimary || active 
-                                        ? '#ffffff' 
-                                        : 'var(--color-textSecondary)',
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!item.isPrimary && !active) {
-                                        e.currentTarget.style.backgroundColor = 'var(--color-border)';
-                                        e.currentTarget.style.color = 'var(--color-textPrimary)';
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!item.isPrimary && !active) {
-                                        e.currentTarget.style.backgroundColor = 'transparent';
-                                        e.currentTarget.style.color = 'var(--color-textSecondary)';
-                                    }
-                                }}
                             >
                                 {item.icon}
                                 <span>{item.label}</span>
@@ -100,9 +82,9 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                     })}
                 </nav>
 
-                <div className="p-4 border-t space-y-3" style={{ borderColor: 'var(--color-border)' }}>
+                <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
                     <ThemeSwitcher />
-                    <div className="text-xs text-center" style={{ color: 'var(--color-textSecondary)' }}>
+                    <div className="text-xs text-center text-slate-600 dark:text-slate-400">
                         v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'}
                     </div>
                 </div>
@@ -111,8 +93,8 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Mobile Top Bar */}
-                <header className="md:hidden flex items-center justify-between p-4 border-b" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-                    <h1 className="text-xl font-bold" style={{ color: 'var(--color-primary)' }}>Billiards Boss</h1>
+                <header className="md:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                    <h1 className="text-xl font-bold text-[var(--accent)]">Billiards Boss</h1>
                     <ThemeSwitcher />
                 </header>
 
@@ -122,7 +104,7 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
 
                 {/* Mobile Bottom Nav (Hidden during gameplay) */}
                 {!pathname.startsWith('/dashboard/games/') && (
-                    <nav className="md:hidden border-t pb-safe" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                    <nav className="md:hidden border-t border-slate-200 dark:border-slate-700 pb-safe bg-slate-50 dark:bg-slate-800">
                         <div className="flex justify-around items-end h-16 pb-2">
                             {navItems.map((item) => {
                                 const active = isActive(item.href);
@@ -132,14 +114,7 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                                         <Link
                                             key={item.href}
                                             href={item.href}
-                                            className="relative -top-5 p-4 rounded-full shadow-lg transition-transform active:scale-95"
-                                            style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.opacity = '0.9';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.opacity = '1';
-                                            }}
+                                            className="relative -top-5 p-4 rounded-full shadow-lg transition-opacity active:scale-95 bg-[var(--accent)] text-white hover:opacity-90"
                                         >
                                             {item.icon}
                                         </Link>
@@ -150,18 +125,11 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className="flex flex-col items-center justify-center w-full h-full space-y-1"
-                                        style={{ color: active ? 'var(--color-primary)' : 'var(--color-textSecondary)' }}
-                                        onMouseEnter={(e) => {
-                                            if (!active) {
-                                                e.currentTarget.style.color = 'var(--color-textPrimary)';
-                                            }
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (!active) {
-                                                e.currentTarget.style.color = 'var(--color-textSecondary)';
-                                            }
-                                        }}
+                                        className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors ${
+                                            active 
+                                                ? "text-[var(--accent)]" 
+                                                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+                                        }`}
                                     >
                                         {item.icon}
                                         <span className="text-[10px] font-medium">{item.label}</span>

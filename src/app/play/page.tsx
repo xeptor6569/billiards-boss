@@ -88,12 +88,12 @@ export default function PlayPage() {
   const HeaderCmp = (
     <div className="flex justify-between items-center w-full">
       <div>
-        <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Total Score</div>
-        <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
+        <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Score</div>
+        <div className="text-3xl font-black text-[var(--accent)]">{gameState.totalScore}</div>
       </div>
       <div className="flex items-center gap-3">
         <ThemeSwitcherCompact />
-        <Link href="/" className="text-sm font-bold text-[var(--game-text-secondary)] hover:text-white">
+        <Link href="/" className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
           EXIT
         </Link>
       </div>
@@ -125,16 +125,16 @@ export default function PlayPage() {
             <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
             {gameState.isComplete && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-50">
-                <div className="text-center p-6 bg-[var(--game-surface)] rounded-xl border border-[var(--game-border)] shadow-2xl">
-                  <h2 className="text-2xl font-bold mb-2 text-white">Game Complete!</h2>
-                  <div className="text-4xl font-black text-[var(--game-accent)] mb-6">{gameState.totalScore}</div>
+                <div className="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl">
+                  <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">Game Complete!</h2>
+                  <div className="text-4xl font-black text-[var(--accent)] mb-6">{gameState.totalScore}</div>
                   <button
                     onClick={() => setGameState(createNewGame())}
-                    className="w-full py-3 bg-[var(--game-strike)] text-white font-bold rounded-lg mb-3"
+                    className="w-full py-3 bg-amber-500 text-white font-bold rounded-lg mb-3 hover:opacity-90 transition-opacity"
                   >
                     Play Again
                   </button>
-                  <Link href="/auth/signup" className="block text-sm text-[var(--game-text-secondary)]">
+                  <Link href="/auth/signup" className="block text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
                     Sign up to save stats
                   </Link>
                 </div>

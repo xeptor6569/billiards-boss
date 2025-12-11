@@ -32,86 +32,86 @@ async function StatsContent() {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
-          <h3 className="text-sm font-medium" style={{ color: 'var(--color-textSecondary)' }}>
+        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
             Games Played
           </h3>
-          <p className="mt-2 text-3xl font-bold" style={{ color: 'var(--color-textPrimary)' }}>
+          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
             {stats.gamesPlayed}
           </p>
         </div>
 
-        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
-          <h3 className="text-sm font-medium" style={{ color: 'var(--color-textSecondary)' }}>
+        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
             Average Score
           </h3>
-          <p className="mt-2 text-3xl font-bold" style={{ color: 'var(--color-textPrimary)' }}>
+          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
             {stats.averageScore.toFixed(1)}
           </p>
         </div>
 
-        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
-          <h3 className="text-sm font-medium" style={{ color: 'var(--color-textSecondary)' }}>
+        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
             Best Score
           </h3>
-          <p className="mt-2 text-3xl font-bold" style={{ color: 'var(--color-textPrimary)' }}>
+          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
             {stats.bestScore}
           </p>
         </div>
 
-        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
-          <h3 className="text-sm font-medium" style={{ color: 'var(--color-textSecondary)' }}>
+        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
             Total Frames
           </h3>
-          <p className="mt-2 text-3xl font-bold" style={{ color: 'var(--color-textPrimary)' }}>
+          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
             {stats.totalFrames}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
-          <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-textPrimary)' }}>
+        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">
             Strikes & Spares
           </h3>
           <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
+                <span className="text-sm text-slate-600 dark:text-slate-400">
                   Strikes
                 </span>
-                <span className="text-sm font-medium" style={{ color: 'var(--color-textPrimary)' }}>
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                   {stats.strikes} ({stats.strikePercentage.toFixed(1)}%)
                 </span>
               </div>
-              <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--color-border)' }}>
+              <div className="w-full rounded-full h-2 bg-slate-200 dark:bg-slate-700">
                 <div
-                  className="h-2 rounded-full"
-                  style={{ width: `${stats.strikePercentage}%`, backgroundColor: 'var(--color-accent)' }}
+                  className="h-2 rounded-full bg-[var(--accent)]"
+                  style={{ width: `${stats.strikePercentage}%` }}
                 />
               </div>
             </div>
             <div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
+                <span className="text-sm text-slate-600 dark:text-slate-400">
                   Spares
                 </span>
-                <span className="text-sm font-medium" style={{ color: 'var(--color-textPrimary)' }}>
+                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
                   {stats.spares} ({stats.sparePercentage.toFixed(1)}%)
                 </span>
               </div>
-              <div className="w-full rounded-full h-2" style={{ backgroundColor: 'var(--color-border)' }}>
+              <div className="w-full rounded-full h-2 bg-slate-200 dark:bg-slate-700">
                 <div
-                  className="h-2 rounded-full"
-                  style={{ width: `${stats.sparePercentage}%`, backgroundColor: 'var(--color-success)' }}
+                  className="h-2 rounded-full bg-green-600 dark:bg-green-400"
+                  style={{ width: `${stats.sparePercentage}%` }}
                 />
               </div>
             </div>
           </div>
         </div>
 
-        <div className="rounded-lg shadow-md p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
-          <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-textPrimary)' }}>
+        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">
             Performance Overview
           </h3>
           <StatsChart chartData={chartData} />
@@ -125,10 +125,10 @@ export default function StatsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-textPrimary)' }}>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
           Statistics
         </h1>
-        <p className="mt-2" style={{ color: 'var(--color-textSecondary)' }}>
+        <p className="mt-2 text-slate-600 dark:text-slate-400">
           Track your performance and progress over time.
         </p>
       </div>

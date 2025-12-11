@@ -13,30 +13,21 @@ interface RecentGameItemProps {
 
 export default function RecentGameItem({ game }: RecentGameItemProps) {
   return (
-    <li style={{ borderColor: 'var(--color-border)' }}>
+    <li className="border-b border-slate-200 dark:border-slate-700">
       <Link
         href={`/dashboard/games/${game.id}`}
-        className="block px-6 py-4 transition-colors"
-        style={{ 
-          color: 'var(--color-textPrimary)',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = 'var(--color-border)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = 'transparent';
-        }}
+        className="block px-6 py-4 transition-colors text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
       >
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-sm font-medium" style={{ color: 'var(--color-textPrimary)' }}>
+            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
               Game #{game.id} - {game.gameMode}
             </p>
-            <p className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               {new Date(game.createdAt).toLocaleDateString()}
             </p>
           </div>
-          <div className="text-sm" style={{ color: 'var(--color-textSecondary)' }}>
+          <div className="text-sm text-slate-600 dark:text-slate-400">
             {game.status}
           </div>
         </div>

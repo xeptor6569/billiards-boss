@@ -1,61 +1,53 @@
 @import "tailwindcss";
 
+/* Accent color CSS variable - will be set dynamically by ThemeProvider */
 :root {
-  /* Default theme colors - will be overridden by ThemeProvider */
-  --color-primary: #2563eb;
-  --color-accent: #f59e0b;
-  --color-background: #ffffff;
-  --color-surface: #f8fafc;
-  --color-textPrimary: #0f172a;
-  --color-textSecondary: #64748b;
-  --color-success: #10b981;
-  --color-error: #ef4444;
-  --color-border: #e2e8f0;
+  --accent: #2563eb;
+  --accent-foreground: #ffffff;
+  --accent-dim: rgba(37, 99, 235, 0.2);
+}
 
-  /* Legacy variables for backward compatibility */
-  --background: var(--color-background);
-  --foreground: var(--color-textPrimary);
-  
-  /* Unified game variables - use same colors as rest of site */
-  --game-bg: var(--color-background);
-  --game-surface: var(--color-surface);
-  --game-border: var(--color-border);
-  --game-text-primary: var(--color-textPrimary);
-  --game-text-secondary: var(--color-textSecondary);
-  --game-accent: var(--color-primary);
-  --game-accent-dim: rgba(26, 95, 63, 0.2);
-  --game-strike: var(--color-accent);
-  --game-spare: var(--color-success);
-  --game-miss: var(--color-error);
+/* Dark mode accent colors - will be overridden by ThemeProvider */
+.dark {
+  --accent: #3b82f6;
+  --accent-foreground: #ffffff;
+  --accent-dim: rgba(59, 130, 246, 0.2);
 }
 
 @theme inline {
-  --color-background: var(--color-background);
-  --color-foreground: var(--color-textPrimary);
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Custom accent color using CSS variable */
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: white;
+  color: rgb(15 23 42);
   font-family: var(--font-geist-sans), 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 16px;
   line-height: 1.5;
 }
 
+.dark body {
+  background-color: rgb(15 23 42);
+  color: rgb(241 245 249);
+}
+
 /* Typography scale */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 700;
-  line-height: 1.2;
+  @apply font-bold leading-tight;
 }
 
 h1 {
-  font-size: 32px;
+  @apply text-3xl;
 }
 
 h2 {
-  font-size: 24px;
+  @apply text-2xl;
 }
 
 /* Monospace for score displays */

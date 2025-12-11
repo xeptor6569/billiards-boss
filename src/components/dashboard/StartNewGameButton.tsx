@@ -32,11 +32,7 @@ export default function StartNewGameButton({ activeGameId }: StartNewGameButtonP
   return (
     <button
       onClick={handleStartNew}
-      className="px-6 py-2 rounded-lg font-semibold transition-colors"
-      style={{ 
-        backgroundColor: 'var(--color-border)',
-        color: 'var(--color-textPrimary)'
-      }}
+      className="px-6 py-2 rounded-lg font-semibold transition-colors bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-300 dark:hover:bg-slate-600"
     >
       Start New
     </button>

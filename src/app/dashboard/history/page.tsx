@@ -27,13 +27,12 @@ async function HistoryList() {
   if (allGames.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="mb-4" style={{ color: 'var(--color-textSecondary)' }}>
+        <p className="mb-4 text-slate-600 dark:text-slate-400">
           No games yet. Start your first game!
         </p>
         <Link
           href="/dashboard/games/new"
-          className="inline-block px-6 py-3 rounded-md transition-opacity hover:opacity-90"
-          style={{ backgroundColor: 'var(--color-primary)', color: '#ffffff' }}
+          className="inline-block px-6 py-3 rounded-md transition-opacity hover:opacity-90 bg-[var(--accent)] text-white"
         >
           New Game
         </Link>
@@ -42,31 +41,31 @@ async function HistoryList() {
   }
 
   return (
-    <div className="rounded-lg shadow-md overflow-hidden" style={{ backgroundColor: 'var(--color-surface)' }}>
-      <table className="min-w-full divide-y" style={{ borderColor: 'var(--color-border)' }}>
-        <thead style={{ backgroundColor: 'var(--color-border)' }}>
+    <div className="rounded-lg shadow-md overflow-hidden bg-slate-50 dark:bg-slate-800">
+      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+        <thead className="bg-slate-100 dark:bg-slate-700">
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--color-textSecondary)' }}>
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
               Game ID
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--color-textSecondary)' }}>
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
               Mode
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--color-textSecondary)' }}>
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
               Status
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--color-textSecondary)' }}>
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
               Score
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--color-textSecondary)' }}>
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
               Date
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--color-textSecondary)' }}>
+            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
           {allGames.map((game) => {
             // Recalculate score from raw shot data
             let totalScore = 0;
@@ -107,10 +106,10 @@ export default function HistoryPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-textPrimary)' }}>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
           Game History
         </h1>
-        <p className="mt-2" style={{ color: 'var(--color-textSecondary)' }}>
+        <p className="mt-2 text-slate-600 dark:text-slate-400">
           View all your past games and scores.
         </p>
       </div>

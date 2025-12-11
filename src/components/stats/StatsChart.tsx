@@ -21,22 +21,25 @@ export default function StatsChart({ chartData }: StatsChartProps) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
         <XAxis 
           dataKey="name" 
-          style={{ fill: 'var(--color-textSecondary)', fontSize: '12px' }}
+          className="text-slate-600 dark:text-slate-400"
+          style={{ fontSize: '12px' }}
         />
         <YAxis 
-          style={{ fill: 'var(--color-textSecondary)', fontSize: '12px' }}
+          className="text-slate-600 dark:text-slate-400"
+          style={{ fontSize: '12px' }}
         />
         <Tooltip 
           contentStyle={{
-            backgroundColor: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            color: 'var(--color-textPrimary)',
+            backgroundColor: 'rgb(248 250 252)',
+            border: '1px solid rgb(226 232 240)',
+            color: 'rgb(15 23 42)',
           }}
+          className="dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
         />
-        <Bar dataKey="value" fill="var(--color-primary)" />
+        <Bar dataKey="value" fill="var(--accent)" />
       </BarChart>
     </ResponsiveContainer>
   );

@@ -187,13 +187,13 @@ function GameDetailContent() {
   // If game is completed, show summary view instead of scorekeeper
   if (game.status === 'completed') {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="min-h-screen bg-white dark:bg-slate-900">
         <div className="container mx-auto py-8">
           <div className="flex items-center justify-between w-full mb-6 px-4">
             {/* Back button on left */}
             <button
               onClick={() => router.push("/dashboard")}
-              className="flex items-center gap-2 text-[var(--game-text-secondary)] hover:text-white transition-colors"
+              className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -203,7 +203,7 @@ function GameDetailContent() {
 
             {/* Game # in center */}
             <div className="text-center flex-1">
-              <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Game #{game.id}</div>
+              <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Game #{game.id}</div>
             </div>
 
             {/* Theme switcher on right */}
@@ -263,7 +263,7 @@ function GameDetailContent() {
       {/* Back button on left */}
       <button
         onClick={handleBack}
-        className="flex items-center gap-2 text-[var(--game-text-secondary)] hover:text-white transition-colors"
+        className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
           <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -273,14 +273,14 @@ function GameDetailContent() {
 
       {/* Game # in center */}
       <div className="text-center flex-1">
-        <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Game #{game.id}</div>
+        <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Game #{game.id}</div>
       </div>
 
       {/* Score and theme switcher on right */}
       <div className="flex items-center gap-4">
         <div className="text-right">
-          <div className="text-[var(--game-text-secondary)] text-xs font-bold uppercase tracking-wider">Score</div>
-          <div className="text-3xl font-black text-[var(--game-accent)]">{gameState.totalScore}</div>
+          <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Score</div>
+          <div className="text-3xl font-black text-[var(--accent)]">{gameState.totalScore}</div>
         </div>
         <ThemeSwitcherCompact />
       </div>
@@ -313,8 +313,8 @@ function GameDetailContent() {
         controls={
           isComplete ? (
             <div className="flex flex-col items-center justify-center h-full gap-4">
-              <div className="text-xl font-bold">Game Complete</div>
-              <button onClick={() => router.push("/dashboard")} className="px-6 py-3 bg-[var(--game-surface)] border border-[var(--game-border)] rounded-lg">
+              <div className="text-xl font-bold text-slate-900 dark:text-slate-100">Game Complete</div>
+              <button onClick={() => router.push("/dashboard")} className="px-6 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                 Return to Dashboard
               </button>
             </div>

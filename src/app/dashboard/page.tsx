@@ -59,34 +59,33 @@ async function DashboardContent() {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-textPrimary)' }}>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
           Welcome back, {session.user?.name || session.user?.email}!
         </h1>
-        <p className="mt-2" style={{ color: 'var(--color-textSecondary)' }}>
+        <p className="mt-2 text-slate-600 dark:text-slate-400">
           Start a new game or view your history and statistics.
         </p>
       </div>
 
       {/* Active Game Section */}
       {activeGame && (
-        <div className="mb-8 p-6 rounded-lg shadow-md" style={{ backgroundColor: 'var(--color-surface)', border: '2px solid var(--color-primary)' }}>
+        <div className="mb-8 p-6 rounded-lg shadow-md bg-slate-50 dark:bg-slate-800 border-2 border-[var(--accent)]">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold mb-1" style={{ color: 'var(--color-textPrimary)' }}>
+              <h2 className="text-xl font-semibold mb-1 text-slate-900 dark:text-slate-100">
                 Active Game
               </h2>
-              <p className="text-sm mb-2" style={{ color: 'var(--color-textSecondary)' }}>
+              <p className="text-sm mb-2 text-slate-600 dark:text-slate-400">
                 Game #{activeGame.id} - {activeGame.gameMode}
               </p>
-              <p className="text-xs" style={{ color: 'var(--color-textSecondary)' }}>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 Started {new Date(activeGame.createdAt).toLocaleDateString()}
               </p>
             </div>
             <div className="flex gap-3">
               <Link
                 href={`/dashboard/games/${activeGame.id}`}
-                className="px-6 py-2 rounded-lg font-semibold text-white transition-opacity hover:opacity-90"
-                style={{ backgroundColor: 'var(--color-primary)' }}
+                className="px-6 py-2 rounded-lg font-semibold text-white transition-opacity hover:opacity-90 bg-[var(--accent)]"
               >
                 Resume Game
               </Link>
@@ -99,39 +98,36 @@ async function DashboardContent() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Link
           href="/dashboard/games/new"
-          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
-          style={{ backgroundColor: 'var(--color-surface)' }}
+          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow bg-slate-50 dark:bg-slate-800"
         >
-          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
+          <h2 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
             {activeGame ? "New Game" : "New Game"}
           </h2>
-          <p style={{ color: 'var(--color-textSecondary)' }}>
+          <p className="text-slate-600 dark:text-slate-400">
             {activeGame ? "Start a fresh game (abandons current)" : "Start a new billiards bowling game"}
           </p>
         </Link>
 
         <Link
           href="/dashboard/history"
-          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
-          style={{ backgroundColor: 'var(--color-surface)' }}
+          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow bg-slate-50 dark:bg-slate-800"
         >
-          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
+          <h2 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
             Game History
           </h2>
-          <p style={{ color: 'var(--color-textSecondary)' }}>
+          <p className="text-slate-600 dark:text-slate-400">
             View your past games and scores
           </p>
         </Link>
 
         <Link
           href="/dashboard/stats"
-          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
-          style={{ backgroundColor: 'var(--color-surface)' }}
+          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow bg-slate-50 dark:bg-slate-800"
         >
-          <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-textPrimary)' }}>
+          <h2 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
             Statistics
           </h2>
-          <p style={{ color: 'var(--color-textSecondary)' }}>
+          <p className="text-slate-600 dark:text-slate-400">
             Track your performance and progress
           </p>
         </Link>
@@ -139,11 +135,11 @@ async function DashboardContent() {
 
       {recentGames.length > 0 && (
         <div>
-          <h2 className="text-2xl font-bold mb-4" style={{ color: 'var(--color-textPrimary)' }}>
+          <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-slate-100">
             Recent Games
           </h2>
-          <div className="rounded-lg shadow-md overflow-hidden" style={{ backgroundColor: 'var(--color-surface)' }}>
-            <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="rounded-lg shadow-md overflow-hidden bg-slate-50 dark:bg-slate-800">
+            <ul className="divide-y divide-slate-200 dark:divide-slate-700">
               {recentGames.map((game) => (
                 <RecentGameItem key={game.id} game={game} />
               ))}

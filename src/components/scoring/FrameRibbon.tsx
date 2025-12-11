@@ -69,7 +69,7 @@ export default function FrameRibbon({
                   ${isCurrent ? "opacity-100" : "opacity-50"}
                 `}
               >
-                <div className="text-[10px] uppercase tracking-wider font-bold text-[var(--game-text-secondary)] text-center min-w-[80px]">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-slate-600 dark:text-slate-400 text-center min-w-[80px]">
                   {frame.frameNumber}
                   {canEdit && (
                     <span className="ml-0.5 text-[8px] opacity-60" title="Click to edit">
@@ -108,8 +108,8 @@ export default function FrameRibbon({
                   onClick={() => handleFrameClick(index)}
                   className={`
                     rounded-lg border-2 p-2 w-[80px] h-[80px] flex flex-col transition-all aspect-square
-                    ${isCurrent ? "border-[var(--game-accent)] bg-[var(--game-surface)]" : "border-[var(--game-border)] bg-[var(--game-bg)]"}
-                    ${canEdit ? "cursor-pointer hover:border-[var(--game-accent)] hover:shadow-md active:scale-95" : ""}
+                    ${isCurrent ? "border-[var(--accent)] bg-slate-50 dark:bg-slate-800" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"}
+                    ${canEdit ? "cursor-pointer hover:border-[var(--accent)] hover:shadow-md active:scale-95" : ""}
                   `}
                   role={canEdit ? "button" : undefined}
                   tabIndex={canEdit ? 0 : undefined}
@@ -139,10 +139,10 @@ export default function FrameRibbon({
                                 rounded px-1 py-0.5 text-[10px] font-bold min-w-[18px] text-center
                                 ${
                                   isStrike
-                                    ? "bg-[var(--game-strike)] text-white"
+                                    ? "bg-amber-500 text-white"
                                     : isSpare
-                                    ? "bg-[var(--game-spare)] text-white"
-                                    : "bg-[var(--game-text-secondary)]/20 text-[var(--game-text-primary)]"
+                                    ? "bg-green-600 dark:bg-green-400 text-white"
+                                    : "bg-slate-200 dark:bg-slate-700/50 text-slate-900 dark:text-slate-100"
                                 }
                               `}
                             >
@@ -152,21 +152,21 @@ export default function FrameRibbon({
                         })}
                         {/* For 10th frame, show empty shot 3 box if needed */}
                         {frame.frameNumber === 10 && frame.ballsPocketed.length < 3 && (
-                          <div className="rounded px-1 py-0.5 text-[10px] font-bold min-w-[18px] text-center bg-[var(--game-text-secondary)]/10 text-[var(--game-text-secondary)]">
+                          <div className="rounded px-1 py-0.5 text-[10px] font-bold min-w-[18px] text-center bg-slate-200 dark:bg-slate-700/30 text-slate-600 dark:text-slate-400">
                             —
                           </div>
                         )}
                       </>
                     ) : (
                       <>
-                        <div className="rounded px-1 py-0.5 text-[10px] font-bold min-w-[18px] text-center bg-[var(--game-text-secondary)]/10 text-[var(--game-text-secondary)]">
+                        <div className="rounded px-1 py-0.5 text-[10px] font-bold min-w-[18px] text-center bg-slate-200 dark:bg-slate-700/30 text-slate-600 dark:text-slate-400">
                           —
                         </div>
-                        <div className="rounded px-1 py-0.5 text-[10px] font-bold min-w-[18px] text-center bg-[var(--game-text-secondary)]/10 text-[var(--game-text-secondary)]">
+                        <div className="rounded px-1 py-0.5 text-[10px] font-bold min-w-[18px] text-center bg-slate-200 dark:bg-slate-700/30 text-slate-600 dark:text-slate-400">
                           —
                         </div>
                         {frame.frameNumber === 10 && (
-                          <div className="rounded px-1 py-0.5 text-[10px] font-bold min-w-[18px] text-center bg-[var(--game-text-secondary)]/10 text-[var(--game-text-secondary)]">
+                          <div className="rounded px-1 py-0.5 text-[10px] font-bold min-w-[18px] text-center bg-slate-200 dark:bg-slate-700/30 text-slate-600 dark:text-slate-400">
                             —
                           </div>
                         )}
@@ -177,23 +177,23 @@ export default function FrameRibbon({
                   {/* Cumulative score or strike/spare symbol (bottom center, large) */}
                   <div className="mt-auto flex items-center justify-center">
                     {cumulativeScore > 0 ? (
-                      <div className="text-base sm:text-lg font-bold text-[var(--game-accent)] text-center">
+                      <div className="text-base sm:text-lg font-bold text-[var(--accent)] text-center">
                         {cumulativeScore}
                       </div>
                     ) : frame.isStrike ? (
-                      <div className="text-2xl sm:text-3xl font-bold text-[var(--game-strike)] text-center">
+                      <div className="text-2xl sm:text-3xl font-bold text-amber-500 text-center">
                         X
                       </div>
                     ) : frame.isSpare ? (
-                      <div className="text-2xl sm:text-3xl font-bold text-[var(--game-spare)] text-center">
+                      <div className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400 text-center">
                         /
                       </div>
                     ) : frame.score > 0 ? (
-                      <div className="text-base sm:text-lg font-bold text-[var(--game-accent)] text-center">
+                      <div className="text-base sm:text-lg font-bold text-[var(--accent)] text-center">
                         {frame.score}
                       </div>
                     ) : (
-                      <div className="text-base sm:text-lg font-bold text-[var(--game-text-secondary)]/30 text-center">
+                      <div className="text-base sm:text-lg font-bold text-slate-600 dark:text-slate-400/30 text-center">
                         —
                       </div>
                     )}
