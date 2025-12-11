@@ -13,7 +13,7 @@ import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
 
 export default function NewGamePage() {
   const router = useRouter();
-  const [gameMode, setGameMode] = useState<"single" | "multiplayer" | "tournament">("single");
+  const [gameMode] = useState<"single" | "multiplayer" | "tournament">("single");
   const [saving, setSaving] = useState(false);
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +23,9 @@ export default function NewGamePage() {
   const hasShotsRef = useRef(false);
   const autoSaveInProgressRef = useRef(false);
   const gameStateRef = useRef<GameState | null>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const savedGameIdRef = useRef<number | null>(null);
+  const gameModeRef = useRef<"single" | "multiplayer" | "tournament">("single");
 
   // Check for active game on mount
   useEffect(() => {
@@ -59,10 +62,96 @@ export default function NewGamePage() {
     checkActiveGame();
   }, []);
 
-  // Keep gameState ref updated
+  const handleGameCompletion = async () => {
+    if (!gameState || !gameState.isComplete) return;
+    
+    console.log("Game completed! Auto-saving as completed...", {
+      savedGameId,
+      totalScore: gameState.totalScore
+    });
+    
+    try {
+      if (savedGameId) {
+        // Update existing game to completed
+        const response = await fetch(`/api/games/${savedGameId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameState,
+            status: "completed",
+            completedAt: new Date().toISOString(),
+          }),
+        });
+        if (response.ok) {
+          console.log("Game saved as completed (updated existing)");
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to save completed game:", errorText);
+        }
+      } else {
+        // Create new completed game
+        const response = await fetch("/api/games", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameMode,
+            gameState,
+          }),
+        });
+        if (response.ok) {
+          const game = await response.json();
+          setSavedGameId(game.id);
+          console.log("Game saved as completed, created new game:", game.id);
+        } else {
+          const errorText = await response.text();
+          console.error("Failed to create completed game:", errorText);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving completed game:", error);
+    }
+  };
+
+  // Keep refs updated
   useEffect(() => {
     gameStateRef.current = gameState;
-  }, [gameState]);
+    savedGameIdRef.current = savedGameId;
+    gameModeRef.current = gameMode;
+  }, [gameState, savedGameId, gameMode]);
+
+  // Keep gameState ref updated and handle completion
+  useEffect(() => {
+    if (gameState) {
+      console.log("GameState updated:", {
+        currentFrame: gameState.currentFrame,
+        totalScore: gameState.totalScore,
+        isComplete: gameState.isComplete,
+        framesWithShots: gameState.frames.filter(f => f.ballsPocketed.length > 0).map(f => ({
+          frame: f.frameNumber,
+          shots: f.ballsPocketed
+        }))
+      });
+      
+      // Auto-save when game completes
+      if (gameState.isComplete && !showSuccessModal) {
+        handleGameCompletion();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, showSuccessModal]);
+
+  // Save on component unmount (backup for navigation)
+  useEffect(() => {
+    return () => {
+      // Also save on component unmount if navigating away
+      const currentState = gameStateRef.current;
+      if (hasShotsRef.current && currentState && !currentState.isComplete && !autoSaveInProgressRef.current) {
+        autoSaveInProgressRef.current = true;
+        autoSaveGame(currentState);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-save on exit
   useEffect(() => {
@@ -77,13 +166,8 @@ export default function NewGamePage() {
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      // Also save on component unmount if navigating away
-      const currentState = gameStateRef.current;
-      if (hasShotsRef.current && currentState && !currentState.isComplete && !autoSaveInProgressRef.current) {
-        autoSaveInProgressRef.current = true;
-        autoSaveGame(currentState);
-      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const autoSaveGame = async (stateToSave?: GameState) => {
@@ -93,6 +177,7 @@ export default function NewGamePage() {
     const hasProgress = state.frames.some(f => f.ballsPocketed.length > 0);
     if (!hasProgress) return;
 
+    autoSaveInProgressRef.current = true;
     try {
       if (savedGameId) {
         // Update existing game
@@ -137,10 +222,18 @@ export default function NewGamePage() {
     const newGameState = addBallToFrame(gameState, currentFrameIndex, ballsToAdd);
     setGameState(newGameState);
     hasShotsRef.current = true;
+    
+    // Auto-save after each shot (debounced to avoid too many saves)
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      autoSaveGame(newGameState);
+    }, 1000);
   };
 
   const handleFrameClick = (frameIndex: number) => {
-    if (gameState.isComplete) return;
+    if (!gameState || gameState.isComplete) return;
     setEditingFrameIndex(frameIndex);
   };
 
@@ -160,14 +253,29 @@ export default function NewGamePage() {
 
     setSaving(true);
     try {
-      const response = await fetch("/api/games", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          gameMode,
-          gameState,
-        }),
-      });
+      let response;
+      if (savedGameId) {
+        // Update existing game to completed
+        response = await fetch(`/api/games/${savedGameId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameState,
+            status: "completed",
+            completedAt: new Date().toISOString(),
+          }),
+        });
+      } else {
+        // Create new completed game
+        response = await fetch("/api/games", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gameMode,
+            gameState,
+          }),
+        });
+      }
 
       if (!response.ok) {
         const error = await response.json();
@@ -182,7 +290,9 @@ export default function NewGamePage() {
       }
 
       const game = await response.json();
-      setSavedGameId(game.id);
+      if (!savedGameId) {
+        setSavedGameId(game.id);
+      }
       setShowSuccessModal(true);
     } catch (error) {
       console.error("Error saving game:", error);
@@ -214,7 +324,7 @@ export default function NewGamePage() {
   };
 
   const handleExit = async () => {
-    // Auto-save before exiting
+    // Auto-save before exiting - simple approach that worked before
     if (hasShotsRef.current && gameState && !gameState.isComplete) {
       await autoSaveGame(gameState);
     }
@@ -263,6 +373,22 @@ export default function NewGamePage() {
       </div>
       <div className="flex items-center gap-3">
         <ThemeSwitcherCompact />
+        {/* Debug: Manual save button - remove in production */}
+        {process.env.NODE_ENV === 'development' && (
+          <button
+            onClick={async () => {
+              console.log("Manual save triggered");
+              const currentState = gameState || gameStateRef.current;
+              if (currentState) {
+                await autoSaveGame(currentState);
+                alert("Save triggered!");
+              }
+            }}
+            className="text-xs font-bold text-[var(--game-text-secondary)] hover:text-white px-2"
+          >
+            TEST SAVE
+          </button>
+        )}
         <button
           onClick={handleExit}
           className="text-sm font-bold text-[var(--game-text-secondary)] hover:text-white"
@@ -290,11 +416,12 @@ export default function NewGamePage() {
           <div className="w-full h-full flex flex-col justify-center">
             <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
             {gameState.isComplete && !showSuccessModal && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-50">
-                <div className="text-center p-6 bg-[var(--game-surface)] rounded-xl border border-[var(--game-border)] shadow-2xl">
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-[100]" style={{ position: 'fixed' }}>
+                <div className="text-center p-6 bg-[var(--game-surface)] rounded-xl border border-[var(--game-border)] shadow-2xl max-w-md mx-4">
                   <h2 className="text-2xl font-bold mb-2 text-white">Game Complete!</h2>
                   <div className="text-4xl font-black text-[var(--game-accent)] mb-6">{gameState.totalScore}</div>
                   <button
+                    type="button"
                     onClick={handleSaveGame}
                     disabled={saving}
                     className="w-full py-3 bg-[var(--game-strike)] text-white font-bold rounded-lg mb-3 disabled:opacity-50"
@@ -302,6 +429,7 @@ export default function NewGamePage() {
                     {saving ? "Saving..." : "Save to History"}
                   </button>
                   <button
+                    type="button"
                     onClick={() => router.push("/dashboard")}
                     className="block w-full text-sm text-[var(--game-text-secondary)] hover:text-white mt-2"
                   >
