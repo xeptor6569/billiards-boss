@@ -11,7 +11,7 @@ async function ProtectedAppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AppNavigation>
+    <AppNavigation session={session}>
       {children}
     </AppNavigation>
   );

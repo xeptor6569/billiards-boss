@@ -3,8 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
+import UserMenu from "@/components/layout/UserMenu";
+import type { Session } from "next-auth";
 
-export default function AppNavigation({ children }: { children: React.ReactNode }) {
+interface AppNavigationProps {
+  children: React.ReactNode;
+  session: Session;
+}
+
+export default function AppNavigation({ children, session }: AppNavigationProps) {
     const pathname = usePathname();
 
     // Highlight active link helper
@@ -83,6 +90,7 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                 </nav>
 
                 <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                    <UserMenu session={session} variant="desktop" />
                     <ThemeSwitcher />
                     <div className="text-xs text-center text-slate-600 dark:text-slate-400">
                         v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'}
@@ -95,7 +103,10 @@ export default function AppNavigation({ children }: { children: React.ReactNode 
                 {/* Mobile Top Bar */}
                 <header className="md:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
                     <h1 className="text-xl font-bold text-[var(--accent)]">Billiards Boss</h1>
-                    <ThemeSwitcher />
+                    <div className="flex items-center gap-3">
+                        <UserMenu session={session} variant="mobile" />
+                        <ThemeSwitcher />
+                    </div>
                 </header>
 
                 <main className="flex-1 overflow-y-auto pb-safe">
