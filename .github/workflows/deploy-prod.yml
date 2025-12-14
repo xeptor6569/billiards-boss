@@ -40,7 +40,23 @@ jobs:
           DEPLOY_PATH: ${{ secrets.PROD_DEPLOY_PATH }}
         run: |
           set -e
+          
+          # Validate deployment path
+          if [ -z "$DEPLOY_PATH" ]; then
+            echo "❌ Error: PROD_DEPLOY_PATH secret is not set!"
+            exit 1
+          fi
+          
+          if [ ! -d "$DEPLOY_PATH" ]; then
+            echo "❌ Error: Deployment directory does not exist: $DEPLOY_PATH"
+            echo "💡 Create it with: sudo mkdir -p $DEPLOY_PATH && sudo chown \$USER:\$USER $DEPLOY_PATH"
+            exit 1
+          fi
+          
           cd "$DEPLOY_PATH"
+          
+          # Fix git safe.directory issue (Git 2.35.2+ security feature)
+          git config --global --add safe.directory "$DEPLOY_PATH" || true
           
           echo "📥 Pulling latest changes from main branch..."
           git fetch origin

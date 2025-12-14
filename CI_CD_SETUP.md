@@ -68,7 +68,21 @@ nano .env
 # Add your production environment variables
 ```
 
-3. **Ensure user has Docker permissions**:
+3. **Fix Git ownership/permissions** (important for self-hosted runners):
+
+```bash
+# Ensure the runner user owns the deployment directories
+# Replace $USER with the actual user running the GitHub Actions runner
+sudo chown -R $USER:$USER /opt/billiards-boss-dev
+sudo chown -R $USER:$USER /opt/billiards-boss-prod
+
+# Or if you prefer, add safe.directory config (Git 2.35.2+ security feature)
+# This is done automatically by the workflows, but you can set it permanently:
+git config --global --add safe.directory /opt/billiards-boss-dev
+git config --global --add safe.directory /opt/billiards-boss-prod
+```
+
+4. **Ensure user has Docker permissions**:
 
 ```bash
 # Add your user to docker group (if not already)
