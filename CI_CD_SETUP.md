@@ -1,32 +1,42 @@
 # CI/CD Setup Guide
 
-This guide explains how to set up automated deployments for Billiards Boss using GitHub Actions.
+This guide explains how to set up automated deployments for Billiards Boss using GitHub Actions with self-hosted runners.
 
 ## Overview
 
 The project uses two deployment environments:
 
 - **Dev/Staging**: `dev.billiardsboss.com` - Deploys from `dev` branch
-- **Production**: `billiardsboss.com` - Deploys from `master`/`main` branch
+- **Production**: `billiardsboss.com` - Deploys from `main` branch
 
 ## Workflow Files
 
 - `.github/workflows/deploy-dev.yml` - Deploys dev branch to staging
-- `.github/workflows/deploy-prod.yml` - Deploys master/main branch to production
+- `.github/workflows/deploy-prod.yml` - Deploys main branch to production
+
+## Why Self-Hosted Runners?
+
+If your deployment server is on a home network (like a Proxmox VM), it's not directly accessible from the internet. Self-hosted runners solve this by:
+
+- ✅ Running directly on your server (no SSH needed)
+- ✅ No need to expose ports or configure SSH keys
+- ✅ Free (doesn't use GitHub Actions minutes)
+- ✅ Faster deployments (no network overhead)
+- ✅ More secure (runner connects to GitHub, not the other way around)
 
 ## Prerequisites
 
 1. **GitHub Repository** with the code
-2. **Deployment Server** with:
+2. **Deployment Server** (your Proxmox VM) with:
    - Docker and Docker Compose installed
-   - SSH access configured
-   - Git repository cloned
-   - Environment files (`.env`) configured
-3. **SSH Key Pair** for GitHub Actions to access the server
+   - Git installed
+   - Node.js installed (for build info generation)
+   - User with Docker permissions
+   - Network access to GitHub (for runner to connect)
 
 ## Step 1: Prepare Deployment Server
 
-### On your deployment server:
+### On your deployment server (Proxmox VM):
 
 1. **Create deployment directories** (one for dev, one for prod):
 
@@ -41,7 +51,7 @@ git checkout dev
 sudo mkdir -p /opt/billiards-boss-prod
 cd /opt/billiards-boss-prod
 git clone <your-repo-url> .
-git checkout master  # or main
+git checkout main
 ```
 
 2. **Create environment files**:
@@ -58,65 +68,133 @@ nano .env
 # Add your production environment variables
 ```
 
-3. **Create SSH user for deployments** (optional but recommended):
+3. **Ensure user has Docker permissions**:
 
 ```bash
-# Create a dedicated user for CI/CD
-sudo adduser github-actions
-sudo usermod -aG docker github-actions
+# Add your user to docker group (if not already)
+sudo usermod -aG docker $USER
 
-# Switch to the new user and set up SSH
-sudo su - github-actions
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
+# Log out and back in for changes to take effect
+# Or use: newgrp docker
 ```
 
-## Step 2: Generate SSH Key for GitHub Actions
+## Step 2: Set Up GitHub Self-Hosted Runner
 
 ### On your deployment server:
 
-```bash
-# As the deployment user (github-actions or your user)
-ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/github_actions_deploy
-
-# Display the public key (you'll need this)
-cat ~/.ssh/github_actions_deploy.pub
-
-# Add the public key to authorized_keys
-cat ~/.ssh/github_actions_deploy.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-```
-
-### Copy the private key:
+1. **Create a directory for the runner**:
 
 ```bash
-# Display the private key (copy this entire output)
-cat ~/.ssh/github_actions_deploy
+# Create directory for runner
+mkdir -p ~/actions-runner
+cd ~/actions-runner
 ```
 
-**Important**: Keep this private key secure! You'll add it to GitHub Secrets.
+2. **Download the runner**:
+
+```bash
+# For Linux x64 (most common)
+curl -o actions-runner-linux-x64-2.311.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
+
+# Extract
+tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
+```
+
+**Note**: Check [GitHub Actions Runner releases](https://github.com/actions/runner/releases) for the latest version.
+
+3. **Get runner registration token from GitHub**:
+
+   - Go to your GitHub repository
+   - Settings → Actions → Runners
+   - Click "New self-hosted runner"
+   - Select Linux and x64
+   - Copy the registration token (looks like `AXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`)
+
+4. **Configure and start the runner**:
+
+```bash
+# Configure the runner (replace TOKEN with your token from GitHub)
+./config.sh --url https://github.com/YOUR_USERNAME/YOUR_REPO --token YOUR_TOKEN
+
+# When prompted:
+# - Runner name: billiards-boss-runner (or any name you like)
+# - Labels: Leave default or add custom labels like "self-hosted,linux"
+# - Work folder: Leave default (~/actions-runner/_work)
+
+# Start the runner
+./run.sh
+```
+
+5. **Set up runner as a service** (recommended for auto-start):
+
+```bash
+# Install as a service
+sudo ./svc.sh install
+
+# Start the service
+sudo ./svc.sh start
+
+# Check status
+sudo ./svc.sh status
+```
+
+The runner will now automatically start on boot and connect to GitHub.
+
+### Optional: Separate Runners for Dev and Production
+
+If you want to use separate runners for dev and production (for better isolation):
+
+1. **Set up a second runner** (repeat Step 2 in a different directory):
+   ```bash
+   mkdir -p ~/actions-runner-prod
+   cd ~/actions-runner-prod
+   # Download and configure as above, but use different name/labels
+   ```
+
+2. **Update workflows** to use specific labels:
+   - In `deploy-dev.yml`: Change `runs-on: self-hosted` to `runs-on: [self-hosted, dev]`
+   - In `deploy-prod.yml`: Change `runs-on: self-hosted` to `runs-on: [self-hosted, production]`
+
+3. **Configure runners with labels**:
+   ```bash
+   # When configuring, add labels:
+   ./config.sh --url https://github.com/YOUR_USERNAME/YOUR_REPO --token TOKEN --labels dev,linux
+   # or
+   ./config.sh --url https://github.com/YOUR_USERNAME/YOUR_REPO --token TOKEN --labels production,linux
+   ```
+
+### Updating the Runner
+
+Periodically update your runner to the latest version:
+
+```bash
+cd ~/actions-runner
+
+# Stop the service
+sudo ./svc.sh stop
+
+# Download latest version (check GitHub for latest)
+curl -o actions-runner-linux-x64-2.311.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.311.0/actions-runner-linux-x64-2.311.0.tar.gz
+
+# Extract (this will update the files)
+tar xzf ./actions-runner-linux-x64-2.311.0.tar.gz
+
+# Restart service
+sudo ./svc.sh start
+```
 
 ## Step 3: Configure GitHub Secrets
 
 Go to your GitHub repository → Settings → Secrets and variables → Actions
 
-### For Dev Environment:
+### Required Secrets:
 
-Add these secrets:
+You only need deployment paths (no SSH keys needed!):
 
-- `DEV_SSH_HOST` - Your server's IP address or hostname (e.g., `10.10.20.44` or `dev.billiardsboss.com`)
-- `DEV_SSH_USER` - SSH username (e.g., `github-actions` or `deploy`)
-- `DEV_SSH_PRIVATE_KEY` - The private key content from Step 2 (entire output of `cat ~/.ssh/github_actions_deploy`)
 - `DEV_DEPLOY_PATH` - Path to dev deployment directory (e.g., `/opt/billiards-boss-dev`)
-
-### For Production Environment:
-
-Add these secrets:
-
-- `PROD_SSH_HOST` - Your server's IP address or hostname
-- `PROD_SSH_USER` - SSH username
-- `PROD_SSH_PRIVATE_KEY` - A different private key (or same if using same user)
 - `PROD_DEPLOY_PATH` - Path to production deployment directory (e.g., `/opt/billiards-boss-prod`)
+
+That's it! No SSH keys, no hostnames, no usernames needed.
 
 ## Step 4: Test the Workflows
 
@@ -136,11 +214,11 @@ Add these secrets:
 
 ### Test Production Deployment:
 
-1. Merge dev to master:
+1. Merge dev to main:
    ```bash
-   git checkout master
+   git checkout main
    git merge dev
-   git push origin master
+   git push origin main
    ```
 2. Go to GitHub → Actions tab
 3. Watch the "Deploy to Production" workflow run
@@ -163,21 +241,20 @@ You can also trigger deployments manually:
    - Automatically on push to `dev` branch
    - Manually via workflow_dispatch
 
-2. **Steps**:
+2. **Steps** (runs directly on your server via self-hosted runner):
    - Checks out code
    - Generates build info (build number, commit hash)
-   - Sets up SSH connection
-   - Connects to server and:
-     - Pulls latest `dev` branch
-     - Builds Docker containers with build info
-     - Runs database migrations
-     - Seeds database
-     - Checks application health
+   - Navigates to deployment directory
+   - Pulls latest `dev` branch
+   - Builds Docker containers with build info
+   - Runs database migrations
+   - Seeds database
+   - Checks application health
 
 ### Production Workflow (`deploy-prod.yml`):
 
 1. **Triggers**: 
-   - Automatically on push to `master`/`main` branch
+   - Automatically on push to `main` branch
    - Manually via workflow_dispatch
 
 2. **Steps**:
@@ -196,16 +273,36 @@ This information is passed to Docker as build arguments and displayed in the Bui
 
 ## Troubleshooting
 
-### SSH Connection Issues
+### Runner Not Connecting
 
 ```bash
-# Test SSH connection manually
-ssh -i ~/.ssh/github_actions_deploy github-actions@your-server-ip
+# Check runner status
+cd ~/actions-runner
+./run.sh  # If not running as service
 
-# Check SSH key permissions
-chmod 600 ~/.ssh/github_actions_deploy
-chmod 644 ~/.ssh/github_actions_deploy.pub
+# Or check service status
+sudo ./svc.sh status
+
+# View runner logs
+tail -f ~/actions-runner/_diag/Runner_*.log
 ```
+
+### Runner Not Picking Up Jobs
+
+1. **Check runner is online**:
+   - Go to GitHub → Settings → Actions → Runners
+   - Verify runner shows as "Idle" or "Active"
+
+2. **Check runner labels**:
+   - Ensure workflow uses `runs-on: self-hosted`
+   - If using custom labels, ensure they match
+
+3. **Restart runner**:
+   ```bash
+   cd ~/actions-runner
+   sudo ./svc.sh stop
+   sudo ./svc.sh start
+   ```
 
 ### Docker Permission Issues
 
@@ -224,7 +321,7 @@ sudo usermod -aG docker $USER
 ### Deployment Fails
 
 1. **Check GitHub Actions logs** for specific error messages
-2. **SSH into server** and check:
+2. **On your server**, check:
    ```bash
    cd /opt/billiards-boss-dev  # or prod
    docker compose logs -f
@@ -233,6 +330,7 @@ sudo usermod -aG docker $USER
 3. **Verify environment variables** are set correctly in `.env` file
 4. **Check disk space**: `df -h`
 5. **Check Docker**: `docker ps`, `docker system df`
+6. **Check runner logs**: `tail -f ~/actions-runner/_diag/Runner_*.log`
 
 ### Health Check Fails
 
@@ -249,21 +347,23 @@ docker compose logs app
 
 ## Security Best Practices
 
-1. **Use separate SSH keys** for dev and production
-2. **Use dedicated deployment user** with minimal permissions
-3. **Restrict SSH access** to specific IPs if possible
-4. **Never commit** `.env` files or secrets
-5. **Rotate SSH keys** periodically
-6. **Use strong passwords** for database and NextAuth secrets
-7. **Enable GitHub branch protection** for master/main branch
-8. **Require pull request reviews** before merging to production
+1. **Run runner as dedicated user** with minimal permissions (not root)
+2. **Use separate deployment directories** for dev and production
+3. **Never commit** `.env` files or secrets
+4. **Use strong passwords** for database and NextAuth secrets
+5. **Enable GitHub branch protection** for main branch
+6. **Require pull request reviews** before merging to production
+7. **Keep runner updated** - check for updates periodically
+8. **Monitor runner logs** for suspicious activity
+9. **Use firewall rules** to restrict network access if possible
+10. **Regularly rotate** GitHub runner tokens (re-register runner)
 
 ## Branch Protection (Recommended)
 
 Set up branch protection rules in GitHub:
 
 1. Go to Settings → Branches
-2. Add rule for `master`/`main`:
+2. Add rule for `main`:
    - Require pull request reviews
    - Require status checks to pass
    - Require branches to be up to date
@@ -280,10 +380,7 @@ Set up branch protection rules in GitHub:
 If a deployment fails or causes issues:
 
 ```bash
-# SSH into server
-ssh user@server
-
-# Navigate to deployment directory
+# On your server, navigate to deployment directory
 cd /opt/billiards-boss-prod  # or dev
 
 # Checkout previous commit
@@ -291,8 +388,8 @@ git log --oneline -10  # Find the commit hash
 git checkout <previous-commit-hash>
 
 # Rebuild and restart
-docker compose down
-docker compose up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 docker compose exec app npm run db:migrate
 ```
 
@@ -307,7 +404,7 @@ docker compose exec app npm run db:migrate
 
 ### Production Environment (billiardsboss.com)
 
-- Uses `master`/`main` branch
+- Uses `main` branch
 - Production database
 - Full security enabled
 - Environment variables in `/opt/billiards-boss-prod/.env`
