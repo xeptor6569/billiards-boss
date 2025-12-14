@@ -3,7 +3,11 @@
 import { useTheme } from "@/contexts/ThemeContext";
 import { useState } from "react";
 
-export default function ThemeSwitcher() {
+interface ThemeSwitcherProps {
+  expandUp?: boolean;
+}
+
+export default function ThemeSwitcher({ expandUp = false }: ThemeSwitcherProps) {
   const { mode, accentColor, setMode, setAccentColor, availableAccentColors } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -38,7 +42,7 @@ export default function ThemeSwitcher() {
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-56 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg z-50">
+          <div className={`absolute right-0 w-56 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg z-50 ${expandUp ? 'bottom-full mb-2' : 'mt-2'}`}>
             {/* Mode Toggle */}
             <div className="p-3 border-b border-slate-200 dark:border-slate-700">
               <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">
