@@ -3,6 +3,10 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
+# Accept build arguments for build info
+ARG BUILD_NUMBER
+ARG COMMIT_HASH
+
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
@@ -15,8 +19,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application with build info from args
+RUN BUILD_NUMBER=${BUILD_NUMBER} COMMIT_HASH=${COMMIT_HASH} npm run build
 
 # Production stage
 FROM node:24-alpine AS runner

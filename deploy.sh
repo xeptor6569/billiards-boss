@@ -20,6 +20,27 @@ if [ -d .git ]; then
     git pull
 fi
 
+# Generate build info before Docker build
+echo "📦 Generating build info..."
+if [ -d .git ]; then
+    BUILD_NUMBER=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+    COMMIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "dev")
+    echo "   Build number: $BUILD_NUMBER"
+    echo "   Commit hash: $COMMIT_HASH"
+    
+    # Also generate the build-info.ts file directly as a backup
+    # This ensures it's available even if Docker build args don't work
+    BUILD_NUMBER=$BUILD_NUMBER COMMIT_HASH=$COMMIT_HASH npm run build:info || echo "   ⚠️  Failed to pre-generate build info, will use Docker build args"
+else
+    BUILD_NUMBER="0"
+    COMMIT_HASH="dev"
+    echo "   ⚠️  No git repository found, using fallback values"
+fi
+
+# Export for Docker build
+export BUILD_NUMBER
+export COMMIT_HASH
+
 # Stop any existing containers
 echo "🛑 Stopping any existing containers..."
 docker compose -f docker-compose.yml -f docker-compose.prod.yml down 2>/dev/null || true
@@ -36,7 +57,7 @@ if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
     fi
 fi
 
-# Build and start containers
+# Build and start containers (build args are passed via environment variables)
 echo "🐳 Building and starting Docker containers..."
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 

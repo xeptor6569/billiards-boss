@@ -24,6 +24,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        BUILD_NUMBER: ${BUILD_NUMBER:-0}
+        COMMIT_HASH: ${COMMIT_HASH:-dev}
     container_name: billiards-boss-app
     environment:
       NODE_ENV: production
