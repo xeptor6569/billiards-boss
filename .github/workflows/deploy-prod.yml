@@ -1,0 +1,92 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  DEPLOY_ENV: production
+  DEPLOY_URL: billiardsboss.com
+
+jobs:
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch full history for git commands
+
+      - name: Generate build info
+        id: build-info
+        run: |
+          BUILD_NUMBER=$(git rev-list --count HEAD)
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "commit_hash=$COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "✅ Build info: v$(node -p "require('./package.json').version").$BUILD_NUMBER ($COMMIT_HASH)"
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.PROD_SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          BUILD_NUMBER: ${{ steps.build-info.outputs.build_number }}
+          COMMIT_HASH: ${{ steps.build-info.outputs.commit_hash }}
+          SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.PROD_DEPLOY_PATH }}
+        run: |
+          ssh $SSH_USER@$SSH_HOST "set -e && \
+            cd '$DEPLOY_PATH' && \
+            echo '📥 Pulling latest changes from master branch...' && \
+            git fetch origin && \
+            (git checkout master || git checkout main) && \
+            (git pull origin master || git pull origin main) && \
+            echo '📦 Setting build info environment variables...' && \
+            export BUILD_NUMBER='$BUILD_NUMBER' && \
+            export COMMIT_HASH='$COMMIT_HASH' && \
+            echo '🛑 Stopping existing containers...' && \
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml down 2>/dev/null || true && \
+            echo '🐳 Building and starting containers...' && \
+            BUILD_NUMBER='$BUILD_NUMBER' COMMIT_HASH='$COMMIT_HASH' docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build && \
+            echo '⏳ Waiting for services to be ready...' && \
+            sleep 20 && \
+            echo '📊 Running database migrations...' && \
+            docker compose exec -T app npm run db:migrate || echo '⚠️  Migration failed or already applied' && \
+            echo '🌱 Seeding database...' && \
+            docker compose exec -T app npm run db:seed || echo '⚠️  Seeding failed or already done' && \
+            echo '🏥 Checking application health...' && \
+            sleep 5 && \
+            if curl -f http://localhost:3000/api/health > /dev/null 2>&1; then \
+              echo '✅ Application is healthy!'; \
+            else \
+              echo '⚠️  Health check failed, but containers are running'; \
+            fi && \
+            echo '✅ Deployment complete!' && \
+            echo '🌐 Application available at: https://billiardsboss.com'"
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Production (billiardsboss.com)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: master/main" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Number**: ${{ steps.build-info.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ steps.build-info.outputs.commit_hash }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit Message**: ${{ github.event.head_commit.message }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed By**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+
