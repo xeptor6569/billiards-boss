@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import UserMenu from "@/components/layout/UserMenu";
 import type { Session } from "next-auth";
+import { BUILD_INFO } from "@/lib/build-info";
 
 interface AppNavigationProps {
   children: React.ReactNode;
@@ -91,9 +92,9 @@ export default function AppNavigation({ children, session }: AppNavigationProps)
 
                 <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
                     <UserMenu session={session} variant="desktop" />
-                    <ThemeSwitcher />
+                    <ThemeSwitcher expandUp={true} />
                     <div className="text-xs text-center text-slate-600 dark:text-slate-400">
-                        v{process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0'}
+                        {BUILD_INFO.display}
                     </div>
                 </div>
             </aside>
