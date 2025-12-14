@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Accent color CSS variable - will be set dynamically by ThemeProvider */
 :root {
   --accent: #2563eb;

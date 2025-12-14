@@ -19,36 +19,37 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Helper function to get initial theme from localStorage (safe for SSR)
+function getInitialTheme(): { mode: ThemeMode; accent: AccentColorName } {
+  if (typeof window === "undefined") {
+    return { mode: defaultThemeMode, accent: defaultAccentColor };
+  }
+  
+  const savedMode = localStorage.getItem("theme-mode") as ThemeMode;
+  const savedAccent = localStorage.getItem("theme-accent") as AccentColorName;
+  
+  return {
+    mode: (savedMode === "light" || savedMode === "dark") ? savedMode : defaultThemeMode,
+    accent: (savedAccent && accentColors[savedAccent]) ? savedAccent : defaultAccentColor,
+  };
+}
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>(defaultThemeMode);
-  const [accentColor, setAccentColorState] = useState<AccentColorName>(defaultAccentColor);
+  const initialTheme = getInitialTheme();
+  const [mode, setModeState] = useState<ThemeMode>(initialTheme.mode);
+  const [accentColor, setAccentColorState] = useState<AccentColorName>(initialTheme.accent);
   const [mounted, setMounted] = useState(false);
 
+  // Apply theme immediately on mount and whenever mode/accent changes
   useEffect(() => {
-    setMounted(true);
-    // Load theme preferences from localStorage
-    const savedMode = localStorage.getItem("theme-mode") as ThemeMode;
-    const savedAccent = localStorage.getItem("theme-accent") as AccentColorName;
-    
-    if (savedMode === "light" || savedMode === "dark") {
-      setModeState(savedMode);
-    }
-    
-    if (savedAccent && accentColors[savedAccent]) {
-      setAccentColorState(savedAccent);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
+    if (typeof window === "undefined") return;
     
     const root = document.documentElement;
     
-    // Toggle dark class for Tailwind dark mode
+    // Always remove dark class first to ensure clean state, then add if needed
+    root.classList.remove("dark");
     if (mode === "dark") {
       root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
     }
     
     // Set accent color CSS variable based on current mode
@@ -68,7 +69,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Save to localStorage
     localStorage.setItem("theme-mode", mode);
     localStorage.setItem("theme-accent", accentColor);
-  }, [mode, accentColor, mounted]);
+    
+    setMounted(true);
+  }, [mode, accentColor]);
 
   // Helper function to convert hex to RGB
   function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
