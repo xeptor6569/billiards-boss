@@ -5,6 +5,8 @@ import { games, frames, gameParticipants } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { checkGameLimit } from "@/lib/plan-checks";
 
+// With cacheComponents enabled, routes are dynamic by default
+// This route uses request.url which requires runtime evaluation
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();

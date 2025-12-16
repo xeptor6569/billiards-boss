@@ -1,0 +1,69 @@
+name: Cleanup Runner Disk Space
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  cleanup:
+    name: Cleanup Runner Disk Space
+    runs-on: self-hosted
+    
+    steps:
+      - name: Clean up Docker resources
+        run: |
+          echo "🐳 Cleaning up Docker resources..."
+          
+          # Remove stopped containers
+          docker container prune -f || true
+          
+          # Remove unused images (keep images from last 24 hours)
+          docker image prune -a -f --filter "until=24h" || true
+          
+          # Remove unused volumes (be careful - this removes unused volumes)
+          docker volume prune -f || true
+          
+          # Remove build cache (this can be very large)
+          docker builder prune -a -f --filter "until=24h" || true
+          
+          echo "✅ Docker cleanup complete"
+      
+      - name: Clean up runner workspace
+        run: |
+          echo "📦 Cleaning up runner workspace..."
+          
+          RUNNER_DIR="$HOME/actions-runner"
+          if [ -d "$RUNNER_DIR/_work" ]; then
+            cd "$RUNNER_DIR/_work"
+            # Keep last 3 workspace directories, remove older ones
+            ls -t | tail -n +4 | xargs -r rm -rf || true
+          fi
+          
+          # Clean up old diagnostic logs (keep last 7 days)
+          if [ -d "$RUNNER_DIR/_diag" ]; then
+            find "$RUNNER_DIR/_diag" -name "*.log" -type f -mtime +7 -delete || true
+          fi
+          
+          echo "✅ Workspace cleanup complete"
+      
+      - name: Show disk usage
+        run: |
+          echo "📊 Current disk usage:"
+          df -h /
+          echo ""
+          echo "🐳 Docker disk usage:"
+          docker system df || true
+      
+      - name: Alert if disk space is low
+        run: |
+          DISK_USAGE=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+          if [ "$DISK_USAGE" -gt 85 ]; then
+            echo "⚠️  WARNING: Disk usage is at ${DISK_USAGE}%"
+            echo "Consider expanding disk or running more aggressive cleanup"
+            exit 1
+          else
+            echo "✅ Disk usage is at ${DISK_USAGE}% (healthy)"
+          fi
+

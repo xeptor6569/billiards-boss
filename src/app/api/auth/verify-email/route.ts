@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { users, verificationTokens } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
 
-// API routes are inherently dynamic
+// With cacheComponents enabled, routes are dynamic by default
+// This route uses request.url which requires runtime evaluation
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
