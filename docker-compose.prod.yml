@@ -5,6 +5,17 @@ services:
   postgres:
     container_name: billiards-boss-db-prod
     restart: always
+    # Override env_file to load production-specific environment
+    # Order: .env (base) -> .env.production (overrides)
+    env_file:
+      - .env
+      - .env.production
+    # Preserve environment variables from base docker-compose.yml
+    # These are required for PostgreSQL to start
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-billiards}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-billiards}
+      POSTGRES_DB: ${POSTGRES_DB:-billiards_boss}
     ports:
       - "${POSTGRES_PORT:-5434}:5432"  # Prod uses 5434
     volumes:
@@ -14,6 +25,11 @@ services:
 
   app:
     container_name: billiards-boss-app-prod
+    # Override env_file to load production-specific environment
+    # Order: .env (base) -> .env.production (overrides)
+    env_file:
+      - .env
+      - .env.production
     environment:
       NODE_ENV: production
       # Override with production URLs

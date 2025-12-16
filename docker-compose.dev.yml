@@ -4,6 +4,17 @@
 services:
   postgres:
     container_name: billiards-boss-db-dev
+    # Override env_file to load dev-specific environment
+    # Order: .env (base) -> .env.development (overrides)
+    env_file:
+      - .env
+      - .env.development
+    # Preserve environment variables from base docker-compose.yml
+    # These are required for PostgreSQL to start
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-billiards}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-billiards}
+      POSTGRES_DB: ${POSTGRES_DB:-billiards_boss}
     ports:
       - "${POSTGRES_PORT:-5433}:5432"  # Dev uses 5433
     volumes:
@@ -13,6 +24,11 @@ services:
 
   app:
     container_name: billiards-boss-app-dev
+    # Override env_file to load dev-specific environment
+    # Order: .env (base) -> .env.development (overrides)
+    env_file:
+      - .env
+      - .env.development
     ports:
       - "${APP_PORT:-3001}:3000"  # Dev uses 3001
     networks:

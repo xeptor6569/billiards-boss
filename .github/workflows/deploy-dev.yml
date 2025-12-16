@@ -62,6 +62,29 @@ jobs:
           git checkout dev
           git pull origin dev
           
+          # Check for environment file (.env.development preferred, fallback to .env)
+          if [ -f .env.development ]; then
+            echo "✅ Found .env.development file"
+            set -a
+            source .env.development
+            set +a
+          elif [ -f .env ]; then
+            echo "⚠️  Using .env file (consider creating .env.development for dev-specific config)"
+            set -a
+            source .env
+            set +a
+          else
+            echo "❌ Error: No .env.development or .env file found!"
+            echo "💡 Create .env.development from .env.example.development template"
+            exit 1
+          fi
+          
+          # Validate required environment variables
+          if [ -z "$NEXTAUTH_SECRET" ]; then
+            echo "❌ Error: NEXTAUTH_SECRET is not set in environment file!"
+            exit 1
+          fi
+          
           echo "📦 Setting build info environment variables..."
           export BUILD_NUMBER="$BUILD_NUMBER"
           export COMMIT_HASH="$COMMIT_HASH"
@@ -83,7 +106,7 @@ jobs:
           
           echo "🏥 Checking application health..."
           sleep 5
-          # Load APP_PORT from .env if available, default to 3001 for dev
+          # APP_PORT should already be loaded from .env.development, default to 3001 if not set
           APP_PORT=${APP_PORT:-3001}
           if curl -f http://localhost:${APP_PORT}/api/health > /dev/null 2>&1; then
             echo "✅ Application is healthy!"

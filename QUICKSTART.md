@@ -11,7 +11,14 @@ Create a `.env` file in the root directory:
 openssl rand -base64 32
 ```
 
-Create `.env` file with:
+Create `.env.local` file for local development:
+
+```bash
+# Copy the example template
+cp .env.example.local .env.local
+```
+
+Then edit `.env.local` and fill in your values:
 
 ```env
 # Database
@@ -25,6 +32,8 @@ NEXTAUTH_SECRET=your-generated-secret-here
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_WS_URL=http://localhost:3000
 ```
+
+**Note**: `.env.local` is gitignored and takes highest priority. See [ENV_SETUP.md](ENV_SETUP.md) for more details.
 
 ## Step 2: Set Up PostgreSQL Database
 
