@@ -62,15 +62,42 @@ jobs:
           git checkout dev
           git pull origin dev
           
+          # Check for environment file (.env.development preferred, fallback to .env)
+          if [ -f .env.development ]; then
+            echo "✅ Found .env.development file"
+            set -a
+            source .env.development
+            set +a
+          elif [ -f .env ]; then
+            echo "⚠️  Using .env file (consider creating .env.development for dev-specific config)"
+            set -a
+            source .env
+            set +a
+          else
+            echo "❌ Error: No .env.development or .env file found!"
+            echo "💡 Create .env.development from .env.example.development template"
+            exit 1
+          fi
+          
+          # Validate required environment variables
+          if [ -z "$NEXTAUTH_SECRET" ]; then
+            echo "❌ Error: NEXTAUTH_SECRET is not set in environment file!"
+            exit 1
+          fi
+          
           echo "📦 Setting build info environment variables..."
           export BUILD_NUMBER="$BUILD_NUMBER"
           export COMMIT_HASH="$COMMIT_HASH"
           
           echo "🛑 Stopping existing containers..."
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml down 2>/dev/null || true
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml down 2>/dev/null || true
           
           echo "🐳 Building and starting containers..."
-          BUILD_NUMBER="$BUILD_NUMBER" COMMIT_HASH="$COMMIT_HASH" docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+          BUILD_NUMBER="$BUILD_NUMBER" COMMIT_HASH="$COMMIT_HASH" docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+          
+          # Clean up Docker build cache after build to free space
+          echo "🧹 Cleaning up Docker build cache..."
+          docker builder prune -f --filter "until=24h" || true
           
           echo "⏳ Waiting for services to be ready..."
           sleep 20
@@ -83,10 +110,13 @@ jobs:
           
           echo "🏥 Checking application health..."
           sleep 5
-          if curl -f http://localhost:3000/api/health > /dev/null 2>&1; then
+          # APP_PORT should already be loaded from .env.development, default to 3001 if not set
+          APP_PORT=${APP_PORT:-3001}
+          if curl -f http://localhost:${APP_PORT}/api/health > /dev/null 2>&1; then
             echo "✅ Application is healthy!"
           else
             echo "⚠️  Health check failed, but containers are running"
+            echo "💡 Dev app runs on port ${APP_PORT}"
           fi
           
           echo "✅ Deployment complete!"

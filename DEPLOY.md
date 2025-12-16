@@ -44,23 +44,26 @@ cd billiards-boss-dev
 git checkout main  # or your dev branch
 ```
 
-## Step 3: Create Production Environment File
+## Step 3: Create Environment File
 
-Create a `.env` file for production:
+For development environment (dev.billiardsboss.com), create `.env.development`:
 
 ```bash
 # Generate a secure NextAuth secret
 openssl rand -base64 32
+
+# Copy the example template
+cp .env.example.development .env.development
 ```
 
-Create `.env` file:
+Then edit `.env.development` and fill in your values:
 
 ```env
 # Database
 POSTGRES_USER=billiards
 POSTGRES_PASSWORD=<generate-strong-password>
 POSTGRES_DB=billiards_boss
-POSTGRES_PORT=5433  # Change if 5432 is already in use by another PostgreSQL instance
+POSTGRES_PORT=5433  # Dev uses 5433 to avoid conflicts
 
 # NextAuth
 NEXTAUTH_URL=https://dev.billiardsboss.com
@@ -71,10 +74,20 @@ NEXT_PUBLIC_APP_URL=https://dev.billiardsboss.com
 NEXT_PUBLIC_WS_URL=https://dev.billiardsboss.com
 
 # Docker
-APP_PORT=3000
+APP_PORT=3001  # Dev uses 3001 to avoid conflicts with production
 ```
 
-**Important**: Use strong passwords in production!
+**For production (billiardsboss.com)**, use `.env.production`:
+```bash
+cp .env.example.production .env.production
+# Edit .env.production with production values
+# Use POSTGRES_PORT=5434 and APP_PORT=3000
+```
+
+**Important**: 
+- Use strong passwords in production!
+- Each environment should have a unique `NEXTAUTH_SECRET`
+- See [ENV_SETUP.md](ENV_SETUP.md) for detailed environment configuration
 
 ## Step 4: Set Up Cloudflare DNS
 

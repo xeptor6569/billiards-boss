@@ -10,6 +10,7 @@ import InputKeypad from "@/components/scoring/InputKeypad";
 import FrameEditModal from "@/components/scoring/FrameEditModal";
 import GameSaveSuccessModal from "@/components/scoring/GameSaveSuccessModal";
 import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
+import ShareGame from "@/components/sharing/ShareGame";
 
 export default function NewGamePage() {
   const router = useRouter();
@@ -20,6 +21,7 @@ export default function NewGamePage() {
   const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [savedGameId, setSavedGameId] = useState<number | null>(null);
+  const [savedGameCreatedAt, setSavedGameCreatedAt] = useState<string | null>(null);
   const hasShotsRef = useRef(false);
   const autoSaveInProgressRef = useRef(false);
   const gameStateRef = useRef<GameState | null>(null);
@@ -376,6 +378,7 @@ export default function NewGamePage() {
       if (!savedGameId) {
         setSavedGameId(game.id);
       }
+      setSavedGameCreatedAt(game.createdAt || new Date().toISOString());
       setShowSuccessModal(true);
     } catch (error) {
       console.error("Error saving game:", error);
@@ -535,6 +538,14 @@ export default function NewGamePage() {
                 <div className="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md mx-4">
                   <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">Game Complete!</h2>
                   <div className="text-4xl font-black text-[var(--accent)] mb-6">{gameState.totalScore}</div>
+                  <div className="mb-4">
+                    <ShareGame
+                      gameState={gameState}
+                      gameId={savedGameId || 0}
+                      createdAt={savedGameCreatedAt || new Date().toISOString()}
+                      gameMode={gameMode}
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={handleSaveGame}
@@ -579,6 +590,9 @@ export default function NewGamePage() {
           isOpen={showSuccessModal}
           totalScore={gameState.totalScore}
           gameId={savedGameId || undefined}
+          gameState={gameState}
+          createdAt={savedGameCreatedAt || new Date().toISOString()}
+          gameMode={gameMode}
           onNewGame={handleNewGame}
           onDashboard={() => router.push("/dashboard")}
         />

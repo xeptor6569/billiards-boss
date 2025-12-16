@@ -9,7 +9,13 @@
 
 2. **Set Up Environment Variables**
    
-   Create a `.env` file in the root directory with the following:
+   Create a `.env.local` file for local development:
+   ```bash
+   # Copy the example template
+   cp .env.example.local .env.local
+   ```
+   
+   Then edit `.env.local` and fill in your values:
    ```env
    # Database
    DATABASE_URL=postgresql://billiards:billiards@localhost:5432/billiards_boss
@@ -22,11 +28,13 @@
    NEXT_PUBLIC_APP_URL=http://localhost:3000
    NEXT_PUBLIC_WS_URL=http://localhost:3000
    ```
-
+   
    **Important**: Generate a secure `NEXTAUTH_SECRET`:
    ```bash
    openssl rand -base64 32
    ```
+   
+   See [ENV_SETUP.md](ENV_SETUP.md) for detailed environment configuration guide.
 
 3. **Set Up PostgreSQL Database**
    
@@ -56,7 +64,7 @@
 
 ## Docker Setup
 
-1. **Create `.env` file** (see above)
+1. **Create `.env.local` file** (see above, or use `.env` for Docker-specific config)
 
 2. **Start Services**
    ```bash

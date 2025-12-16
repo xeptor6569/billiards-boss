@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: billiards-boss-db
+    env_file:
+      - .env  # Base environment file (fallback)
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-billiards}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-billiards}
@@ -28,6 +30,8 @@ services:
         BUILD_NUMBER: ${BUILD_NUMBER:-0}
         COMMIT_HASH: ${COMMIT_HASH:-dev}
     container_name: billiards-boss-app
+    env_file:
+      - .env  # Base environment file (fallback)
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER:-billiards}:${POSTGRES_PASSWORD:-billiards}@postgres:5432/${POSTGRES_DB:-billiards_boss}

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { users, plans } from "@/lib/db/schema";
+import { users, plans, verificationTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -56,8 +57,31 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    // Generate verification token
+    const verificationToken = nanoid(32);
+    const expires = new Date();
+    expires.setHours(expires.getHours() + 24); // 24 hours
+
+    // Store verification token
+    await db.insert(verificationTokens).values({
+      identifier: email,
+      token: verificationToken,
+      expires,
+    });
+
+    // Send verification email (don't fail signup if email fails)
+    try {
+      await sendVerificationEmail(email, verificationToken);
+    } catch (emailError) {
+      console.error("Error sending verification email:", emailError);
+      // Continue anyway - user can request resend later
+    }
+
     return NextResponse.json(
-      { message: "User created successfully", userId: newUser[0].id },
+      { 
+        message: "User created successfully. Please check your email to verify your account.",
+        userId: newUser[0].id 
+      },
       { status: 201 }
     );
   } catch (error) {

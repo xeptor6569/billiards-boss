@@ -9,6 +9,7 @@ import PasswordInput from "@/components/auth/PasswordInput";
 function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [authMethod, setAuthMethod] = useState<"password" | "magic-link">("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,9 +20,12 @@ function SignInForm() {
     if (searchParams.get("registered") === "true") {
       setSuccess("Account created successfully! Please sign in.");
     }
+    if (searchParams.get("password-reset") === "true") {
+      setSuccess("Password reset successfully! Please sign in with your new password.");
+    }
   }, [searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -51,6 +55,33 @@ function SignInForm() {
     }
   };
 
+  const handleMagicLinkSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // NextAuth Email provider will redirect to verifyRequest page
+      // We need to allow the redirect to happen
+      await signIn("email", {
+        email,
+        redirect: true,
+        callbackUrl: "/auth/verify-request",
+      });
+    } catch (err) {
+      setError("An error occurred. Please try again.");
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-white dark:bg-slate-900">
       <div className="w-full max-w-md space-y-8 rounded-lg p-8 shadow-xl bg-slate-50 dark:bg-slate-800">
@@ -68,7 +99,40 @@ function SignInForm() {
             </Link>
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <div className="mt-6 flex rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 p-1">
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMethod("password");
+              setError("");
+              setSuccess("");
+            }}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              authMethod === "password"
+                ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+            }`}
+          >
+            Password
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAuthMethod("magic-link");
+              setError("");
+              setSuccess("");
+            }}
+            className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              authMethod === "magic-link"
+                ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+            }`}
+          >
+            Magic Link
+          </button>
+        </div>
+
+        <form className="mt-8 space-y-6" onSubmit={authMethod === "password" ? handlePasswordSignIn : handleMagicLinkSignIn}>
           {error && (
             <div className="rounded-md p-4 bg-red-50 dark:bg-red-900/20">
               <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
@@ -96,19 +160,21 @@ function SignInForm() {
                 placeholder="Email address"
               />
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <PasswordInput
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                required
-                autoComplete="current-password"
-              />
-            </div>
+            {authMethod === "password" && (
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  Password
+                </label>
+                <PasswordInput
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password"
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -117,16 +183,21 @@ function SignInForm() {
               disabled={loading}
               className="group relative flex w-full justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white bg-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--accent)] disabled:opacity-50 disabled:cursor-not-allowed transition-opacity hover:opacity-90"
             >
-              {loading ? "Signing in..." : "Sign in"}
+              {loading 
+                ? (authMethod === "password" ? "Signing in..." : "Sending...")
+                : (authMethod === "password" ? "Sign in" : "Send Magic Link")
+              }
             </button>
-            <div className="text-center">
-              <Link
-                href="/auth/signup"
-                className="text-sm text-slate-600 dark:text-slate-400 hover:text-[var(--accent)] transition-colors"
-              >
-                Forgot password? (Coming soon)
-              </Link>
-            </div>
+            {authMethod === "password" && (
+              <div className="text-center">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-slate-600 dark:text-slate-400 hover:text-[var(--accent)] transition-colors"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+            )}
           </div>
         </form>
       </div>

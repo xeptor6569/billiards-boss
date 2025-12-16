@@ -14,6 +14,14 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
+# Load environment variables from .env file
+set -a
+source .env
+set +a
+
+# Set default APP_PORT if not set
+APP_PORT=${APP_PORT:-3000}
+
 # Pull latest changes (if using git)
 if [ -d .git ]; then
     echo "📥 Pulling latest changes..."
@@ -45,13 +53,13 @@ export COMMIT_HASH
 echo "🛑 Stopping any existing containers..."
 docker compose -f docker-compose.yml -f docker-compose.prod.yml down 2>/dev/null || true
 
-# Check if port 3000 is in use by another process
-if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null 2>&1 ; then
-    echo "⚠️  Port 3000 is already in use. Attempting to free it..."
+# Check if APP_PORT is in use by another process
+if lsof -Pi :${APP_PORT} -sTCP:LISTEN -t >/dev/null 2>&1 ; then
+    echo "⚠️  Port ${APP_PORT} is already in use. Attempting to free it..."
     # Try to find and stop the process
-    PID=$(lsof -Pi :3000 -sTCP:LISTEN -t 2>/dev/null | head -1)
+    PID=$(lsof -Pi :${APP_PORT} -sTCP:LISTEN -t 2>/dev/null | head -1)
     if [ -n "$PID" ]; then
-        echo "   Found process $PID using port 3000. Stopping it..."
+        echo "   Found process $PID using port ${APP_PORT}. Stopping it..."
         kill -9 $PID 2>/dev/null || true
         sleep 2
     fi
@@ -89,10 +97,11 @@ docker compose exec app npm run db:seed || echo "⚠️  Seeding failed or alrea
 # Check health
 echo "🏥 Checking application health..."
 sleep 5
-if curl -f http://10.10.20.44:3000/api/health > /dev/null 2>&1; then
+if curl -f http://localhost:${APP_PORT}/api/health > /dev/null 2>&1; then
     echo "✅ Application is healthy!"
 else
     echo "⚠️  Health check failed, but containers are running"
+    echo "💡 App is running on port ${APP_PORT}"
     echo "Check logs with: docker compose logs -f"
 fi
 

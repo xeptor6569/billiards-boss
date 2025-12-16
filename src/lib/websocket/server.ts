@@ -11,9 +11,11 @@ interface GameRoom {
 const gameRooms = new Map<string, GameRoom>();
 
 export function initializeWebSocket(server: HTTPServer) {
+  const origin = process.env.NEXT_PUBLIC_APP_URL || 
+    (process.env.NODE_ENV === "production" ? "https://billiardsboss.com" : "http://localhost:3000");
   const io = new SocketIOServer(server, {
     cors: {
-      origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      origin,
       methods: ["GET", "POST"],
     },
     path: "/api/ws/socket.io",

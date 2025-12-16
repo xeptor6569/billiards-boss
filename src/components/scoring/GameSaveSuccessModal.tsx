@@ -1,11 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { GameState } from "@/lib/game-logic";
+import ShareGame from "@/components/sharing/ShareGame";
 
 interface GameSaveSuccessModalProps {
   isOpen: boolean;
   totalScore: number;
   gameId?: number;
+  gameState?: GameState;
+  createdAt?: string;
+  gameMode?: string;
   onViewGame?: () => void;
   onNewGame?: () => void;
   onDashboard?: () => void;
@@ -15,6 +20,9 @@ export default function GameSaveSuccessModal({
   isOpen,
   totalScore,
   gameId,
+  gameState,
+  createdAt,
+  gameMode,
   onViewGame,
   onNewGame,
   onDashboard,
@@ -72,6 +80,16 @@ export default function GameSaveSuccessModal({
           {totalScore}
         </div>
         <div className="space-y-3">
+          {gameId && gameState && createdAt && (
+            <div className="mb-3">
+              <ShareGame
+                gameState={gameState}
+                gameId={gameId}
+                createdAt={createdAt}
+                gameMode={gameMode}
+              />
+            </div>
+          )}
           {gameId && (
             <button
               onClick={handleViewGame}

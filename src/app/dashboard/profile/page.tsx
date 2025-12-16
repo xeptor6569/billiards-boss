@@ -7,6 +7,7 @@ import ProfileForm from "@/components/profile/ProfileForm";
 import PasswordChangeForm from "@/components/profile/PasswordChangeForm";
 import PlanInfo from "@/components/profile/PlanInfo";
 import AccountSettings from "@/components/profile/AccountSettings";
+import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 
 export default async function ProfilePage() {
   const session = await auth();
@@ -38,6 +39,10 @@ export default async function ProfilePage() {
           Manage your account information and preferences.
         </p>
       </div>
+
+      {!user.emailVerified && (
+        <EmailVerificationBanner email={user.email} isVerified={false} />
+      )}
 
       <div className="space-y-8">
         {/* Account Information */}

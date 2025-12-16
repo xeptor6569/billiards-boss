@@ -59,14 +59,18 @@ git checkout main
 ```bash
 # Dev environment
 cd /opt/billiards-boss-dev
-nano .env
-# Add your dev environment variables (see DEPLOY.md for reference)
+cp .env.example.development .env.development
+nano .env.development
+# Fill in your dev environment variables (see .env.example.development for template)
 
 # Production environment
 cd /opt/billiards-boss-prod
-nano .env
-# Add your production environment variables
+cp .env.example.production .env.production
+nano .env.production
+# Fill in your production environment variables (see .env.example.production for template)
 ```
+
+**Note**: The workflows automatically use `.env.development` for dev and `.env.production` for production. See [ENV_SETUP.md](ENV_SETUP.md) for detailed environment configuration guide.
 
 3. **Fix Git ownership/permissions** (important for self-hosted runners):
 
