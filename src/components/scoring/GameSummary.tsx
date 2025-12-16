@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { GameState, Frame } from "@/lib/game-logic";
 import FrameDisplay from "./FrameDisplay";
+import ShareGame from "@/components/sharing/ShareGame";
 
 interface GameSummaryProps {
   gameState: GameState;
   gameId: number;
   createdAt: string;
+  gameMode?: string;
 }
 
 // Calculate cumulative score up to a given frame index
@@ -53,7 +55,7 @@ function calculateCumulativeScore(frames: Frame[], upToIndex: number): number {
   return total;
 }
 
-export default function GameSummary({ gameState, gameId, createdAt }: GameSummaryProps) {
+export default function GameSummary({ gameState, gameId, createdAt, gameMode }: GameSummaryProps) {
   const router = useRouter();
   const strikes = gameState.frames.filter(f => f.isStrike).length;
   const spares = gameState.frames.filter(f => f.isSpare && !f.isStrike).length;
@@ -109,6 +111,12 @@ export default function GameSummary({ gameState, gameId, createdAt }: GameSummar
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <ShareGame
+          gameState={gameState}
+          gameId={gameId}
+          createdAt={createdAt}
+          gameMode={gameMode}
+        />
         <button
           onClick={() => router.push("/dashboard/games/new")}
           className="px-6 py-3 bg-[var(--accent)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
