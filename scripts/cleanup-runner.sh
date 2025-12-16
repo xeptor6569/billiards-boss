@@ -23,8 +23,13 @@ echo "  Removing unused volumes..."
 docker volume prune -f
 
 # Remove build cache (this can be large)
-echo "  Removing Docker build cache..."
-docker builder prune -a -f --filter "until=24h"
+# Use --keep-storage to limit cache size instead of time-based
+# This avoids I/O errors when metadata is corrupted
+echo "  Removing Docker build cache (keeping 2GB)..."
+docker builder prune -a -f --keep-storage 2GB || {
+  echo "  ⚠️  Build cache cleanup failed (may have I/O errors)"
+  echo "  💡 If I/O errors persist, try: sudo rm -rf /var/lib/docker/buildkit"
+}
 
 # 2. Clean up GitHub Actions runner workspace
 echo "📦 Cleaning up GitHub Actions workspace..."

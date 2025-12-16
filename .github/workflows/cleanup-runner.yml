@@ -26,7 +26,12 @@ jobs:
           docker volume prune -f || true
           
           # Remove build cache (this can be very large)
-          docker builder prune -a -f --filter "until=24h" || true
+          # Use --keep-storage to limit cache size instead of time-based
+          # This avoids I/O errors when metadata is corrupted
+          docker builder prune -a -f --keep-storage 2GB || {
+            echo "⚠️  Build cache cleanup failed (may have I/O errors)"
+            echo "💡 Try manual cleanup: docker system prune -a -f"
+          }
           
           echo "✅ Docker cleanup complete"
       
