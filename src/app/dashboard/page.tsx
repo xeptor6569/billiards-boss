@@ -2,10 +2,11 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { games } from "@/lib/db/schema";
+import { games, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import RecentGameItem from "@/components/dashboard/RecentGameItem";
 import StartNewGameButton from "@/components/dashboard/StartNewGameButton";
+import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 
 import { Suspense } from "react";
 
@@ -56,8 +57,16 @@ async function DashboardContent() {
 
   const activeGame = activeGames.length > 0 ? activeGames[0] : null;
 
+  // Get user email verification status
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, session.user.id),
+  });
+
   return (
     <>
+      {user && !user.emailVerified && (
+        <EmailVerificationBanner email={user.email} isVerified={false} />
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
           Welcome back, {session.user?.name || session.user?.email}!

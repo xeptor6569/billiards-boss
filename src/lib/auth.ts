@@ -2,9 +2,11 @@ import NextAuth from "next-auth";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "./db";
 import Credentials from "next-auth/providers/credentials";
+import Email from "next-auth/providers/email";
 import { users, accounts, sessions, verificationTokens } from "./db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { sendMagicLinkEmail } from "./email";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true, // Trust the host (required for reverse proxy setups)
@@ -19,6 +21,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   pages: {
     signIn: "/auth/signin",
+    verifyRequest: "/auth/verify-request",
   },
   providers: [
     Credentials({
@@ -55,6 +58,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           name: user.name,
           planId: user.planId,
         };
+      },
+    }),
+    Email({
+      // Provide minimal server config (required by NextAuth, but we use custom sendVerificationRequest)
+      server: {
+        host: "smtp.resend.com",
+        port: 587,
+        auth: {
+          user: "resend",
+          pass: process.env.RESEND_API_KEY || "dummy",
+        },
+      },
+      from: process.env.EMAIL_FROM || "noreply@billiardsboss.com",
+      // Override with our custom email sending using Resend
+      sendVerificationRequest: async ({ identifier, url }) => {
+        try {
+          await sendMagicLinkEmail(identifier, url);
+        } catch (error) {
+          console.error("Error sending magic link email:", error);
+          throw error;
+        }
       },
     }),
   ],
