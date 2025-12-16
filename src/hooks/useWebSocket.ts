@@ -28,7 +28,9 @@ export function useWebSocket({
     }
 
     // Initialize socket connection
-    const socket = io(process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3000", {
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 
+      (process.env.NODE_ENV === "production" ? "https://billiardsboss.com" : "http://localhost:3000");
+    const socket = io(wsUrl, {
       path: "/api/ws/socket.io",
       transports: ["websocket", "polling"],
     });

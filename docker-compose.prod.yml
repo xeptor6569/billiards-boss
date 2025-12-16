@@ -1,8 +1,19 @@
-# Production Docker Compose configuration for dev.billiardsboss.com
+# Production Docker Compose configuration
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 services:
+  postgres:
+    container_name: billiards-boss-db-prod
+    restart: always
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"  # Prod uses 5434
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    networks:
+      - billiards-network-prod
+
   app:
+    container_name: billiards-boss-app-prod
     environment:
       NODE_ENV: production
       # Override with production URLs
@@ -14,14 +25,15 @@ services:
     # If Nginx is in a different Docker stack, bind to all interfaces (0.0.0.0)
     # so Nginx can reach it via the VM's LAN IP
     ports:
-      - "0.0.0.0:3000:3000"  # Accessible from LAN IP (for Nginx in different stack)
-      # Alternative if Nginx is on same host: "127.0.0.1:3000:3000" (localhost only)
+      - "0.0.0.0:${APP_PORT:-3000}:3000"  # Prod uses APP_PORT (default 3000, accessible from LAN IP for Nginx)
+      # Alternative if Nginx is on same host: "127.0.0.1:${APP_PORT:-3000}:3000" (localhost only)
+    networks:
+      - billiards-network-prod
 
-  postgres:
-    restart: always
-    # Consider adding backup volume
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      # Optional: backup directory
-      # - ./backups:/backups
+volumes:
+  postgres_data_prod:
+
+networks:
+  billiards-network-prod:
+    driver: bridge
 

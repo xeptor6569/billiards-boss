@@ -17,7 +17,8 @@ function getResendClient(): Resend {
 const EMAIL_FROM = process.env.EMAIL_FROM || "noreply@billiardsboss.com";
 const EMAIL_FROM_NAME = process.env.EMAIL_FROM_NAME || "Billiards Boss";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+   process.env.NODE_ENV === "production" ? "https://billiardsboss.com" : "http://localhost:3000");
 
 interface SendEmailOptions {
   to: string;

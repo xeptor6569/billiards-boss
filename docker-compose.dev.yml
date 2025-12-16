@@ -1,12 +1,26 @@
+# Dev environment overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
 services:
   postgres:
-    image: postgres:16-alpine
-    container_name: billiards-boss-db
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-billiards}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-billiards}
-      POSTGRES_DB: ${POSTGRES_DB:-billiards_boss}
+    container_name: billiards-boss-db-dev
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5433}:5432"  # Dev uses 5433
     volumes:
-      - ./pg_data_local:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
+    networks:
+      - billiards-network-dev
+
+  app:
+    container_name: billiards-boss-app-dev
+    ports:
+      - "${APP_PORT:-3001}:3000"  # Dev uses 3001
+    networks:
+      - billiards-network-dev
+
+volumes:
+  postgres_data_dev:
+
+networks:
+  billiards-network-dev:
+    driver: bridge

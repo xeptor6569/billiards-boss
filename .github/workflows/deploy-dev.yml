@@ -67,10 +67,10 @@ jobs:
           export COMMIT_HASH="$COMMIT_HASH"
           
           echo "🛑 Stopping existing containers..."
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml down 2>/dev/null || true
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml down 2>/dev/null || true
           
           echo "🐳 Building and starting containers..."
-          BUILD_NUMBER="$BUILD_NUMBER" COMMIT_HASH="$COMMIT_HASH" docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+          BUILD_NUMBER="$BUILD_NUMBER" COMMIT_HASH="$COMMIT_HASH" docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
           
           echo "⏳ Waiting for services to be ready..."
           sleep 20
@@ -83,10 +83,13 @@ jobs:
           
           echo "🏥 Checking application health..."
           sleep 5
-          if curl -f http://localhost:3000/api/health > /dev/null 2>&1; then
+          # Load APP_PORT from .env if available, default to 3001 for dev
+          APP_PORT=${APP_PORT:-3001}
+          if curl -f http://localhost:${APP_PORT}/api/health > /dev/null 2>&1; then
             echo "✅ Application is healthy!"
           else
             echo "⚠️  Health check failed, but containers are running"
+            echo "💡 Dev app runs on port ${APP_PORT}"
           fi
           
           echo "✅ Deployment complete!"
