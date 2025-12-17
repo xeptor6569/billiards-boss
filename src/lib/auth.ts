@@ -83,6 +83,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Allow sign in for Email provider
+      if (account?.provider === "email") {
+        return true;
+      }
+      // Allow sign in for Credentials provider
+      if (account?.provider === "credentials") {
+        return true;
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;

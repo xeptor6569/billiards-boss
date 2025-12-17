@@ -69,12 +69,12 @@ function SignInForm() {
     setLoading(true);
 
     try {
-      // NextAuth Email provider will redirect to verifyRequest page
-      // We need to allow the redirect to happen
+      // NextAuth Email provider will redirect to verifyRequest page after sending email
+      // The callbackUrl is where the user will be redirected AFTER clicking the magic link
       await signIn("email", {
         email,
         redirect: true,
-        callbackUrl: "/auth/verify-request",
+        callbackUrl: "/dashboard",
       });
     } catch (err) {
       setError("An error occurred. Please try again.");
