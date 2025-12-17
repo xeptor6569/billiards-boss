@@ -61,7 +61,7 @@ async function sendEmail({ to, subject, html, text }: SendEmailOptions) {
 }
 
 export async function sendVerificationEmail(email: string, token: string) {
-  const verificationUrl = `${APP_URL}/auth/verify-email?token=${token}`;
+  const verificationUrl = `${APP_URL}/api/auth/verify-email?token=${token}`;
 
   const html = `
     <!DOCTYPE html>
