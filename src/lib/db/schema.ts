@@ -22,6 +22,7 @@ export const plans = pgTable("plans", {
   maxGames: integer("max_games"), // null = unlimited
   allowsMultiplayer: boolean("allows_multiplayer").default(false).notNull(),
   allowsTournaments: boolean("allows_tournaments").default(false).notNull(),
+  allowsCustomGames: boolean("allows_custom_games").default(false).notNull(),
   price: decimal("price", { precision: 10, scale: 2 }), // null = free
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -39,26 +40,44 @@ export const subscriptions = pgTable("subscriptions", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Custom games table (for user-defined games)
+export const customGames = pgTable("custom_games", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  yamlConfig: text("yaml_config").notNull(), // YAML game definition
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Games table
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
   userId: text("user_id").references(() => users.id).notNull(),
   gameMode: text("game_mode").notNull(), // 'single', 'multiplayer', 'tournament'
+  gameType: text("game_type").notNull().default("bowlliards"), // 'bowlliards', 'apa8ball', 'apa9ball', 'straight-pool', 'custom'
+  customGameId: integer("custom_game_id").references(() => customGames.id), // null unless gameType is 'custom'
   status: text("status").notNull().default("active"), // 'active', 'completed', 'abandoned'
   createdAt: timestamp("created_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
 });
 
-// Frames table
+// Frames table (flexible for different game types)
 export const frames = pgTable("frames", {
   id: serial("id").primaryKey(),
   gameId: integer("game_id").references(() => games.id).notNull(),
-  frameNumber: integer("frame_number").notNull(),
+  frameNumber: integer("frame_number").notNull(), // For frame-based games, inning/rack number for others
   score: integer("score").notNull(),
+  // Legacy fields for Bowlliards compatibility (can be null for other game types)
   isStrike: boolean("is_strike").default(false).notNull(),
   isSpare: boolean("is_spare").default(false).notNull(),
-  // Store individual shots as JSON array: [shot1, shot2, shot3] (e.g., [6, 4] or [10] for strike)
-  ballsPocketed: text("balls_pocketed").notNull(), // JSON array stored as text
+  // Flexible score data - JSON stored as text (replaces ballsPocketed for flexibility)
+  // For Bowlliards: [shot1, shot2, shot3] (backward compatible)
+  // For other games: game-specific data structure
+  scoreData: text("score_data").notNull(), // JSON stored as text
+  // Legacy field for backward compatibility (deprecated, use scoreData)
+  ballsPocketed: text("balls_pocketed"), // JSON array stored as text (nullable for new games)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -134,8 +153,20 @@ export const gamesRelations = relations(games, ({ one, many }) => ({
     fields: [games.userId],
     references: [users.id],
   }),
+  customGame: one(customGames, {
+    fields: [games.customGameId],
+    references: [customGames.id],
+  }),
   frames: many(frames),
   participants: many(gameParticipants),
+}));
+
+export const customGamesRelations = relations(customGames, ({ one, many }) => ({
+  user: one(users, {
+    fields: [customGames.userId],
+    references: [users.id],
+  }),
+  games: many(games),
 }));
 
 export const framesRelations = relations(frames, ({ one }) => ({

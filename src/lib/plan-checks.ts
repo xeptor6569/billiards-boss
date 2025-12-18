@@ -88,3 +88,20 @@ export async function checkTournamentAccess(userId: string): Promise<boolean> {
   return plan?.allowsTournaments || false;
 }
 
+export async function checkCustomGamesAccess(userId: string): Promise<boolean> {
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    with: { plan: true },
+  });
+
+  if (!user || !user.planId) {
+    return false;
+  }
+
+  const plan = await db.query.plans.findFirst({
+    where: eq(plans.id, user.planId),
+  });
+
+  return plan?.allowsCustomGames || false;
+}
+
