@@ -15,6 +15,7 @@ type EventName =
   | "signup_completed"
   | "signin_completed"
   | "first_game_guide_dismissed"
+  | "first_game_guide_step"
   | "signup_prompt_dismissed";
 
 interface EventProperties {
@@ -80,6 +81,10 @@ export function trackSigninCompleted() {
  */
 export function trackFirstGameGuideDismissed() {
   trackEvent("first_game_guide_dismissed");
+}
+
+export function trackFirstGameGuideStep(step: string, action: "next" | "skip" | "complete") {
+  trackEvent("first_game_guide_step", { step, action });
 }
 
 export function trackSignupPromptDismissed(action: "signed_up" | "play_again" | "maybe_later") {

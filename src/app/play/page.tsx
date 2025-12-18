@@ -8,8 +8,9 @@ import RackVisualizer from "@/components/scoring/RackVisualizer";
 import InputKeypad from "@/components/scoring/InputKeypad";
 import FrameEditModal from "@/components/scoring/FrameEditModal";
 import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
+import FirstTimeGuide, { type GuideStep } from "@/components/scoring/FirstTimeGuide";
 import Link from "next/link";
-import { trackGameStarted, trackGameCompleted, trackFirstGameGuideDismissed, trackSignupPromptDismissed, trackCTAClick } from "@/lib/analytics";
+import { trackGameStarted, trackGameCompleted, trackFirstGameGuideDismissed, trackSignupPromptDismissed, trackCTAClick, trackFirstGameGuideStep } from "@/lib/analytics";
 
 // Lazy initialization for first-time guide
 function getInitialShowGuide(): boolean {
@@ -27,6 +28,7 @@ export default function PlayPage() {
   const [gameState, setGameState] = useState<GameState>(createNewGame());
   const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
   const [showFirstTimeGuide, setShowFirstTimeGuide] = useState(getInitialShowGuide);
+  const [guideStep, setGuideStep] = useState<GuideStep>("welcome");
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [hasTrackedCompletion, setHasTrackedCompletion] = useState(false);
 
@@ -69,6 +71,11 @@ export default function PlayPage() {
     const newGameState = addBallToFrame(gameState, currentFrameIndex, ballsToAdd);
     setGameState(newGameState);
     
+    // Advance guide if on first-shot step
+    if (showFirstTimeGuide && guideStep === "first-shot") {
+      setGuideStep("complete");
+    }
+    
     // Track completion and show signup prompt
     if (newGameState.isComplete && !hasTrackedCompletion) {
       setHasTrackedCompletion(true);
@@ -77,6 +84,40 @@ export default function PlayPage() {
     } else if (!newGameState.isComplete) {
       setHasTrackedCompletion(false);
       setShowSignupPrompt(false);
+    }
+  };
+
+  const handleGuideNext = () => {
+    const steps: GuideStep[] = ["welcome", "frame-ribbon", "rack-visualizer", "input-keypad", "first-shot", "complete"];
+    const currentIndex = steps.indexOf(guideStep);
+    if (currentIndex < steps.length - 1) {
+      trackFirstGameGuideStep(guideStep, "next");
+      setGuideStep(steps[currentIndex + 1]);
+    }
+  };
+
+  const handleGuideSkip = () => {
+    trackFirstGameGuideStep(guideStep, "skip");
+    setShowFirstTimeGuide(false);
+    trackFirstGameGuideDismissed();
+  };
+
+  const handleGuideComplete = () => {
+    trackFirstGameGuideStep(guideStep, "complete");
+    setShowFirstTimeGuide(false);
+    trackFirstGameGuideDismissed();
+  };
+
+  const getGuideTarget = (): string | undefined => {
+    switch (guideStep) {
+      case "frame-ribbon":
+        return "[data-guide='frame-ribbon']";
+      case "rack-visualizer":
+        return "[data-guide='rack-visualizer']";
+      case "input-keypad":
+        return "[data-guide='input-keypad']";
+      default:
+        return undefined;
     }
   };
 
@@ -128,17 +169,21 @@ export default function PlayPage() {
       <GameLayout
         header={HeaderCmp}
         frameStrip={
-          <FrameRibbon
-            frames={gameState.frames}
-            currentFrameIndex={gameState.currentFrame - 1}
-            calculateCumulativeScore={() => 0}
-            onFrameClick={handleFrameClick}
-            isEditable={!gameState.isComplete}
-          />
+          <div data-guide="frame-ribbon">
+            <FrameRibbon
+              frames={gameState.frames}
+              currentFrameIndex={gameState.currentFrame - 1}
+              calculateCumulativeScore={() => 0}
+              onFrameClick={handleFrameClick}
+              isEditable={!gameState.isComplete}
+            />
+          </div>
         }
         visualizer={
           <div className="w-full h-full flex flex-col justify-center">
-            <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
+            <div data-guide="rack-visualizer">
+              <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
+            </div>
             {gameState.isComplete && showSignupPrompt && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-50">
                 <div className="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md mx-4">
@@ -184,36 +229,25 @@ export default function PlayPage() {
               </div>
             )}
             {showFirstTimeGuide && !gameState.isComplete && (
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm z-40">
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl p-6 max-w-md mx-4">
-                  <h3 className="text-xl font-bold mb-3 text-slate-900 dark:text-slate-100">Welcome to Billiards Boss!</h3>
-                  <div className="text-sm text-slate-600 dark:text-slate-400 space-y-2 mb-4">
-                    <p>• Tap the number buttons to enter how many balls you pocketed</p>
-                    <p>• Use STRIKE for all 10 balls on first shot, SPARE for all 10 in 2 shots</p>
-                    <p>• The frame ribbon shows your progress through 10 frames</p>
-                    <p>• Complete the game to see your final score</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setShowFirstTimeGuide(false);
-                      trackFirstGameGuideDismissed();
-                    }}
-                    className="w-full py-2 bg-[var(--accent)] text-white font-semibold rounded-lg hover:opacity-90 transition-opacity"
-                  >
-                    Got it, let&apos;s play!
-                  </button>
-                </div>
-              </div>
+              <FirstTimeGuide
+                currentStep={guideStep}
+                onNext={handleGuideNext}
+                onSkip={handleGuideSkip}
+                onComplete={handleGuideComplete}
+                targetElement={getGuideTarget()}
+              />
             )}
           </div>
         }
         controls={
-          <InputKeypad
-            mode={keypadMode}
-            remainingBalls={remainingBalls}
-            onInput={handleScoreInput}
-            disabled={gameState.isComplete}
-          />
+          <div data-guide="input-keypad">
+            <InputKeypad
+              mode={keypadMode}
+              remainingBalls={remainingBalls}
+              onInput={handleScoreInput}
+              disabled={gameState.isComplete}
+            />
+          </div>
         }
       />
       {editingFrameIndex !== null && editingFrame && (
