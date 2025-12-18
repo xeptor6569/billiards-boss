@@ -62,6 +62,9 @@ async function DashboardContent() {
     where: eq(users.id, session.user.id),
   });
 
+  // Check if user is new (no games yet)
+  const isNewUser = recentGames.length === 0 && activeGames.length === 0;
+
   return (
     <>
       {user && !user.emailVerified && (
@@ -69,12 +72,59 @@ async function DashboardContent() {
       )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-          Welcome back, {session.user?.name || session.user?.email}!
+          {isNewUser ? "Welcome to Billiards Boss!" : `Welcome back, ${session.user?.name || session.user?.email}!`}
         </h1>
         <p className="mt-2 text-slate-600 dark:text-slate-400">
-          Start a new game or view your history and statistics.
+          {isNewUser 
+            ? "Get started by playing your first game. Score games, save history, and track your stats."
+            : "Start a new game or view your history and statistics."
+          }
         </p>
       </div>
+
+      {/* Onboarding for new users */}
+      {isNewUser && (
+        <div className="mb-8 p-6 rounded-lg shadow-md bg-gradient-to-r from-[var(--accent)]/10 to-[var(--accent)]/5 dark:from-[var(--accent)]/20 dark:to-[var(--accent)]/10 border-2 border-[var(--accent)]/30">
+          <h2 className="text-xl font-semibold mb-3 text-slate-900 dark:text-slate-100">
+            🎱 Get Started in 3 Steps
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-sm">
+                1
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 dark:text-slate-100">Play your first game</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Score a full billiards bowling game</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-sm">
+                2
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 dark:text-slate-100">Save and review</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">View your game history</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[var(--accent)] text-white flex items-center justify-center font-bold text-sm">
+                3
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 dark:text-slate-100">Track your stats</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">See your performance over time</p>
+              </div>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/games/new"
+            className="inline-block px-6 py-3 rounded-lg font-semibold text-white transition-opacity hover:opacity-90 bg-[var(--accent)] shadow-lg"
+          >
+            Start Your First Game →
+          </Link>
+        </div>
+      )}
 
       {/* Active Game Section */}
       {activeGame && (

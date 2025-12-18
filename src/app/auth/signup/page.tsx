@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import PasswordInput from "@/components/auth/PasswordInput";
 import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
+import { trackSignupStarted, trackSignupCompleted } from "@/lib/analytics";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -14,6 +15,11 @@ export default function SignUpPage() {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Track signup page view
+  useEffect(() => {
+    trackSignupStarted();
+  }, []);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,9 +62,12 @@ export default function SignUpPage() {
         return;
       }
 
+      // Track successful signup
+      trackSignupCompleted();
+
       // Redirect to verify email page
       router.push("/auth/verify-email");
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -70,15 +79,18 @@ export default function SignUpPage() {
       <div className="w-full max-w-md space-y-8 rounded-lg p-8 shadow-xl bg-slate-50 dark:bg-slate-800">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            Create your account
+            Create your free account
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
-            Or{" "}
+            Save your games, track statistics, and sync across devices. No credit card required.
+          </p>
+          <p className="mt-3 text-center text-xs text-slate-500 dark:text-slate-500">
+            Already have an account?{" "}
             <Link
               href="/auth/signin"
               className="font-medium transition-opacity hover:opacity-80 text-[var(--accent)]"
             >
-              sign in to your existing account
+              Sign in
             </Link>
           </p>
         </div>
