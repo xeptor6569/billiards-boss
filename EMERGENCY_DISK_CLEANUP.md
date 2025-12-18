@@ -103,7 +103,7 @@ If I/O errors continue after cleanup:
 
 3. **Consider disk replacement** if SMART shows errors
 
-4. **Expand disk** if it's just full (see DOCKER_CLEANUP.md)
+4. **Expand disk** if it's just full (see `docs/docker-cleanup.md`)
 
 ## Prevention
 
@@ -168,4 +168,5 @@ Save as `emergency-cleanup.sh`, make executable, and run:
 chmod +x emergency-cleanup.sh
 sudo ./emergency-cleanup.sh
 ```
+
 

@@ -1,4 +1,4 @@
-# Deployment Guide for dev.billiardsboss.com
+## Deployment Guide for dev.billiardsboss.com
 
 This guide will help you deploy Billiards Boss to your dev subdomain for testing.
 
@@ -87,7 +87,7 @@ cp .env.example.production .env.production
 **Important**: 
 - Use strong passwords in production!
 - Each environment should have a unique `NEXTAUTH_SECRET`
-- See [ENV_SETUP.md](ENV_SETUP.md) for detailed environment configuration
+- See [`env-setup.md`](./env-setup.md) for detailed environment configuration
 
 ## Step 4: Set Up Cloudflare DNS
 

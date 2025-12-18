@@ -1,4 +1,4 @@
-# Docker and Runner Disk Space Management
+## Docker and Runner Disk Space Management
 
 This guide helps you manage disk space on your self-hosted GitHub Actions runner to prevent "No space left on device" errors.
 

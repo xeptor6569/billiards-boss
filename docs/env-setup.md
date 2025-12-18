@@ -1,4 +1,4 @@
-# Environment Configuration Guide
+## Environment Configuration Guide
 
 This guide explains how to configure environment variables for different deployment environments.
 
