@@ -11,6 +11,7 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/lib/db/run-migrations.ts",
+    "db:migrate:from-old": "tsx scripts/migrate-games-from-old-db.ts",
     "db:seed": "tsx src/lib/db/seed.ts"
   },
   "dependencies": {

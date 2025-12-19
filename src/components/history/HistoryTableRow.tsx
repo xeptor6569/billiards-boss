@@ -34,14 +34,26 @@ export default function HistoryTableRow({ game, totalScore }: HistoryTableRowPro
     try {
       const parsedFrames = game.frames
         .sort((a, b) => a.frameNumber - b.frameNumber)
-        .map((frame) => ({
-          frameNumber: frame.frameNumber,
-          ballsPocketed: JSON.parse(frame.ballsPocketed as string) as number[],
-          score: frame.score,
-          isStrike: frame.isStrike,
-          isSpare: frame.isSpare,
-          isComplete: true,
-        }));
+        .map((frame) => {
+          // Handle null or missing ballsPocketed
+          let ballsPocketed: number[] = [];
+          if (frame.ballsPocketed && typeof frame.ballsPocketed === 'string') {
+            try {
+              ballsPocketed = JSON.parse(frame.ballsPocketed);
+            } catch {
+              ballsPocketed = [];
+            }
+          }
+          
+          return {
+            frameNumber: frame.frameNumber,
+            ballsPocketed,
+            score: frame.score,
+            isStrike: frame.isStrike,
+            isSpare: frame.isSpare,
+            isComplete: true,
+          };
+        });
       
       const reconstructed = reconstructGameStateFromFrames(parsedFrames);
       setGameState(reconstructed);
