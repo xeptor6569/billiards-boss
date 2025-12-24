@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { GameState, createNewGame, addBallToFrame, getRemainingBalls, reconstructGameStateFromFrames } from "@/lib/game-logic";
+import { GameState, Frame, createNewGame, addBallToFrame, getRemainingBalls, reconstructGameStateFromFrames } from "@/lib/game-logic";
 import GameLayout from "@/components/scoring/GameLayout";
 import FrameRibbon from "@/components/scoring/FrameRibbon";
 import RackVisualizer from "@/components/scoring/RackVisualizer";
@@ -376,7 +376,7 @@ export default function NewGamePage() {
     // Check for progress - different for different game types
     let hasProgress = false;
     if (currentGameType === 'bowlliards' && 'frames' in state) {
-      hasProgress = state.frames.some((f: any) => f.ballsPocketed.length > 0);
+      hasProgress = (state.frames as Frame[]).some((f) => f.ballsPocketed.length > 0);
     } else if ('gameData' in state) {
       // For other game types, check if there's any game data
       hasProgress = Object.keys(state.gameData).length > 0;
@@ -531,7 +531,7 @@ export default function NewGamePage() {
         const newBaseState = gameTypeHandler.createNewGame();
         // Convert to old GameState format for backward compatibility with existing UI
         const newState = {
-          frames: (newBaseState.gameData as { frames: unknown[] }).frames as typeof gameState.frames,
+          frames: (newBaseState.gameData as { frames: unknown[] }).frames as Frame[],
           currentFrame: (newBaseState.gameData as { currentFrame: number }).currentFrame,
           totalScore: newBaseState.totalScore,
           isComplete: newBaseState.isComplete,
@@ -572,7 +572,8 @@ export default function NewGamePage() {
     setShowSkillLevelSelector(false);
     const gameTypeHandler = getGameType('apa9ball');
     if (gameTypeHandler) {
-      const newState = gameTypeHandler.createNewGame(player1SL, player2SL);
+      // createNewGame for apa9ball takes skill levels as arguments
+      const newState = (gameTypeHandler.createNewGame as (player1SL: number, player2SL: number) => BaseGameState)(player1SL, player2SL);
       setBaseGameState(newState);
       // Clear history when starting a new game
       setGameHistory([]);
@@ -737,6 +738,10 @@ export default function NewGamePage() {
       if (savedGameId) {
         // Update existing game to completed
         // Convert old GameState format to BaseGameState format for Bowlliards
+        if (!stateToSave) {
+          alert("No game state to save.");
+          return;
+        }
         let stateWithType: BaseGameState;
         if (currentGameType === 'bowlliards') {
           // Convert old GameState (with frames directly) to BowlliardsGameState format
@@ -771,6 +776,10 @@ export default function NewGamePage() {
       } else {
         // Create new completed game
         const stateToSave = currentGameType === 'bowlliards' ? gameState : baseGameState;
+        if (!stateToSave) {
+          alert("No game state to save.");
+          return;
+        }
         // Convert old GameState format to BaseGameState format for Bowlliards
         let stateWithType: BaseGameState;
         if (currentGameType === 'bowlliards') {
@@ -856,7 +865,7 @@ export default function NewGamePage() {
         const newBaseState = gameTypeHandler.createNewGame();
         // Convert to old GameState format for backward compatibility with existing UI
         const newState = {
-          frames: (newBaseState.gameData as { frames: unknown[] }).frames as typeof gameState.frames,
+          frames: (newBaseState.gameData as { frames: unknown[] }).frames as Frame[],
           currentFrame: (newBaseState.gameData as { currentFrame: number }).currentFrame,
           totalScore: newBaseState.totalScore,
           isComplete: newBaseState.isComplete,
@@ -1041,9 +1050,6 @@ export default function NewGamePage() {
             isOpen={showSuccessModal}
             totalScore={apa9State.totalScore}
             gameId={savedGameId || undefined}
-            gameState={apa9State as unknown as GameState}
-            createdAt={savedGameCreatedAt || new Date().toISOString()}
-            gameMode={gameMode}
             onNewGame={handleNewGame}
             onDashboard={() => router.push("/dashboard")}
           />
@@ -1058,7 +1064,7 @@ export default function NewGamePage() {
       <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-slate-900">
         <div className="text-center p-6">
           <div className="text-slate-900 dark:text-slate-100 mb-4">
-            Game type "{gameType}" UI is coming soon!
+            Game type &quot;{gameType}&quot; UI is coming soon!
           </div>
           <button
             onClick={() => {
@@ -1089,7 +1095,7 @@ export default function NewGamePage() {
         const newBaseState = gameTypeHandler.createNewGame();
         // Convert to old GameState format for backward compatibility with existing UI
         const newState = {
-          frames: (newBaseState.gameData as { frames: unknown[] }).frames as typeof gameState.frames,
+          frames: (newBaseState.gameData as { frames: unknown[] }).frames as Frame[],
           currentFrame: (newBaseState.gameData as { currentFrame: number }).currentFrame,
           totalScore: newBaseState.totalScore,
           isComplete: newBaseState.isComplete,
@@ -1110,6 +1116,13 @@ export default function NewGamePage() {
   }
 
   // Calculate derived state after loading check
+  if (!gameState) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-slate-900">
+        <div className="text-slate-900 dark:text-slate-100">Loading game...</div>
+      </div>
+    );
+  }
   const currentFrame = gameState.frames[gameState.currentFrame - 1];
   const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
   const totalPocketed = currentFrame
@@ -1156,7 +1169,7 @@ export default function NewGamePage() {
       <div className="flex items-center gap-4">
         <div className="text-right">
           <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Score</div>
-          <div className="text-3xl font-black text-[var(--accent)]">{gameState.totalScore}</div>
+          <div className="text-3xl font-black text-[var(--accent)]">{gameState?.totalScore || 0}</div>
         </div>
         <ThemeSwitcherCompact />
       </div>
@@ -1169,17 +1182,17 @@ export default function NewGamePage() {
         header={HeaderCmp}
         frameStrip={
           <FrameRibbon
-            frames={gameState.frames}
-            currentFrameIndex={gameState.currentFrame - 1}
+            frames={gameState?.frames || []}
+            currentFrameIndex={(gameState?.currentFrame || 1) - 1}
             calculateCumulativeScore={() => 0}
             onFrameClick={handleFrameClick}
-            isEditable={!gameState.isComplete}
+            isEditable={!gameState?.isComplete}
           />
         }
         visualizer={
           <div className="w-full h-full flex flex-col justify-center">
             <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
-            {gameState.isComplete && !showSuccessModal && (
+            {gameState && gameState.isComplete && !showSuccessModal && (
               <div className="fixed inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-[100]" style={{ position: 'fixed' }}>
                 <div className="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md mx-4">
                   <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">Game Complete!</h2>
@@ -1205,7 +1218,7 @@ export default function NewGamePage() {
                     onClick={() => router.push("/dashboard")}
                     className="block w-full text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mt-2"
                   >
-                    Cancel
+                    Return to Dashboard
                   </button>
                 </div>
               </div>
@@ -1217,11 +1230,11 @@ export default function NewGamePage() {
             mode={keypadMode}
             remainingBalls={remainingBalls}
             onInput={handleScoreInput}
-            disabled={gameState.isComplete || saving}
+            disabled={gameState?.isComplete || saving}
           />
         }
       />
-      {editingFrameIndex !== null && editingFrame && (
+      {editingFrameIndex !== null && editingFrame && gameState && (
         <FrameEditModal
           isOpen={editingFrameIndex !== null}
           frame={editingFrame}
@@ -1231,16 +1244,13 @@ export default function NewGamePage() {
           onSave={handleModalSave}
         />
       )}
-      {((gameType === 'bowlliards' && gameState) || (gameType === 'apa9ball' && baseGameState)) && (
+      {(gameType && (gameType === 'bowlliards' && gameState) || (gameType === 'apa9ball' && baseGameState)) && (
         <GameSaveSuccessModal
           isOpen={showSuccessModal}
           totalScore={gameType === 'bowlliards' 
             ? (gameState?.totalScore || 0)
             : (baseGameState?.totalScore || 0)}
           gameId={savedGameId || undefined}
-          gameState={gameType === 'bowlliards' ? gameState : (baseGameState as unknown as GameState) || undefined}
-          createdAt={savedGameCreatedAt || new Date().toISOString()}
-          gameMode={gameMode}
           onNewGame={handleNewGame}
           onDashboard={() => router.push("/dashboard")}
         />
