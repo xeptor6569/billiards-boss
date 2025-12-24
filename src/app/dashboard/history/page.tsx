@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { getStandardGameTypes } from "@/lib/game-types";
 import GameTypeCard from "@/components/dashboard/GameTypeCard";
 import Link from "next/link";
@@ -28,8 +27,8 @@ export default function HistoryPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {gameTypes.map((gameType) => (
           <GameTypeCard
-            key={gameType.id}
-            gameType={gameType}
+            key={gameType.metadata.id}
+            gameType={gameType.metadata}
           />
         ))}
       </div>

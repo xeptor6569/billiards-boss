@@ -9,6 +9,7 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { games, frames } from "../src/lib/db/schema";
+import * as schema from "../src/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { Pool } from "pg";
 
@@ -18,7 +19,7 @@ if (!DATABASE_URL) {
 }
 
 const pool = new Pool({ connectionString: DATABASE_URL });
-const db = drizzle(pool);
+const db = drizzle(pool, { schema });
 
 interface FrameData {
   frameNumber: number;

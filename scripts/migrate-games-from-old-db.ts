@@ -18,6 +18,7 @@ import "dotenv/config";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { games, frames, gameParticipants } from "../src/lib/db/schema";
+import * as schema from "../src/lib/db/schema";
 
 // Get database URLs
 const OLD_DB_URL = process.env.OLD_DATABASE_URL;
@@ -42,7 +43,7 @@ const oldPool = new Pool({ connectionString: OLD_DB_URL });
 const newPool = new Pool({ connectionString: NEW_DB_URL });
 
 const oldDb = drizzle(oldPool);
-const newDb = drizzle(newPool);
+const newDb = drizzle(newPool, { schema });
 
 interface OldGame {
   id: number;
@@ -263,17 +264,33 @@ async function migrateGames() {
       }
 
       try {
-        await newDb.insert(frames).values({
+        const frameValues: {
+          gameId: number;
+          frameNumber: number;
+          score: number;
+          isStrike: boolean;
+          isSpare: boolean;
+          scoreData: string;
+          ballsPocketed?: string;
+          createdAt: Date;
+          updatedAt: Date;
+        } = {
           gameId: newGameId,
           frameNumber: oldFrame.frame_number,
           score: oldFrame.score,
-          isStrike: oldFrame.is_strike,
-          isSpare: oldFrame.is_spare,
-          scoreData: oldFrame.score_data || oldFrame.balls_pocketed || null,
-          ballsPocketed: oldFrame.balls_pocketed || null, // Keep for backward compatibility
+          isStrike: oldFrame.is_strike || false,
+          isSpare: oldFrame.is_spare || false,
+          scoreData: oldFrame.score_data || oldFrame.balls_pocketed || JSON.stringify({ gameType: "bowlliards", totalScore: oldFrame.score, isComplete: false, gameData: {} }),
           createdAt: oldFrame.created_at,
           updatedAt: oldFrame.updated_at,
-        });
+        };
+        
+        // Only include ballsPocketed if it has a value
+        if (oldFrame.balls_pocketed) {
+          frameValues.ballsPocketed = oldFrame.balls_pocketed;
+        }
+        
+        await newDb.insert(frames).values(frameValues);
 
         frameMigratedCount++;
         if (frameMigratedCount % 50 === 0) {

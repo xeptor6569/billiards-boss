@@ -1,6 +1,6 @@
 // APA 8 ball game type implementation (1v1 match play)
 
-import { GameType, BaseGameState, ScoreInput, GameTypeMetadata } from './types';
+import { GameType, BaseGameState, ScoreInput, GameTypeMetadata, GameUIComponents } from './types';
 
 export interface APA8BallGameState extends BaseGameState {
   gameType: 'apa8ball';

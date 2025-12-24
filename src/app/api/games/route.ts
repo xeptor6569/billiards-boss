@@ -147,12 +147,13 @@ export async function POST(request: NextRequest) {
       createdAt: newGame.createdAt,
       completedAt: newGame.completedAt,
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating game:", error);
     
     // Check for foreign key violation (user doesn't exist)
-    if (error?.code === '23503' || error?.cause?.code === '23503' || 
-        (error?.message && error.message.includes('violates foreign key constraint'))) {
+    const errorObj = error as { code?: string; cause?: { code?: string }; message?: string };
+    if (errorObj?.code === '23503' || errorObj?.cause?.code === '23503' || 
+        (errorObj?.message && errorObj.message.includes('violates foreign key constraint'))) {
       return NextResponse.json(
         { error: "User not found in database. Please sign out and sign in again." },
         { status: 401 }

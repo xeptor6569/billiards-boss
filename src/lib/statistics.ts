@@ -5,7 +5,7 @@ import { calculateTotalScore, Frame } from "./game-logic";
 
 export async function calculateUserStatistics(userId: string) {
   // Get or create statistics record
-  let stats = await db.query.statistics.findFirst({
+  const stats = await db.query.statistics.findFirst({
     where: eq(statistics.userId, userId),
   });
 

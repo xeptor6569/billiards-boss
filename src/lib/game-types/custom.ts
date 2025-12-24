@@ -1,6 +1,6 @@
 // Custom game type implementation (YAML-based)
 
-import { GameType, BaseGameState, ScoreInput, GameTypeMetadata } from './types';
+import { GameType, BaseGameState, ScoreInput, GameTypeMetadata, GameUIComponents } from './types';
 import { CustomGameConfig } from './custom/schema';
 import { parseCustomGameYAML } from './custom/yaml-parser';
 
@@ -72,7 +72,7 @@ function applySpecialRules(state: CustomGameState, input: ScoreInput): CustomGam
     return state;
   }
 
-  let newState = { ...state };
+  const newState = { ...state };
   let scoreDelta = 0;
 
   for (const rule of config.rules.specialRules) {

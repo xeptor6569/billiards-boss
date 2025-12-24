@@ -90,14 +90,11 @@ async function HistoryList({ gameType }: HistoryListProps) {
                 key={game.id}
                 game={{
                   id: game.id,
-                  userId: game.userId,
                   gameMode: game.gameMode,
                   gameType: game.gameType,
                   gameTypeSequence: game.gameTypeSequence,
-                  customGameId: game.customGameId,
                   status: game.status,
                   createdAt: game.createdAt,
-                  completedAt: game.completedAt,
                   frames: [], // Not needed for display
                 }}
                 totalScore={totalScore}

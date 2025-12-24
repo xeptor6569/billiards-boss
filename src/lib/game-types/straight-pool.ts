@@ -1,6 +1,6 @@
 // Straight pool game type implementation
 
-import { GameType, BaseGameState, ScoreInput, GameTypeMetadata } from './types';
+import { GameType, BaseGameState, ScoreInput, GameTypeMetadata, GameUIComponents } from './types';
 
 export interface StraightPoolGameState extends BaseGameState {
   gameType: 'straight-pool';

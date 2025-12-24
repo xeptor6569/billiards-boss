@@ -412,9 +412,6 @@ function GameDetailContent() {
           isOpen={showSuccessModal}
           totalScore={gameState.totalScore}
           gameId={game.id}
-          gameState={gameState}
-          createdAt={game.createdAt}
-          gameMode={game.gameMode}
           onViewGame={() => setShowSuccessModal(false)}
           onNewGame={() => router.push("/dashboard/games/new")}
           onDashboard={() => router.push("/dashboard")}
