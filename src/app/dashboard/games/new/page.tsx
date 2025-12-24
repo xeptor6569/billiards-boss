@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { GameState, createNewGame, addBallToFrame, getRemainingBalls, reconstructGameStateFromFrames } from "@/lib/game-logic";
 import GameLayout from "@/components/scoring/GameLayout";
 import FrameRibbon from "@/components/scoring/FrameRibbon";
@@ -24,6 +24,7 @@ import { APA9BallGameState } from "@/lib/game-types/apa9ball";
 
 export default function NewGamePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [gameMode] = useState<"single" | "multiplayer" | "tournament">("single");
   const [saving, setSaving] = useState(false);
   const [gameState, setGameState] = useState<GameState | null>(null);
@@ -46,9 +47,43 @@ export default function NewGamePage() {
   const savedGameIdRef = useRef<number | null>(null);
   const gameModeRef = useRef<"single" | "multiplayer" | "tournament">("single");
 
-  // Check for active game on mount
+  // Check URL query parameters for game type selection
+  useEffect(() => {
+    const urlGameType = searchParams.get("gameType");
+    const urlCustomGameId = searchParams.get("customGameId");
+    const forceNew = searchParams.get("new") === "true";
+    
+    // If "new=true" is in the URL, don't load existing game
+    if (forceNew) {
+      setShowGameTypeSelector(true);
+      setLoading(false);
+      return;
+    }
+    
+    if (urlGameType) {
+      setGameType(urlGameType);
+      if (urlCustomGameId) {
+        setCustomGameId(parseInt(urlCustomGameId, 10));
+      }
+      setShowGameTypeSelector(false);
+    }
+  }, [searchParams]);
+
+  // Check for active game on mount (only if not forced to create new)
   useEffect(() => {
     const checkActiveGame = async () => {
+      // Don't load existing game if "new=true" is in URL
+      const forceNew = searchParams.get("new") === "true";
+      if (forceNew) {
+        setGameType(null);
+        setShowGameTypeSelector(true);
+        setSavedGameId(null);
+        savedGameIdRef.current = null;
+        hasShotsRef.current = false;
+        setLoading(false);
+        return;
+      }
+      
       try {
         const response = await fetch("/api/games?status=active&limit=1");
         if (response.ok) {
@@ -105,7 +140,7 @@ export default function NewGamePage() {
     };
 
     checkActiveGame();
-  }, []);
+  }, [searchParams]);
 
   const handleGameCompletion = async () => {
     if (!gameState || !gameState.isComplete) return;
@@ -116,46 +151,106 @@ export default function NewGamePage() {
     });
     
     try {
+      const currentGameType = gameType || 'bowlliards';
+      
       if (savedGameId) {
         // Update existing game to completed
+        // Convert old GameState format to BaseGameState format for Bowlliards
+        let stateWithType: BaseGameState;
+        if (currentGameType === 'bowlliards') {
+          // Convert old GameState (with frames directly) to BowlliardsGameState format
+          if ('frames' in gameState && !('gameData' in gameState)) {
+            stateWithType = {
+              gameType: currentGameType,
+              totalScore: gameState.totalScore || 0,
+              isComplete: gameState.isComplete || false,
+              gameData: {
+                frames: gameState.frames,
+                currentFrame: gameState.currentFrame || 1,
+              },
+            };
+          } else {
+            // Already in BaseGameState format, just add gameType if missing
+            stateWithType = { ...gameState, gameType: currentGameType } as BaseGameState;
+          }
+        } else {
+          // baseGameState should already have gameType
+          stateWithType = baseGameState as BaseGameState;
+        }
+        
         const response = await fetch(`/api/games/${savedGameId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            gameState,
+            gameState: stateWithType,
             status: "completed",
             completedAt: new Date().toISOString(),
           }),
         });
         if (response.ok) {
-          console.log("Game saved as completed (updated existing)");
-          // Clear savedGameId since this game is now completed
-          setSavedGameId(null);
-          savedGameIdRef.current = null;
+          const updatedGame = await response.json();
+          console.log("Game saved as completed (updated existing)", { gameId: updatedGame.id });
+          // Show success modal
+          setSavedGameId(updatedGame.id);
+          setSavedGameCreatedAt(new Date().toISOString());
+          setShowSuccessModal(true);
+          // Clear savedGameId after showing modal so next game creates new one
+          setTimeout(() => {
+            setSavedGameId(null);
+            savedGameIdRef.current = null;
+          }, 100);
         } else {
           const errorText = await response.text();
           console.error("Failed to save completed game:", errorText);
+          alert("Failed to save game. Please try again.");
         }
       } else {
         // Create new completed game
+        // Convert old GameState format to BaseGameState format for Bowlliards
+        let stateWithType: BaseGameState;
+        if (currentGameType === 'bowlliards') {
+          // Convert old GameState (with frames directly) to BowlliardsGameState format
+          if ('frames' in gameState && !('gameData' in gameState)) {
+            stateWithType = {
+              gameType: currentGameType,
+              totalScore: gameState.totalScore || 0,
+              isComplete: gameState.isComplete || false,
+              gameData: {
+                frames: gameState.frames,
+                currentFrame: gameState.currentFrame || 1,
+              },
+            };
+          } else {
+            // Already in BaseGameState format, just add gameType if missing
+            stateWithType = { ...gameState, gameType: currentGameType } as BaseGameState;
+          }
+        } else {
+          // baseGameState should already have gameType
+          stateWithType = baseGameState as BaseGameState;
+        }
+        
         const response = await fetch("/api/games", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             gameMode,
-            gameState,
+            gameType: currentGameType,
+            customGameId: customGameId,
+            gameState: stateWithType,
           }),
         });
         if (response.ok) {
           const game = await response.json();
-          // Don't set savedGameId for completed games - it should be null for new games
           console.log("Game saved as completed, created new game:", game.id);
-          // Clear savedGameId to ensure next game creates a new one
-          setSavedGameId(null);
-          savedGameIdRef.current = null;
+          // Show success modal
+          setSavedGameId(game.id);
+          setSavedGameCreatedAt(game.createdAt || new Date().toISOString());
+          setShowSuccessModal(true);
+          // Don't clear savedGameId immediately - let user see the modal and choose what to do
         } else {
           const errorText = await response.text();
           console.error("Failed to create completed game:", errorText);
+          alert("Failed to save game. Please try again.");
         }
       }
     } catch (error) {
@@ -170,7 +265,9 @@ export default function NewGamePage() {
     gameModeRef.current = gameMode;
     
     // If gameState is a fresh new game (no shots), clear savedGameId and reset auto-save state
-    if (gameState && gameState.frames.every(f => f.ballsPocketed.length === 0)) {
+    // Only clear if we haven't made any shots yet (hasShotsRef is false)
+    // This prevents clearing savedGameId during state transitions
+    if (gameState && gameState.frames.every(f => f.ballsPocketed.length === 0) && !hasShotsRef.current) {
       if (savedGameId) {
         console.log("Clearing savedGameId - fresh game detected (no shots)");
         setSavedGameId(null);
@@ -185,13 +282,24 @@ export default function NewGamePage() {
         clearTimeout(autoSaveTimeoutRef.current);
         autoSaveTimeoutRef.current = null;
       }
-      hasShotsRef.current = false;
     }
   }, [gameState, savedGameId, gameMode]);
 
-  // Keep gameState ref updated and handle completion
+  // Keep gameState ref updated and sync baseGameState for Bowlliards
   useEffect(() => {
-    if (gameState) {
+    if (gameState && gameType === 'bowlliards') {
+      // Sync baseGameState with gameState for API calls
+      const syncedBaseState: BaseGameState = {
+        gameType: 'bowlliards',
+        totalScore: gameState.totalScore,
+        isComplete: gameState.isComplete,
+        gameData: {
+          frames: gameState.frames,
+          currentFrame: gameState.currentFrame,
+        },
+      };
+      setBaseGameState(syncedBaseState);
+      
       console.log("GameState updated:", {
         currentFrame: gameState.currentFrame,
         totalScore: gameState.totalScore,
@@ -202,13 +310,16 @@ export default function NewGamePage() {
         }))
       });
       
-      // Auto-save when game completes
-      if (gameState.isComplete && !showSuccessModal) {
+      // Auto-save when game completes (only if user has auto-save enabled)
+      // For now, we'll check user preference - default to false (manual save required)
+      // TODO: Fetch from user profile settings
+      const autoSaveCompleted = false; // Will be replaced with user preference
+      if (gameState.isComplete && !showSuccessModal && autoSaveCompleted) {
         handleGameCompletion();
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState, showSuccessModal]);
+  }, [gameState, gameType, showSuccessModal]);
 
   // Save on component unmount (backup for navigation)
   useEffect(() => {
@@ -242,11 +353,13 @@ export default function NewGamePage() {
 
   const autoSaveGame = async (stateToSave?: GameState | BaseGameState) => {
     // Determine which state to use based on game type
-    const currentGameType = gameType || 'bowlliards';
+    // Ensure currentGameType is always defined to avoid initialization errors
+    const currentGameType: string = gameType || 'bowlliards';
     let state: GameState | BaseGameState | null = null;
     
     if (currentGameType === 'bowlliards') {
-      state = stateToSave || gameStateRef.current || gameState;
+      // Prefer baseGameState if available (proper format), otherwise use gameState
+      state = stateToSave || baseGameState || gameStateRef.current || gameState;
     } else {
       state = stateToSave || baseGameState;
     }
@@ -296,12 +409,35 @@ export default function NewGamePage() {
             } else {
               // Update existing active game
               console.log("Auto-saving: Updating existing game", { gameId: currentSavedId });
-              const stateToSave = currentGameType === 'bowlliards' ? state : baseGameState;
+              const stateToSave = currentGameType === 'bowlliards' ? state : (baseGameState || state);
+              // Convert old GameState format to BaseGameState format for Bowlliards
+              let stateWithType: BaseGameState;
+              if (currentGameType === 'bowlliards') {
+                // Convert old GameState (with frames directly) to BowlliardsGameState format
+                if ('frames' in stateToSave && !('gameData' in stateToSave)) {
+                  stateWithType = {
+                    gameType: currentGameType,
+                    totalScore: stateToSave.totalScore || 0,
+                    isComplete: stateToSave.isComplete || false,
+                    gameData: {
+                      frames: stateToSave.frames,
+                      currentFrame: stateToSave.currentFrame || 1,
+                    },
+                  };
+                } else {
+                  // Already in BaseGameState format, just add gameType if missing
+                  stateWithType = { ...stateToSave, gameType: currentGameType } as BaseGameState;
+                }
+              } else {
+                // baseGameState should already have gameType
+                stateWithType = stateToSave as BaseGameState;
+              }
+              
               const response = await fetch(`/api/games/${currentSavedId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  gameState: stateToSave,
+                  gameState: stateWithType,
                   status: "active",
                 }),
               });
@@ -312,7 +448,10 @@ export default function NewGamePage() {
               } else {
                 const errorText = await response.text();
                 console.error("Auto-save failed: Update error", { gameId: currentSavedId, status: response.status, error: errorText });
-                // Fall through to create new game if update failed
+                // Don't create a new game on update failure - just log and return
+                // The next auto-save will retry the update
+                autoSaveInProgressRef.current = false;
+                return;
               }
             }
           }
@@ -324,12 +463,41 @@ export default function NewGamePage() {
       
       // Create new active game (either no savedGameId or saved game is completed)
       console.log("Auto-saving: Creating new game");
+      // Reuse currentGameType from the top of the function (line 357)
+      // Use baseGameState if available (proper format), otherwise convert
+      let stateWithType: BaseGameState;
+      if (currentGameType === 'bowlliards') {
+        // Prefer baseGameState if it exists (proper format)
+        if (baseGameState && baseGameState.gameType === 'bowlliards') {
+          stateWithType = baseGameState;
+        } else if ('frames' in state && !('gameData' in state)) {
+          // Convert old GameState (with frames directly) to BowlliardsGameState format
+          stateWithType = {
+            gameType: currentGameType,
+            totalScore: state.totalScore || 0,
+            isComplete: state.isComplete || false,
+            gameData: {
+              frames: state.frames,
+              currentFrame: state.currentFrame || 1,
+            },
+          };
+        } else {
+          // Already in BaseGameState format, just add gameType if missing
+          stateWithType = { ...state, gameType: currentGameType } as BaseGameState;
+        }
+      } else {
+        // baseGameState should already have gameType
+        stateWithType = (baseGameState || state) as BaseGameState;
+      }
+      
       const response = await fetch("/api/games", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           gameMode: gameModeRef.current,
-          gameState: state,
+          gameType: currentGameType,
+          customGameId: customGameId,
+          gameState: stateWithType,
         }),
       });
       if (response.ok) {
@@ -337,6 +505,8 @@ export default function NewGamePage() {
         console.log("Auto-save successful: Created new game", { gameId: game.id });
         setSavedGameId(game.id);
         savedGameIdRef.current = game.id;
+        // Mark that we have shots so savedGameId doesn't get cleared
+        hasShotsRef.current = true;
       } else {
         const errorText = await response.text();
         console.error("Auto-save failed: Create error", { status: response.status, error: errorText });
@@ -355,9 +525,25 @@ export default function NewGamePage() {
     
     // Create new game based on type
     if (selectedGameType === 'bowlliards') {
-      // Use existing Bowlliards logic for backward compatibility
-      const newState = createNewGame();
-      setGameState(newState);
+      // Use game type handler to create proper BaseGameState
+      const gameTypeHandler = getGameType('bowlliards');
+      if (gameTypeHandler) {
+        const newBaseState = gameTypeHandler.createNewGame();
+        // Convert to old GameState format for backward compatibility with existing UI
+        const newState = {
+          frames: (newBaseState.gameData as { frames: unknown[] }).frames as typeof gameState.frames,
+          currentFrame: (newBaseState.gameData as { currentFrame: number }).currentFrame,
+          totalScore: newBaseState.totalScore,
+          isComplete: newBaseState.isComplete,
+        };
+        setGameState(newState);
+        // Also store as baseGameState for API calls
+        setBaseGameState(newBaseState);
+      } else {
+        // Fallback to old method if handler not found
+        const newState = createNewGame();
+        setGameState(newState);
+      }
     } else if (selectedGameType === 'apa9ball') {
       // Show skill level selector for APA 9-ball
       setShowSkillLevelSelector(true);
@@ -550,26 +736,72 @@ export default function NewGamePage() {
       
       if (savedGameId) {
         // Update existing game to completed
+        // Convert old GameState format to BaseGameState format for Bowlliards
+        let stateWithType: BaseGameState;
+        if (currentGameType === 'bowlliards') {
+          // Convert old GameState (with frames directly) to BowlliardsGameState format
+          if ('frames' in stateToSave && !('gameData' in stateToSave)) {
+            stateWithType = {
+              gameType: currentGameType,
+              totalScore: stateToSave.totalScore || 0,
+              isComplete: stateToSave.isComplete || false,
+              gameData: {
+                frames: stateToSave.frames,
+                currentFrame: stateToSave.currentFrame || 1,
+              },
+            };
+          } else {
+            // Already in BaseGameState format, just add gameType if missing
+            stateWithType = { ...stateToSave, gameType: currentGameType } as BaseGameState;
+          }
+        } else {
+          // baseGameState should already have gameType
+          stateWithType = stateToSave as BaseGameState;
+        }
+        
         response = await fetch(`/api/games/${savedGameId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            gameState: stateToSave,
+            gameState: stateWithType,
             status: "completed",
             completedAt: new Date().toISOString(),
           }),
         });
       } else {
         // Create new completed game
-        const stateToSave = gameType === 'bowlliards' ? gameState : baseGameState;
+        const stateToSave = currentGameType === 'bowlliards' ? gameState : baseGameState;
+        // Convert old GameState format to BaseGameState format for Bowlliards
+        let stateWithType: BaseGameState;
+        if (currentGameType === 'bowlliards') {
+          // Convert old GameState (with frames directly) to BowlliardsGameState format
+          if ('frames' in stateToSave && !('gameData' in stateToSave)) {
+            stateWithType = {
+              gameType: currentGameType,
+              totalScore: stateToSave.totalScore || 0,
+              isComplete: stateToSave.isComplete || false,
+              gameData: {
+                frames: stateToSave.frames,
+                currentFrame: stateToSave.currentFrame || 1,
+              },
+            };
+          } else {
+            // Already in BaseGameState format, just add gameType if missing
+            stateWithType = { ...stateToSave, gameType: currentGameType } as BaseGameState;
+          }
+        } else {
+          // baseGameState should already have gameType
+          stateWithType = stateToSave as BaseGameState;
+        }
+        
         response = await fetch("/api/games", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             gameMode,
-            gameState: stateToSave,
-            gameType: gameType || 'bowlliards',
+            gameType: currentGameType,
             customGameId: customGameId,
+            gameState: stateWithType,
           }),
         });
       }
@@ -617,7 +849,26 @@ export default function NewGamePage() {
       }
     }
     // Clear all game state and start fresh
-    setGameState(createNewGame());
+    const currentGameType = gameType || 'bowlliards';
+    if (currentGameType === 'bowlliards') {
+      const gameTypeHandler = getGameType('bowlliards');
+      if (gameTypeHandler) {
+        const newBaseState = gameTypeHandler.createNewGame();
+        // Convert to old GameState format for backward compatibility with existing UI
+        const newState = {
+          frames: (newBaseState.gameData as { frames: unknown[] }).frames as typeof gameState.frames,
+          currentFrame: (newBaseState.gameData as { currentFrame: number }).currentFrame,
+          totalScore: newBaseState.totalScore,
+          isComplete: newBaseState.isComplete,
+        };
+        setGameState(newState);
+        setBaseGameState(newBaseState);
+      } else {
+        setGameState(createNewGame());
+      }
+    } else {
+      setGameState(createNewGame());
+    }
     setShowSuccessModal(false);
     setSavedGameId(null);
     savedGameIdRef.current = null;
@@ -831,10 +1082,25 @@ export default function NewGamePage() {
 
   // If gameType is bowlliards but gameState is not set, show loading or create new
   if (gameType === 'bowlliards' && !gameState) {
-    // This shouldn't happen, but if it does, create a new game
+    // This shouldn't happen, but if it does, create a new game using game type handler
     if (!loading) {
-      const newState = createNewGame();
-      setGameState(newState);
+      const gameTypeHandler = getGameType('bowlliards');
+      if (gameTypeHandler) {
+        const newBaseState = gameTypeHandler.createNewGame();
+        // Convert to old GameState format for backward compatibility with existing UI
+        const newState = {
+          frames: (newBaseState.gameData as { frames: unknown[] }).frames as typeof gameState.frames,
+          currentFrame: (newBaseState.gameData as { currentFrame: number }).currentFrame,
+          totalScore: newBaseState.totalScore,
+          isComplete: newBaseState.isComplete,
+        };
+        setGameState(newState);
+        setBaseGameState(newBaseState);
+      } else {
+        // Fallback to old method
+        const newState = createNewGame();
+        setGameState(newState);
+      }
     }
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-slate-900">
@@ -965,12 +1231,14 @@ export default function NewGamePage() {
           onSave={handleModalSave}
         />
       )}
-      {gameState && (
+      {((gameType === 'bowlliards' && gameState) || (gameType === 'apa9ball' && baseGameState)) && (
         <GameSaveSuccessModal
           isOpen={showSuccessModal}
-          totalScore={gameState.totalScore}
+          totalScore={gameType === 'bowlliards' 
+            ? (gameState?.totalScore || 0)
+            : (baseGameState?.totalScore || 0)}
           gameId={savedGameId || undefined}
-          gameState={gameState}
+          gameState={gameType === 'bowlliards' ? gameState : (baseGameState as unknown as GameState) || undefined}
           createdAt={savedGameCreatedAt || new Date().toISOString()}
           gameMode={gameMode}
           onNewGame={handleNewGame}

@@ -9,6 +9,8 @@ interface HistoryTableRowProps {
   game: {
     id: number;
     gameMode: string;
+    gameType?: string;
+    gameTypeSequence?: number | null;
     status: string;
     createdAt: Date;
     frames?: Array<{
@@ -67,10 +69,15 @@ export default function HistoryTableRow({ game, totalScore }: HistoryTableRowPro
   const reconstructedGameState = getGameState();
   const canShare = reconstructedGameState !== null && game.status === "completed";
 
+  // Format game number: show type-specific sequence if available, otherwise use ID
+  const gameNumber = game.gameTypeSequence 
+    ? `${game.gameType || 'Game'} #${game.gameTypeSequence}`
+    : `#${game.id}`;
+
   return (
     <tr className="transition-colors hover:bg-slate-100 dark:hover:bg-slate-700">
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
-        #{game.id}
+        {gameNumber}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
         {game.gameMode}

@@ -57,6 +57,7 @@ export const games = pgTable("games", {
   userId: text("user_id").references(() => users.id).notNull(),
   gameMode: text("game_mode").notNull(), // 'single', 'multiplayer', 'tournament'
   gameType: text("game_type").notNull().default("bowlliards"), // 'bowlliards', 'apa8ball', 'apa9ball', 'straight-pool', 'custom'
+  gameTypeSequence: integer("game_type_sequence"), // Sequence number per game type per user (e.g., Bowlliards #1, #2, #3...)
   customGameId: integer("custom_game_id").references(() => customGames.id), // null unless gameType is 'custom'
   status: text("status").notNull().default("active"), // 'active', 'completed', 'abandoned'
   createdAt: timestamp("created_at").defaultNow().notNull(),

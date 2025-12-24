@@ -235,7 +235,6 @@ export const apa9ballGameType: GameType = {
           state.gameData.currentBall = newRemainingBalls.length > 0 ? Math.min(...newRemainingBalls) : 9;
           
           // Check if all balls are pocketed (new rack needed)
-          const newAllBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
           if (newAllBallsMade.length === 9) {
             // All balls pocketed - start new rack
             // The player who made the 9-ball breaks the next rack

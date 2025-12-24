@@ -2,11 +2,12 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { games, users } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import RecentGameItem from "@/components/dashboard/RecentGameItem";
-import StartNewGameButton from "@/components/dashboard/StartNewGameButton";
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
+import GameTypeCard from "@/components/dashboard/GameTypeCard";
+import { getStandardGameTypes } from "@/lib/game-types";
+import { gamePersistenceService } from "@/lib/services/game-persistence-service";
 
 import { Suspense } from "react";
 
@@ -17,45 +18,36 @@ async function DashboardContent() {
     redirect("/auth/signin");
   }
 
-  // Fetch active games and recent games with error handling
-  let activeGames: Array<{
-    id: number;
-    userId: string;
-    gameMode: string;
-    status: string;
-    createdAt: Date;
-    completedAt: Date | null;
-  }> = [];
-
-  let recentGames: Array<{
-    id: number;
-    userId: string;
-    gameMode: string;
-    status: string;
-    createdAt: Date;
-    completedAt: Date | null;
-  }> = [];
-
+  // Get game types
+  const gameTypes = getStandardGameTypes();
+  
+  // Fetch game counts per type
+  const gameTypeStats: Record<string, { active: number; recent: number }> = {};
+  
   try {
-    // Ensure session.user exists before accessing id
     if (session?.user?.id) {
-      // Fetch active games
-      const allGames = await db.query.games.findMany({
-        where: eq(games.userId, session.user.id),
-        orderBy: (games, { desc }) => [desc(games.createdAt)],
-      });
-      
-      activeGames = allGames.filter(g => g.status === "active");
-      recentGames = allGames.filter(g => g.status !== "active").slice(0, 5);
+      for (const gameType of gameTypes) {
+        const activeGames = await gamePersistenceService.listGames(session.user.id, {
+          gameType: gameType.metadata.id,
+          status: "active",
+          limit: 100,
+        });
+        
+        const recentGames = await gamePersistenceService.listGames(session.user.id, {
+          gameType: gameType.metadata.id,
+          status: "completed",
+          limit: 5,
+        });
+        
+        gameTypeStats[gameType.metadata.id] = {
+          active: activeGames.length,
+          recent: recentGames.length,
+        };
+      }
     }
   } catch (error) {
-    console.error("Error fetching games:", error);
-    // Continue with empty arrays - don't crash the page
-    activeGames = [];
-    recentGames = [];
+    console.error("Error fetching game stats:", error);
   }
-
-  const activeGame = activeGames.length > 0 ? activeGames[0] : null;
 
   // Get user email verification status
   const user = await db.query.users.findFirst({
@@ -63,7 +55,8 @@ async function DashboardContent() {
   });
 
   // Check if user is new (no games yet)
-  const isNewUser = recentGames.length === 0 && activeGames.length === 0;
+  const totalGames = Object.values(gameTypeStats).reduce((sum, stats) => sum + stats.active + stats.recent, 0);
+  const isNewUser = totalGames === 0;
 
   return (
     <>
@@ -126,56 +119,47 @@ async function DashboardContent() {
         </div>
       )}
 
-      {/* Active Game Section */}
-      {activeGame && (
-        <div className="mb-8 p-6 rounded-lg shadow-md bg-slate-50 dark:bg-slate-800 border-2 border-[var(--accent)]">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold mb-1 text-slate-900 dark:text-slate-100">
-                Active Game
-              </h2>
-              <p className="text-sm mb-2 text-slate-600 dark:text-slate-400">
-                Game #{activeGame.id} - {activeGame.gameMode}
-              </p>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                Started {new Date(activeGame.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Link
-                href={`/dashboard/games/${activeGame.id}`}
-                className="px-6 py-2 rounded-lg font-semibold text-white transition-opacity hover:opacity-90 bg-[var(--accent)]"
-              >
-                Resume Game
-              </Link>
-              <StartNewGameButton activeGameId={activeGame.id} />
-            </div>
-          </div>
+      {/* Game Types Section - Primary Navigation */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            Game Types
+          </h2>
+          <Link
+            href="/dashboard/games/new"
+            className="px-4 py-2 rounded-lg font-semibold text-white transition-opacity hover:opacity-90 bg-[var(--accent)] text-sm"
+          >
+            New Game
+          </Link>
         </div>
-      )}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {gameTypes.map((gameType) => (
+            <GameTypeCard
+              key={gameType.metadata.id}
+              gameType={{
+                id: gameType.metadata.id,
+                name: gameType.metadata.name,
+                description: gameType.metadata.description,
+                requiresPayment: gameType.metadata.requiresPayment,
+              }}
+              activeGamesCount={gameTypeStats[gameType.metadata.id]?.active || 0}
+              recentGamesCount={gameTypeStats[gameType.metadata.id]?.recent || 0}
+            />
+          ))}
+        </div>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Link
           href="/dashboard/games/new"
           className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow bg-slate-50 dark:bg-slate-800"
         >
           <h2 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
-            {activeGame ? "New Game" : "New Game"}
+            Start New Game
           </h2>
           <p className="text-slate-600 dark:text-slate-400">
-            {activeGame ? "Start a fresh game (abandons current)" : "Start a new billiards bowling game"}
-          </p>
-        </Link>
-
-        <Link
-          href="/dashboard/history"
-          className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow bg-slate-50 dark:bg-slate-800"
-        >
-          <h2 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
-            Game History
-          </h2>
-          <p className="text-slate-600 dark:text-slate-400">
-            View your past games and scores
+            Choose a game type and start scoring
           </p>
         </Link>
 
@@ -191,21 +175,6 @@ async function DashboardContent() {
           </p>
         </Link>
       </div>
-
-      {recentGames.length > 0 && (
-        <div>
-          <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-slate-100">
-            Recent Games
-          </h2>
-          <div className="rounded-lg shadow-md overflow-hidden bg-slate-50 dark:bg-slate-800">
-            <ul className="divide-y divide-slate-200 dark:divide-slate-700">
-              {recentGames.map((game) => (
-                <RecentGameItem key={game.id} game={game} />
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
     </>
   );
 }

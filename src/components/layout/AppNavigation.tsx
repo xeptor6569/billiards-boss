@@ -1,9 +1,11 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import UserMenu from "@/components/layout/UserMenu";
+import NewGameDropdown from "@/components/layout/NewGameDropdown";
 import type { Session } from "next-auth";
 import { BUILD_INFO } from "@/lib/build-info";
 
@@ -14,6 +16,27 @@ interface AppNavigationProps {
 
 export default function AppNavigation({ children, session }: AppNavigationProps) {
     const pathname = usePathname();
+    const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
+
+    // Fetch user's premium status
+    useEffect(() => {
+        const fetchPremiumStatus = async () => {
+            try {
+                const response = await fetch("/api/user/profile");
+                if (response.ok) {
+                    const profile = await response.json();
+                    // Check if user has a premium plan with custom games access
+                    setHasPremiumAccess(profile.plan?.allowsCustomGames || false);
+                }
+            } catch (error) {
+                console.error("Error fetching premium status:", error);
+            }
+        };
+
+        if (session?.user?.id) {
+            fetchPremiumStatus();
+        }
+    }, [session?.user?.id]);
 
     // Highlight active link helper
     const isActive = (path: string) => pathname === path || pathname.startsWith(`${path}/`);
@@ -80,14 +103,25 @@ export default function AppNavigation({ children, session }: AppNavigationProps)
                 <nav className="flex-1 px-4 space-y-2">
                     {navItems.map((item) => {
                         const active = isActive(item.href) && item.href !== '/dashboard/games/new';
+                        
+                        // Replace primary "Game" button with dropdown
+                        if (item.isPrimary) {
+                            return (
+                                <NewGameDropdown
+                                    key={item.href}
+                                    userId={session.user.id}
+                                    hasPremiumAccess={hasPremiumAccess}
+                                    variant="desktop"
+                                />
+                            );
+                        }
+                        
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                                    item.isPrimary 
-                                        ? "mt-6 shadow-md justify-center bg-[var(--accent)] text-white hover:opacity-90" 
-                                        : active
+                                    active
                                         ? "bg-[var(--accent)] text-white"
                                         : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100"
                                 }`}
@@ -132,13 +166,12 @@ export default function AppNavigation({ children, session }: AppNavigationProps)
 
                                 if (item.isPrimary) {
                                     return (
-                                        <Link
+                                        <NewGameDropdown
                                             key={item.href}
-                                            href={item.href}
-                                            className="relative -top-5 p-4 rounded-full shadow-lg transition-opacity active:scale-95 bg-[var(--accent)] text-white hover:opacity-90"
-                                        >
-                                            {item.icon}
-                                        </Link>
+                                            userId={session.user.id}
+                                            hasPremiumAccess={hasPremiumAccess}
+                                            variant="mobile"
+                                        />
                                     )
                                 }
 

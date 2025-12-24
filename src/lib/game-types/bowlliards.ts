@@ -296,7 +296,54 @@ export const bowlliardsGameType: GameType = {
   reconstructFromData(data: Record<string, unknown>): BaseGameState {
     const state = createNewBowlliardsGame();
     
-    if (data.frames && Array.isArray(data.frames)) {
+    // Handle unified format (gameData structure)
+    if (data.gameData && typeof data.gameData === 'object') {
+      const gameData = data.gameData as Record<string, unknown>;
+      if (gameData.frames && Array.isArray(gameData.frames)) {
+        const sortedFrames = [...gameData.frames].sort((a: Record<string, unknown>, b: Record<string, unknown>) => 
+          (a.frameNumber as number) - (b.frameNumber as number)
+        );
+        
+        for (let i = 0; i < sortedFrames.length && i < MAX_FRAMES; i++) {
+          const savedFrame = sortedFrames[i] as Record<string, unknown>;
+          const frameIndex = (savedFrame.frameNumber as number) - 1;
+          
+          if (frameIndex >= 0 && frameIndex < state.gameData.frames.length) {
+            const frame = state.gameData.frames[frameIndex];
+            // Handle ballsPocketed - it might be a string (JSON) or array
+            let ballsPocketed: number[] = [];
+            if (Array.isArray(savedFrame.ballsPocketed)) {
+              ballsPocketed = [...(savedFrame.ballsPocketed as number[])];
+            } else if (typeof savedFrame.ballsPocketed === 'string') {
+              try {
+                ballsPocketed = JSON.parse(savedFrame.ballsPocketed);
+              } catch {
+                ballsPocketed = [];
+              }
+            }
+            frame.ballsPocketed = ballsPocketed;
+            frame.score = savedFrame.score as number;
+            frame.isStrike = savedFrame.isStrike as boolean;
+            frame.isSpare = savedFrame.isSpare as boolean;
+            
+            const isTenthFrame = (savedFrame.frameNumber as number) === 10;
+            if (savedFrame.isStrike as boolean) {
+              frame.isComplete = isTenthFrame ? ballsPocketed.length >= 3 : true;
+            } else if (savedFrame.isSpare as boolean) {
+              frame.isComplete = isTenthFrame ? ballsPocketed.length >= 3 : true;
+            } else {
+              frame.isComplete = ballsPocketed.length >= 2;
+            }
+          }
+        }
+        
+        if (typeof gameData.currentFrame === 'number') {
+          state.gameData.currentFrame = gameData.currentFrame;
+        }
+      }
+    }
+    // Legacy format: frames at top level (for backward compatibility during migration)
+    else if (data.frames && Array.isArray(data.frames)) {
       const sortedFrames = [...data.frames].sort((a: Record<string, unknown>, b: Record<string, unknown>) => 
         (a.frameNumber as number) - (b.frameNumber as number)
       );
@@ -307,7 +354,6 @@ export const bowlliardsGameType: GameType = {
         
         if (frameIndex >= 0 && frameIndex < state.gameData.frames.length) {
           const frame = state.gameData.frames[frameIndex];
-          // Handle ballsPocketed - it might be a string (JSON) or array
           let ballsPocketed: number[] = [];
           if (Array.isArray(savedFrame.ballsPocketed)) {
             ballsPocketed = [...(savedFrame.ballsPocketed as number[])];
@@ -333,24 +379,52 @@ export const bowlliardsGameType: GameType = {
           }
         }
       }
-      
-      const firstIncompleteIndex = state.gameData.frames.findIndex(f => !f.isComplete);
-      state.gameData.currentFrame = firstIncompleteIndex >= 0 ? firstIncompleteIndex + 1 : MAX_FRAMES + 1;
-      state.totalScore = calculateTotalScore(state.gameData.frames);
-      state.isComplete = state.gameData.frames.every(f => f.isComplete);
     }
+    
+    // Recalculate state
+    const firstIncompleteIndex = state.gameData.frames.findIndex(f => !f.isComplete);
+    state.gameData.currentFrame = firstIncompleteIndex >= 0 ? firstIncompleteIndex + 1 : MAX_FRAMES + 1;
+    state.totalScore = calculateTotalScore(state.gameData.frames);
+    state.isComplete = state.gameData.frames.every(f => f.isComplete);
+    
+    // Override with saved values if present
+    if (typeof data.totalScore === 'number') state.totalScore = data.totalScore;
+    if (typeof data.isComplete === 'boolean') state.isComplete = data.isComplete;
     
     return state;
   },
   
   serialize(gameState: BaseGameState): Record<string, unknown> {
-    const state = gameState as BowlliardsGameState;
+    // Handle both old GameState format (with frames directly) and new BowlliardsGameState format
+    const state = gameState as BowlliardsGameState | { frames: unknown[]; currentFrame: number; totalScore: number; isComplete: boolean };
+    
+    // Check if it's the old format (frames directly) or new format (gameData.frames)
+    let frames: unknown[];
+    let currentFrame: number;
+    
+    if ('gameData' in state && state.gameData && typeof state.gameData === 'object' && 'frames' in state.gameData) {
+      // New format: gameData.frames
+      frames = (state.gameData as { frames: unknown[] }).frames;
+      currentFrame = (state.gameData as { currentFrame: number }).currentFrame;
+    } else if ('frames' in state && Array.isArray(state.frames)) {
+      // Old format: frames directly
+      frames = state.frames;
+      currentFrame = state.currentFrame || 1;
+    } else {
+      // Fallback: empty game
+      frames = [];
+      currentFrame = 1;
+    }
+    
+    // Unified format: store as gameData structure
     return {
       gameType: 'bowlliards',
-      frames: state.gameData.frames,
-      currentFrame: state.gameData.currentFrame,
-      totalScore: state.totalScore,
-      isComplete: state.isComplete,
+      totalScore: state.totalScore || 0,
+      isComplete: state.isComplete || false,
+      gameData: {
+        frames,
+        currentFrame,
+      },
     };
   },
   
