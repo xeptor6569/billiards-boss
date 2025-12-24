@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db/db";
+import { db } from "@/lib/db";
 import { customGames } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { parseCustomGameYAML } from "@/lib/game-types/custom/yaml-parser";
