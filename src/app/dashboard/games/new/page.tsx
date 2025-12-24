@@ -15,6 +15,12 @@ import GameTypeSelector from "@/components/scoring/GameTypeSelector";
 import { createGame } from "@/lib/game-types/factory";
 import { getGameType, BaseGameState } from "@/lib/game-types";
 import { createCustomGame } from "@/lib/game-types/custom";
+import APA9BallSelector from "@/components/scoring/APA9BallSelector";
+import APA9BallScoreDisplay from "@/components/scoring/APA9BallScoreDisplay";
+import APA9BallSkillLevelSelector from "@/components/scoring/APA9BallSkillLevelSelector";
+import APA9BallMatchPoints from "@/components/scoring/APA9BallMatchPoints";
+import APA9BallTurnControls from "@/components/scoring/APA9BallTurnControls";
+import { APA9BallGameState } from "@/lib/game-types/apa9ball";
 
 export default function NewGamePage() {
   const router = useRouter();
@@ -31,6 +37,7 @@ export default function NewGamePage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [savedGameId, setSavedGameId] = useState<number | null>(null);
   const [savedGameCreatedAt, setSavedGameCreatedAt] = useState<string | null>(null);
+  const [showSkillLevelSelector, setShowSkillLevelSelector] = useState(false);
   const hasShotsRef = useRef(false);
   const autoSaveInProgressRef = useRef(false);
   const gameStateRef = useRef<GameState | null>(null);
@@ -66,7 +73,7 @@ export default function NewGamePage() {
                 setLoading(false);
                 return;
               } else if (gameData.gameState) {
-                // For other game types, use the reconstructed state
+                // For other game types (including APA 9-ball), use the reconstructed state
                 setBaseGameState(gameData.gameState);
                 setSavedGameId(activeGame.id);
                 hasShotsRef.current = true;
@@ -348,6 +355,9 @@ export default function NewGamePage() {
       // Use existing Bowlliards logic for backward compatibility
       const newState = createNewGame();
       setGameState(newState);
+    } else if (selectedGameType === 'apa9ball') {
+      // Show skill level selector for APA 9-ball
+      setShowSkillLevelSelector(true);
     } else if (selectedGameType === 'custom' && selectedCustomGameId) {
       // Load custom game config and create game
       try {
@@ -365,6 +375,15 @@ export default function NewGamePage() {
     } else {
       // Use game type factory for other game types
       const newState = createGame(selectedGameType);
+      setBaseGameState(newState);
+    }
+  };
+
+  const handleSkillLevelConfirm = (player1SL: number, player2SL: number) => {
+    setShowSkillLevelSelector(false);
+    const gameTypeHandler = getGameType('apa9ball');
+    if (gameTypeHandler) {
+      const newState = gameTypeHandler.createNewGame(player1SL, player2SL);
       setBaseGameState(newState);
     }
   };
@@ -405,6 +424,57 @@ export default function NewGamePage() {
           autoSaveGame(newState);
         }, 1000);
       }
+    }
+  };
+
+  const handleAPA9BallInput = (ballNumber: number) => {
+    if (!baseGameState || gameType !== 'apa9ball') return;
+    const gameTypeHandler = getGameType('apa9ball');
+    if (gameTypeHandler) {
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'ball', ballNumber });
+      setBaseGameState(newState);
+      hasShotsRef.current = true;
+      
+      // Auto-save
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        autoSaveGame(newState);
+      }, 1000);
+    }
+  };
+
+  const handleEndTurn = () => {
+    if (!baseGameState || gameType !== 'apa9ball') return;
+    const gameTypeHandler = getGameType('apa9ball');
+    if (gameTypeHandler) {
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action: 'endTurn' } });
+      setBaseGameState(newState);
+      hasShotsRef.current = true;
+      autoSaveGame(newState);
+    }
+  };
+
+  const handleFoul = () => {
+    if (!baseGameState || gameType !== 'apa9ball') return;
+    const gameTypeHandler = getGameType('apa9ball');
+    if (gameTypeHandler) {
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'foul' });
+      setBaseGameState(newState);
+      hasShotsRef.current = true;
+      autoSaveGame(newState);
+    }
+  };
+
+  const handleDefensiveShot = () => {
+    if (!baseGameState || gameType !== 'apa9ball') return;
+    const gameTypeHandler = getGameType('apa9ball');
+    if (gameTypeHandler) {
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action: 'defensiveShot' } });
+      setBaseGameState(newState);
+      hasShotsRef.current = true;
+      autoSaveGame(newState);
     }
   };
 
@@ -565,6 +635,19 @@ export default function NewGamePage() {
     );
   }
 
+  // Show skill level selector for APA 9-ball
+  if (showSkillLevelSelector) {
+    return (
+      <APA9BallSkillLevelSelector
+        onConfirm={handleSkillLevelConfirm}
+        onCancel={() => {
+          setShowSkillLevelSelector(false);
+          setShowGameTypeSelector(true);
+        }}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-slate-900">
@@ -573,9 +656,101 @@ export default function NewGamePage() {
     );
   }
 
-  // For now, only render Bowlliards UI (other game types need their own UI components)
-  // Only show "coming soon" if a non-Bowlliards game type is explicitly selected
-  if (gameType && gameType !== 'bowlliards') {
+  // Render APA 9-ball UI
+  if (gameType === 'apa9ball' && baseGameState) {
+    const apa9State = baseGameState as APA9BallGameState;
+    const isComplete = apa9State.isComplete;
+    
+    const HeaderCmp = (
+      <div className="flex items-center justify-between w-full">
+        <button
+          onClick={handleExit}
+          className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          <span className="text-sm font-semibold">Back</span>
+        </button>
+        {savedGameId && (
+          <div className="text-center flex-1">
+            <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Game #{savedGameId}</div>
+          </div>
+        )}
+        <div className="flex items-center gap-4">
+          <ThemeSwitcherCompact />
+        </div>
+      </div>
+    );
+
+    return (
+      <>
+        <GameLayout
+          header={HeaderCmp}
+          frameStrip={
+            <div className="h-full p-2">
+              <APA9BallScoreDisplay gameState={apa9State} />
+            </div>
+          }
+          visualizer={
+            <div className="w-full h-full flex flex-col justify-center">
+              {isComplete ? (
+                <APA9BallMatchPoints gameState={apa9State} />
+              ) : (
+                <APA9BallSelector
+                  gameState={apa9State}
+                  onBallSelect={handleAPA9BallInput}
+                  disabled={isComplete || saving}
+                />
+              )}
+            </div>
+          }
+          controls={
+            isComplete ? (
+              <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
+                <div className="text-xl font-bold text-slate-900 dark:text-slate-100">Game Complete!</div>
+                <button
+                  onClick={handleSaveGame}
+                  disabled={saving}
+                  className="w-full py-3 bg-amber-500 text-white font-bold rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
+                >
+                  {saving ? "Saving..." : "Save to History"}
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard")}
+                  className="block w-full text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mt-2"
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            ) : (
+              <APA9BallTurnControls
+                onEndTurn={handleEndTurn}
+                onFoul={handleFoul}
+                onDefensiveShot={handleDefensiveShot}
+                disabled={saving}
+              />
+            )
+          }
+        />
+        {baseGameState && (
+          <GameSaveSuccessModal
+            isOpen={showSuccessModal}
+            totalScore={apa9State.totalScore}
+            gameId={savedGameId || undefined}
+            gameState={apa9State as unknown as GameState}
+            createdAt={savedGameCreatedAt || new Date().toISOString()}
+            gameMode={gameMode}
+            onNewGame={handleNewGame}
+            onDashboard={() => router.push("/dashboard")}
+          />
+        )}
+      </>
+    );
+  }
+
+  // For other game types, show "coming soon" message
+  if (gameType && gameType !== 'bowlliards' && gameType !== 'apa9ball') {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-slate-900">
         <div className="text-center p-6">
