@@ -74,7 +74,7 @@ export default function APA9BallSelector({
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center p-4">
-      <div className="relative w-[280px] h-[200px] sm:w-[320px] sm:h-[240px]">
+      <div className="relative w-[300px] h-[220px] sm:w-[360px] sm:h-[280px]">
         {RACK_POSITIONS.map(({ row, col, ball }) => {
           const isPocketed = isBallPocketed(ball);
           const isCurrentPlayer = isBallPocketedByCurrentPlayer(ball);

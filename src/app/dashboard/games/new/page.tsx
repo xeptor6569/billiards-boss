@@ -685,43 +685,50 @@ export default function NewGamePage() {
 
     return (
       <>
-        <GameLayout
-          header={HeaderCmp}
-          frameStrip={
-            <div className="h-full p-2">
-              <APA9BallScoreDisplay gameState={apa9State} />
-            </div>
-          }
-          visualizer={
-            <div className="w-full h-full flex flex-col justify-center">
-              {isComplete ? (
-                <APA9BallMatchPoints gameState={apa9State} />
-              ) : (
-                <APA9BallSelector
-                  gameState={apa9State}
-                  onBallSelect={handleAPA9BallInput}
-                  disabled={isComplete || saving}
-                />
-              )}
-            </div>
-          }
-          controls={
-            isComplete ? (
-              <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
-                <div className="text-xl font-bold text-slate-900 dark:text-slate-100">Game Complete!</div>
-                <button
-                  onClick={handleSaveGame}
-                  disabled={saving}
-                  className="w-full py-3 bg-amber-500 text-white font-bold rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity"
-                >
-                  {saving ? "Saving..." : "Save to History"}
-                </button>
-                <button
-                  onClick={() => router.push("/dashboard")}
-                  className="block w-full text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 mt-2"
-                >
-                  Back to Dashboard
-                </button>
+        <div className="flex flex-col h-full w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 fixed inset-0 overflow-hidden">
+          {/* Header (10%) */}
+          <div className="h-[10%] min-h-[60px] flex items-center px-4 border-b border-slate-200 dark:border-slate-700 z-20 bg-white dark:bg-slate-900">
+            {HeaderCmp}
+          </div>
+
+          {/* Score Display (20%) - Side by side player cards */}
+          <div className="h-[20%] min-h-[100px] bg-white dark:bg-slate-900 relative z-10 shadow-sm overflow-hidden">
+            <APA9BallScoreDisplay gameState={apa9State} />
+          </div>
+
+          {/* Visualizer Stage (45%) - Ball selector */}
+          <div className="h-[45%] min-h-[200px] bg-slate-50 dark:bg-slate-800 relative flex flex-col items-center justify-center p-4 overflow-y-auto">
+            {isComplete ? (
+              <APA9BallMatchPoints gameState={apa9State} />
+            ) : (
+              <APA9BallSelector
+                gameState={apa9State}
+                onBallSelect={handleAPA9BallInput}
+                disabled={isComplete || saving}
+              />
+            )}
+          </div>
+
+          {/* Control Pad (25%) - Controls */}
+          <div className="h-[25%] min-h-[120px] bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 pb-safe-area">
+            {isComplete ? (
+              <div className="flex flex-col items-center justify-center h-full gap-2 p-3">
+                <div className="text-lg font-bold text-slate-900 dark:text-slate-100">Game Complete!</div>
+                <div className="flex gap-2 w-full">
+                  <button
+                    onClick={handleSaveGame}
+                    disabled={saving}
+                    className="flex-1 py-2 bg-amber-500 text-white font-bold rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity text-sm"
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => router.push("/dashboard")}
+                    className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm"
+                  >
+                    Dashboard
+                  </button>
+                </div>
               </div>
             ) : (
               <APA9BallTurnControls
@@ -730,9 +737,9 @@ export default function NewGamePage() {
                 onDefensiveShot={handleDefensiveShot}
                 disabled={saving}
               />
-            )
-          }
-        />
+            )}
+          </div>
+        </div>
         {baseGameState && (
           <GameSaveSuccessModal
             isOpen={showSuccessModal}

@@ -18,25 +18,23 @@ export default function APA9BallTurnControls({
   const btnAction = "text-white shadow-lg";
 
   return (
-    <div className="flex flex-col gap-3 h-full p-4 pb-6">
+    <div className="flex flex-col gap-2 h-full p-3 pb-4 justify-center">
       {/* Primary Action - End Turn */}
-      <div className="h-[40%] min-h-[100px]">
-        <button
-          onClick={onEndTurn}
-          disabled={disabled}
-          className={`${btnBase} ${btnAction} w-full h-full text-xl bg-blue-500 shadow-blue-500/30`}
-        >
-          End Turn
-        </button>
-      </div>
+      <button
+        onClick={onEndTurn}
+        disabled={disabled}
+        className={`${btnBase} ${btnAction} w-full py-5 text-base bg-blue-500 shadow-blue-500/30`}
+      >
+        End Turn
+      </button>
 
       {/* Secondary Actions */}
-      <div className="flex-1 grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         {/* Foul Button */}
         <button
           onClick={onFoul}
           disabled={disabled}
-          className={`${btnBase} ${btnAction} bg-red-600 dark:bg-red-400 shadow-red-600/30 dark:shadow-red-400/30 text-lg`}
+          className={`${btnBase} ${btnAction} py-4 bg-red-600 dark:bg-red-400 shadow-red-600/30 dark:shadow-red-400/30 text-sm`}
         >
           Foul
         </button>
@@ -45,7 +43,7 @@ export default function APA9BallTurnControls({
         <button
           onClick={onDefensiveShot}
           disabled={disabled}
-          className={`${btnBase} ${btnSurface} text-lg`}
+          className={`${btnBase} ${btnSurface} py-4 text-sm`}
         >
           Defensive
         </button>
