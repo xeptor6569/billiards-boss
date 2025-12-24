@@ -61,6 +61,16 @@ export class GamePersistenceService {
     // Get next sequence number
     const sequence = await this.getNextSequence(userId, gameType);
 
+    // Verify user exists before creating game (handles case where DB was reset but session is still valid)
+    const { users } = await import("@/lib/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const userExists = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+    if (!userExists) {
+      throw new Error("User not found in database. Please sign out and sign in again.");
+    }
+
     // Create game record
     const [newGame] = await db
       .insert(games)
@@ -266,39 +276,51 @@ export class GamePersistenceService {
       conditions.push(eq(games.status, status));
     }
 
-    const gameRecords = await db.query.games.findMany({
-      where: conditions.length > 1 ? and(...conditions) : conditions[0],
-      orderBy: [desc(games.createdAt)],
-      limit,
-      with: {
-        frames: true,
-      },
-    });
+    try {
+      const gameRecords = await db.query.games.findMany({
+        where: conditions.length > 1 ? and(...conditions) : conditions[0],
+        orderBy: [desc(games.createdAt)],
+        limit,
+        with: {
+          frames: true,
+        },
+      });
 
-    // Reconstruct game states
-    const gamesWithState: GameWithState[] = [];
-    for (const game of gameRecords) {
-      try {
-        const gameState = await this.reconstructGameState(game);
-        gamesWithState.push({
-          id: game.id,
-          userId: game.userId,
-          gameMode: game.gameMode,
-          gameType: game.gameType,
-          gameTypeSequence: game.gameTypeSequence,
-          customGameId: game.customGameId,
-          status: game.status,
-          createdAt: game.createdAt,
-          completedAt: game.completedAt,
-          gameState,
-        });
-      } catch (error) {
-        console.error(`Error reconstructing game ${game.id}:`, error);
-        // Skip games that can't be reconstructed
+      // Reconstruct game states
+      const gamesWithState: GameWithState[] = [];
+      for (const game of gameRecords) {
+        try {
+          const gameState = await this.reconstructGameState(game);
+          gamesWithState.push({
+            id: game.id,
+            userId: game.userId,
+            gameMode: game.gameMode,
+            gameType: game.gameType,
+            gameTypeSequence: game.gameTypeSequence,
+            customGameId: game.customGameId,
+            status: game.status,
+            createdAt: game.createdAt,
+            completedAt: game.completedAt,
+            gameState,
+          });
+        } catch (error) {
+          console.error(`Error reconstructing game ${game.id}:`, error);
+          // Skip games that can't be reconstructed
+        }
       }
-    }
 
-    return gamesWithState;
+      return gamesWithState;
+    } catch (error: unknown) {
+      // Handle database connection errors
+      if (error && typeof error === 'object' && 'code' in error) {
+        if (error.code === 'ECONNREFUSED') {
+          console.error('Database connection refused. Please ensure PostgreSQL is running and DATABASE_URL is correct.');
+          throw new Error('Database connection failed. Please check that PostgreSQL is running and your DATABASE_URL environment variable is set correctly.');
+        }
+      }
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   /**

@@ -46,13 +46,32 @@ async function DashboardContent() {
       }
     }
   } catch (error) {
-    console.error("Error fetching game stats:", error);
+    // Log the error but don't crash - allow dashboard to render with zero counts
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('connection') || (error && typeof error === 'object' && 'code' in error && error.code === 'ECONNREFUSED')) {
+      console.error("Error fetching game stats: Database connection issue. Please ensure PostgreSQL is running and DATABASE_URL is correct.");
+    } else {
+      console.error("Error fetching game stats:", error);
+    }
   }
 
   // Get user email verification status
-  const user = await db.query.users.findFirst({
-    where: eq(users.id, session.user.id),
-  });
+  let user;
+  try {
+    user = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+  } catch (error) {
+    // Handle database connection errors gracefully
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('connection') || (error && typeof error === 'object' && 'code' in error && error.code === 'ECONNREFUSED')) {
+      console.error('Database connection refused. Please ensure PostgreSQL is running and DATABASE_URL is correct.');
+      // Return null user - the page will handle this gracefully
+      user = null;
+    } else {
+      throw error; // Re-throw other errors
+    }
+  }
 
   // Check if user is new (no games yet)
   const totalGames = Object.values(gameTypeStats).reduce((sum, stats) => sum + stats.active + stats.recent, 0);

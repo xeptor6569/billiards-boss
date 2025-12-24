@@ -12,6 +12,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Validate that user exists in database (handles case where DB was reset but session is still valid)
+    const { db } = await import("@/lib/db");
+    const { users } = await import("@/lib/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const userExists = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+    if (!userExists) {
+      // User doesn't exist - session is invalid, return 401 to force re-authentication
+      return NextResponse.json(
+        { error: "User not found. Please sign in again." },
+        { status: 401 }
+      );
+    }
+
     const url = new URL(request.url);
     const status = url.searchParams.get("status") || undefined;
     const gameType = url.searchParams.get("gameType") || undefined;
@@ -53,6 +68,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Validate that user exists in database (handles case where DB was reset but session is still valid)
+    const { db } = await import("@/lib/db");
+    const { users } = await import("@/lib/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const userExists = await db.query.users.findFirst({
+      where: eq(users.id, session.user.id),
+    });
+    if (!userExists) {
+      // User doesn't exist - session is invalid, return 401 to force re-authentication
+      return NextResponse.json(
+        { error: "User not found. Please sign in again." },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { gameMode, gameState, gameType, customGameId } = body;
 
@@ -83,6 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check game limit for authenticated users
+    // Note: userExists check above ensures user is in database
     const limitCheck = await checkGameLimit(session.user.id);
     if (!limitCheck.allowed && gameState?.isComplete) {
       return NextResponse.json(
@@ -116,8 +147,18 @@ export async function POST(request: NextRequest) {
       createdAt: newGame.createdAt,
       completedAt: newGame.completedAt,
     }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating game:", error);
+    
+    // Check for foreign key violation (user doesn't exist)
+    if (error?.code === '23503' || error?.cause?.code === '23503' || 
+        (error?.message && error.message.includes('violates foreign key constraint'))) {
+      return NextResponse.json(
+        { error: "User not found in database. Please sign out and sign in again." },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
