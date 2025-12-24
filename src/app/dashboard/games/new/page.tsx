@@ -38,6 +38,7 @@ export default function NewGamePage() {
   const [savedGameId, setSavedGameId] = useState<number | null>(null);
   const [savedGameCreatedAt, setSavedGameCreatedAt] = useState<string | null>(null);
   const [showSkillLevelSelector, setShowSkillLevelSelector] = useState(false);
+  const [gameHistory, setGameHistory] = useState<BaseGameState[]>([]); // History stack for undo
   const hasShotsRef = useRef(false);
   const autoSaveInProgressRef = useRef(false);
   const gameStateRef = useRef<GameState | null>(null);
@@ -77,6 +78,8 @@ export default function NewGamePage() {
                 setBaseGameState(gameData.gameState);
                 setSavedGameId(activeGame.id);
                 hasShotsRef.current = true;
+                // Clear history when loading a saved game (can't undo past loads)
+                setGameHistory([]);
                 setLoading(false);
                 return;
               }
@@ -385,6 +388,8 @@ export default function NewGamePage() {
     if (gameTypeHandler) {
       const newState = gameTypeHandler.createNewGame(player1SL, player2SL);
       setBaseGameState(newState);
+      // Clear history when starting a new game
+      setGameHistory([]);
     }
   };
 
@@ -427,10 +432,39 @@ export default function NewGamePage() {
     }
   };
 
+  // Helper to save state to history before making changes
+  const saveToHistory = (state: BaseGameState) => {
+    if (gameType === 'apa9ball' && state) {
+      // Deep clone the state for history
+      const historyEntry = JSON.parse(JSON.stringify(state));
+      setGameHistory(prev => [...prev, historyEntry]);
+    }
+  };
+
+  // Undo last action
+  const handleUndo = () => {
+    if (gameType !== 'apa9ball' || gameHistory.length === 0 || !baseGameState) return;
+    
+    // Get the last state from history
+    const previousState = gameHistory[gameHistory.length - 1];
+    
+    // Restore the previous state
+    setBaseGameState(previousState);
+    
+    // Remove from history
+    setGameHistory(prev => prev.slice(0, -1));
+    
+    // Auto-save the restored state
+    autoSaveGame(previousState);
+  };
+
   const handleAPA9BallInput = (ballNumber: number) => {
     if (!baseGameState || gameType !== 'apa9ball') return;
     const gameTypeHandler = getGameType('apa9ball');
     if (gameTypeHandler) {
+      // Save current state to history before making changes
+      saveToHistory(baseGameState);
+      
       const newState = gameTypeHandler.addScore(baseGameState, { type: 'ball', ballNumber });
       setBaseGameState(newState);
       hasShotsRef.current = true;
@@ -449,6 +483,9 @@ export default function NewGamePage() {
     if (!baseGameState || gameType !== 'apa9ball') return;
     const gameTypeHandler = getGameType('apa9ball');
     if (gameTypeHandler) {
+      // Save current state to history before making changes
+      saveToHistory(baseGameState);
+      
       const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action: 'endTurn' } });
       setBaseGameState(newState);
       hasShotsRef.current = true;
@@ -460,6 +497,9 @@ export default function NewGamePage() {
     if (!baseGameState || gameType !== 'apa9ball') return;
     const gameTypeHandler = getGameType('apa9ball');
     if (gameTypeHandler) {
+      // Save current state to history before making changes
+      saveToHistory(baseGameState);
+      
       const newState = gameTypeHandler.addScore(baseGameState, { type: 'foul' });
       setBaseGameState(newState);
       hasShotsRef.current = true;
@@ -471,6 +511,9 @@ export default function NewGamePage() {
     if (!baseGameState || gameType !== 'apa9ball') return;
     const gameTypeHandler = getGameType('apa9ball');
     if (gameTypeHandler) {
+      // Save current state to history before making changes
+      saveToHistory(baseGameState);
+      
       const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action: 'defensiveShot' } });
       setBaseGameState(newState);
       hasShotsRef.current = true;
@@ -735,6 +778,8 @@ export default function NewGamePage() {
                 onEndTurn={handleEndTurn}
                 onFoul={handleFoul}
                 onDefensiveShot={handleDefensiveShot}
+                onUndo={handleUndo}
+                canUndo={gameHistory.length > 0 && !apa9State.isComplete}
                 disabled={saving}
               />
             )}

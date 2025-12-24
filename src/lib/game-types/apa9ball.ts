@@ -178,17 +178,30 @@ export const apa9ballGameType: GameType = {
           }
           currentPlayerData.score = calculatePlayerScore(currentPlayerData.ballsMade);
           
-          // Check if this wins the game
-          if (checkWinCondition(state, state.gameData.currentPlayer)) {
-            state.gameData.gameStatus = state.gameData.currentPlayer === 1 ? 'player1-won' : 'player2-won';
-            state.isComplete = true;
-            state.gameData.breakAndRun = true;
-            state.gameData.matchPoints = calculateMatchPoints(
-              state.gameData.player1.score,
-              state.gameData.player1.targetScore,
-              state.gameData.player2.score,
-              state.gameData.player2.targetScore
-            );
+          // Check if all balls are pocketed (new rack)
+          const allBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
+          if (allBallsMade.length === 9) {
+            // All balls pocketed - start new rack
+            const nineBallMaker = state.gameData.currentPlayer;
+            state.gameData.breakPlayer = nineBallMaker;
+            state.gameData.currentPlayer = nineBallMaker;
+            state.gameData.player1.ballsMade = [];
+            state.gameData.player2.ballsMade = [];
+            state.gameData.currentBall = 1;
+            state.gameData.nineBallOnBreak = false;
+          } else {
+            // Check if this wins the game
+            if (checkWinCondition(state, state.gameData.currentPlayer)) {
+              state.gameData.gameStatus = state.gameData.currentPlayer === 1 ? 'player1-won' : 'player2-won';
+              state.isComplete = true;
+              state.gameData.breakAndRun = true;
+              state.gameData.matchPoints = calculateMatchPoints(
+                state.gameData.player1.score,
+                state.gameData.player1.targetScore,
+                state.gameData.player2.score,
+                state.gameData.player2.targetScore
+              );
+            }
           }
         } else if (ballNumber >= 1 && ballNumber <= 8) {
           // Regular ball on break
@@ -220,6 +233,23 @@ export const apa9ballGameType: GameType = {
           const newAllBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
           const newRemainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !newAllBallsMade.includes(b));
           state.gameData.currentBall = newRemainingBalls.length > 0 ? Math.min(...newRemainingBalls) : 9;
+          
+          // Check if all balls are pocketed (new rack needed)
+          const newAllBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
+          if (newAllBallsMade.length === 9) {
+            // All balls pocketed - start new rack
+            // The player who made the 9-ball breaks the next rack
+            const nineBallMaker = state.gameData.currentPlayer;
+            state.gameData.breakPlayer = nineBallMaker;
+            state.gameData.currentPlayer = nineBallMaker;
+            
+            // Reset balls (keep scores, innings, etc.)
+            state.gameData.player1.ballsMade = [];
+            state.gameData.player2.ballsMade = [];
+            state.gameData.currentBall = 1;
+            state.gameData.nineBallOnBreak = false;
+            // Note: breakAndRun is only for winning the entire match, not a single rack
+          }
           
           // Check for win condition (reached target score)
           if (checkWinCondition(state, state.gameData.currentPlayer)) {

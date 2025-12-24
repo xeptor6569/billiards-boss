@@ -1,7 +1,7 @@
 // Bowlliards game type implementation
 // 10-ball pocket billiards scored like bowling
 
-import { GameType, BaseGameState, ScoreInput, GameTypeMetadata } from './types';
+import { GameType, BaseGameState, ScoreInput, GameUIComponents } from './types';
 
 // Bowlliards-specific game state
 export interface BowlliardsGameState extends BaseGameState {
@@ -293,30 +293,43 @@ export const bowlliardsGameType: GameType = {
     return getRemainingBalls(currentFrame);
   },
   
-  reconstructFromData(data: any): BaseGameState {
+  reconstructFromData(data: Record<string, unknown>): BaseGameState {
     const state = createNewBowlliardsGame();
     
     if (data.frames && Array.isArray(data.frames)) {
-      const sortedFrames = [...data.frames].sort((a: any, b: any) => a.frameNumber - b.frameNumber);
+      const sortedFrames = [...data.frames].sort((a: Record<string, unknown>, b: Record<string, unknown>) => 
+        (a.frameNumber as number) - (b.frameNumber as number)
+      );
       
       for (let i = 0; i < sortedFrames.length && i < MAX_FRAMES; i++) {
-        const savedFrame = sortedFrames[i];
-        const frameIndex = savedFrame.frameNumber - 1;
+        const savedFrame = sortedFrames[i] as Record<string, unknown>;
+        const frameIndex = (savedFrame.frameNumber as number) - 1;
         
         if (frameIndex >= 0 && frameIndex < state.gameData.frames.length) {
           const frame = state.gameData.frames[frameIndex];
-          frame.ballsPocketed = [...savedFrame.ballsPocketed];
-          frame.score = savedFrame.score;
-          frame.isStrike = savedFrame.isStrike;
-          frame.isSpare = savedFrame.isSpare;
+          // Handle ballsPocketed - it might be a string (JSON) or array
+          let ballsPocketed: number[] = [];
+          if (Array.isArray(savedFrame.ballsPocketed)) {
+            ballsPocketed = [...(savedFrame.ballsPocketed as number[])];
+          } else if (typeof savedFrame.ballsPocketed === 'string') {
+            try {
+              ballsPocketed = JSON.parse(savedFrame.ballsPocketed);
+            } catch {
+              ballsPocketed = [];
+            }
+          }
+          frame.ballsPocketed = ballsPocketed;
+          frame.score = savedFrame.score as number;
+          frame.isStrike = savedFrame.isStrike as boolean;
+          frame.isSpare = savedFrame.isSpare as boolean;
           
-          const isTenthFrame = savedFrame.frameNumber === 10;
-          if (savedFrame.isStrike) {
-            frame.isComplete = isTenthFrame ? savedFrame.ballsPocketed.length >= 3 : true;
-          } else if (savedFrame.isSpare) {
-            frame.isComplete = isTenthFrame ? savedFrame.ballsPocketed.length >= 3 : true;
+          const isTenthFrame = (savedFrame.frameNumber as number) === 10;
+          if (savedFrame.isStrike as boolean) {
+            frame.isComplete = isTenthFrame ? ballsPocketed.length >= 3 : true;
+          } else if (savedFrame.isSpare as boolean) {
+            frame.isComplete = isTenthFrame ? ballsPocketed.length >= 3 : true;
           } else {
-            frame.isComplete = savedFrame.ballsPocketed.length >= 2;
+            frame.isComplete = ballsPocketed.length >= 2;
           }
         }
       }
@@ -330,7 +343,7 @@ export const bowlliardsGameType: GameType = {
     return state;
   },
   
-  serialize(gameState: BaseGameState): any {
+  serialize(gameState: BaseGameState): Record<string, unknown> {
     const state = gameState as BowlliardsGameState;
     return {
       gameType: 'bowlliards',
@@ -351,6 +364,4 @@ export const bowlliardsGameType: GameType = {
 export function getRemainingBallsForFrame(frame: Frame): number {
   return getRemainingBalls(frame);
 }
-
-export type { Frame, BowlliardsGameState };
 
