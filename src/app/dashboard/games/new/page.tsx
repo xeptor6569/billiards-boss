@@ -53,27 +53,49 @@ export default function NewGamePage() {
     const urlCustomGameId = searchParams.get("customGameId");
     const forceNew = searchParams.get("new") === "true";
     
-    // If "new=true" is in the URL, don't load existing game
-    if (forceNew) {
-      setShowGameTypeSelector(true);
-      setLoading(false);
-      return;
-    }
-    
+    // If gameType is provided in URL, use it and don't show selector
     if (urlGameType) {
       setGameType(urlGameType);
       if (urlCustomGameId) {
         setCustomGameId(parseInt(urlCustomGameId, 10));
       }
       setShowGameTypeSelector(false);
+      // For APA 9-ball, show skill level selector if baseGameState is not set
+      if (urlGameType === 'apa9ball') {
+        setShowSkillLevelSelector(true);
+      }
+      // If "new=true" is also present, we'll skip loading existing game
+      if (forceNew) {
+        setLoading(false);
+      }
+      return;
+    }
+    
+    // If "new=true" is in the URL but no gameType, show selector
+    if (forceNew) {
+      setShowGameTypeSelector(true);
+      setLoading(false);
+      return;
     }
   }, [searchParams]);
 
   // Check for active game on mount (only if not forced to create new)
   useEffect(() => {
     const checkActiveGame = async () => {
-      // Don't load existing game if "new=true" is in URL
+      // If gameType is already set from URL, skip loading existing game
+      const urlGameType = searchParams.get("gameType");
       const forceNew = searchParams.get("new") === "true";
+      
+      // If gameType is in URL, don't load existing game (user selected from dropdown)
+      if (urlGameType) {
+        setSavedGameId(null);
+        savedGameIdRef.current = null;
+        hasShotsRef.current = false;
+        setLoading(false);
+        return;
+      }
+      
+      // Don't load existing game if "new=true" is in URL (but no gameType)
       if (forceNew) {
         setGameType(null);
         setShowGameTypeSelector(true);
@@ -959,8 +981,18 @@ export default function NewGamePage() {
     );
   }
 
-  // Render APA 9-ball UI
-  if (gameType === 'apa9ball' && baseGameState) {
+  // Render APA 9-ball UI (only if baseGameState is initialized)
+  if (gameType === 'apa9ball') {
+    // If baseGameState is not set, we should be showing skill level selector
+    // This check prevents rendering before skill levels are selected
+    if (!baseGameState) {
+      // This shouldn't happen if skill level selector is shown, but as a safety check
+      if (!showSkillLevelSelector) {
+        setShowSkillLevelSelector(true);
+      }
+      return null;
+    }
+    
     const apa9State = baseGameState as APA9BallGameState;
     const isComplete = apa9State.isComplete;
     
@@ -1041,6 +1073,14 @@ export default function NewGamePage() {
                 onUndo={handleUndo}
                 canUndo={gameHistory.length > 0 && !apa9State.isComplete}
                 disabled={saving}
+                isRackComplete={(() => {
+                  // Check if all 9 balls are pocketed
+                  const allBallsMade = [...new Set([
+                    ...apa9State.gameData.player1.ballsMade,
+                    ...apa9State.gameData.player2.ballsMade
+                  ])];
+                  return allBallsMade.length === 9;
+                })()}
               />
             )}
           </div>
