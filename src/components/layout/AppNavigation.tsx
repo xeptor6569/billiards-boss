@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ThemeSwitcher from "@/components/ThemeSwitcher";
 import UserMenu from "@/components/layout/UserMenu";
 import NewGameDropdown from "@/components/layout/NewGameDropdown";
 import type { Session } from "next-auth";
@@ -135,7 +134,6 @@ export default function AppNavigation({ children, session }: AppNavigationProps)
 
                 <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
                     <UserMenu session={session} variant="desktop" />
-                    <ThemeSwitcher expandUp={true} />
                     <div className="text-xs text-center text-slate-600 dark:text-slate-400">
                         {BUILD_INFO.display}
                     </div>
@@ -149,7 +147,6 @@ export default function AppNavigation({ children, session }: AppNavigationProps)
                     <h1 className="text-xl font-bold text-[var(--accent)]">Billiards Boss</h1>
                     <div className="flex items-center gap-3">
                         <UserMenu session={session} variant="mobile" />
-                        <ThemeSwitcher />
                     </div>
                 </header>
 
