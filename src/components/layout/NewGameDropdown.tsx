@@ -118,8 +118,10 @@ export default function NewGameDropdown({
       </button>
 
       {isOpen && (
-        <div className={`absolute z-50 mt-2 w-64 rounded-lg shadow-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden ${
-          variant === "desktop" ? "right-0" : "bottom-full mb-2 right-0"
+        <div className={`absolute z-50 w-64 rounded-lg shadow-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden ${
+          variant === "desktop" 
+            ? "right-0 mt-2" 
+            : "bottom-full mb-2 left-1/2 -translate-x-1/2 max-w-[calc(100vw-1rem)]"
         }`}>
           <div className="max-h-96 overflow-y-auto">
             {/* Standard Game Types */}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { getStandardGameTypes } from "@/lib/game-types";
 
 interface GameTypeTabsProps {
@@ -11,10 +11,15 @@ interface GameTypeTabsProps {
 
 export default function GameTypeTabs({ currentGameType, basePath }: GameTypeTabsProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const gameTypes = getStandardGameTypes();
   
   // Determine if we're on the base path or a specific game type
-  const isBasePath = pathname === basePath;
+  // For stats page, check searchParams; for history, check pathname
+  const isStatsPage = basePath === "/dashboard/stats";
+  const isBasePath = isStatsPage 
+    ? !currentGameType && !searchParams.get('gameType')
+    : pathname === basePath;
   
   return (
     <div className="mb-6">
@@ -46,10 +51,14 @@ export default function GameTypeTabs({ currentGameType, basePath }: GameTypeTabs
               );
             }
             
+            const href = isStatsPage
+              ? `${basePath}?gameType=${gameType.metadata.id}`
+              : `${basePath}/${gameType.metadata.id}`;
+            
             return (
               <Link
                 key={gameType.metadata.id}
-                href={`${basePath}/${gameType.metadata.id}`}
+                href={href}
                 className={`whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm transition-colors ${
                   isActive
                     ? "border-[var(--accent)] text-[var(--accent)]"
