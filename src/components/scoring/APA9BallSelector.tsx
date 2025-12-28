@@ -1,10 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { APA9BallGameState } from "@/lib/game-types/apa9ball";
+import PoolBall from "./PoolBall";
 
 interface APA9BallSelectorProps {
   gameState: APA9BallGameState;
   onBallSelect: (ballNumber: number) => void;
+  onBallsConfirm?: (ballNumbers: number[]) => void;
+  onSelectionChange?: (ballNumbers: number[]) => void;
   disabled?: boolean;
 }
 
@@ -24,24 +28,47 @@ const RACK_POSITIONS = [
 export default function APA9BallSelector({
   gameState,
   onBallSelect,
+  onBallsConfirm,
+  onSelectionChange,
   disabled = false,
 }: APA9BallSelectorProps) {
+  const [selectedBalls, setSelectedBalls] = useState<number[]>([]);
+  
+  // Notify parent of selection changes
+  const updateSelection = (newSelection: number[]) => {
+    setSelectedBalls(newSelection);
+    onSelectionChange?.(newSelection);
+  };
+  
   const currentPlayer = gameState.gameData.currentPlayer;
   const currentPlayerData = gameState.gameData[currentPlayer === 1 ? 'player1' : 'player2'];
   const otherPlayerData = gameState.gameData[currentPlayer === 1 ? 'player2' : 'player1'];
   
-  // Get all balls made by both players
+  // Check if this is the break
+  const isBreak = gameState.gameData.breakPlayer === null && 
+                  gameState.gameData.player1.innings === 0 && 
+                  gameState.gameData.player2.innings === 0;
+  
+  // Get all balls made by both players (including dead balls)
   const allBallsMade = [...new Set([
     ...gameState.gameData.player1.ballsMade,
-    ...gameState.gameData.player2.ballsMade
+    ...gameState.gameData.player2.ballsMade,
+    ...gameState.gameData.player1.deadBalls,
+    ...gameState.gameData.player2.deadBalls
   ])];
   
-  // Find the lowest remaining ball (must hit this first)
+  // Find the lowest remaining ball (must hit this first, except on break)
   const remainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !allBallsMade.includes(b));
   const lowestBall = remainingBalls.length > 0 ? Math.min(...remainingBalls) : 9;
   
   const isBallPocketed = (ballNumber: number): boolean => {
-    return allBallsMade.includes(ballNumber);
+    return gameState.gameData.player1.ballsMade.includes(ballNumber) ||
+           gameState.gameData.player2.ballsMade.includes(ballNumber);
+  };
+  
+  const isBallDead = (ballNumber: number): boolean => {
+    return gameState.gameData.player1.deadBalls.includes(ballNumber) ||
+           gameState.gameData.player2.deadBalls.includes(ballNumber);
   };
   
   const isBallPocketedByCurrentPlayer = (ballNumber: number): boolean => {
@@ -53,23 +80,34 @@ export default function APA9BallSelector({
   };
   
   const isBallValid = (ballNumber: number): boolean => {
-    // Can only select the lowest remaining ball (or 9 if it's the only one left)
-    return !isBallPocketed(ballNumber) && (ballNumber === lowestBall || (ballNumber === 9 && lowestBall === 9));
-  };
-  
-  const getBallColor = (ballNumber: number): string => {
-    if (ballNumber === 9) {
-      return "bg-yellow-500 border-yellow-600"; // 9-ball is yellow
-    }
-    // Standard ball colors (simplified - using accent color for all)
-    return "bg-[var(--accent)] border-amber-500";
+    // Any unpocketed, non-dead ball can be selected
+    return !isBallPocketed(ballNumber) && !isBallDead(ballNumber);
   };
   
   const handleBallClick = (ballNumber: number) => {
-    if (disabled || isBallPocketed(ballNumber) || !isBallValid(ballNumber)) {
+    if (disabled || isBallPocketed(ballNumber) || isBallDead(ballNumber)) {
       return;
     }
-    onBallSelect(ballNumber);
+    
+    // Toggle selection - allow selecting any unpocketed ball directly
+    if (selectedBalls.includes(ballNumber)) {
+      const newSelection = selectedBalls.filter(b => b !== ballNumber);
+      updateSelection(newSelection);
+    } else {
+      const newSelection = [...selectedBalls, ballNumber];
+      updateSelection(newSelection);
+    }
+  };
+  
+  const handleConfirmShot = () => {
+    if (selectedBalls.length > 0 && onBallsConfirm) {
+      onBallsConfirm(selectedBalls);
+      updateSelection([]);
+    } else if (selectedBalls.length === 1 && onBallSelect) {
+      // Single ball - use old handler for backward compatibility
+      onBallSelect(selectedBalls[0]);
+      updateSelection([]);
+    }
   };
 
   return (
@@ -77,68 +115,71 @@ export default function APA9BallSelector({
       <div className="relative w-[300px] h-[220px] sm:w-[360px] sm:h-[280px]">
         {RACK_POSITIONS.map(({ row, col, ball }) => {
           const isPocketed = isBallPocketed(ball);
+          const isDead = isBallDead(ball);
           const isCurrentPlayer = isBallPocketedByCurrentPlayer(ball);
           const isOtherPlayer = isBallPocketedByOtherPlayer(ball);
           const isValid = isBallValid(ball);
-          const isClickable = !disabled && !isPocketed && isValid;
+          const isClickable = !disabled && !isPocketed && !isDead && isValid;
+          const isSelected = selectedBalls.includes(ball);
           
           return (
-            <button
+            <div
               key={ball}
-              onClick={() => handleBallClick(ball)}
-              disabled={!isClickable}
-              className={`
-                absolute rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center
-                text-sm sm:text-base font-bold transition-all duration-300
-                ${isPocketed 
-                  ? "bg-slate-200 dark:bg-slate-700 border-2 border-slate-300 dark:border-slate-600 opacity-40 cursor-not-allowed" 
-                  : isValid && isClickable
-                  ? `${getBallColor(ball)} border-2 shadow-lg hover:scale-110 active:scale-95 cursor-pointer`
-                  : "bg-slate-300 dark:bg-slate-600 border-2 border-slate-400 dark:border-slate-500 opacity-50 cursor-not-allowed"
-                }
-                ${isCurrentPlayer ? "ring-2 ring-blue-500 ring-offset-2" : ""}
-                ${isOtherPlayer ? "ring-2 ring-red-500 ring-offset-2" : ""}
-              `}
+              className="absolute"
               style={{
                 left: `${(col / 8) * 100}%`,
                 top: `${(row / 4) * 100}%`,
                 transform: 'translate(-50%, -50%)',
               }}
-              title={
-                isPocketed 
-                  ? `Ball ${ball} already pocketed${isCurrentPlayer ? " by you" : isOtherPlayer ? " by opponent" : ""}`
-                  : isValid 
-                  ? `Click to pocket ball ${ball}${ball === 9 ? " (2 points)" : " (1 point)"}`
-                  : `Must hit ball ${lowestBall} first`
-              }
             >
-              {!isPocketed && (
-                <span className="font-bold text-white drop-shadow-md">
-                  {ball}
-                </span>
-              )}
-              {isPocketed && (
-                <span className="text-xs text-slate-500 dark:text-slate-400 line-through">
-                  {ball}
-                </span>
-              )}
-            </button>
+              <PoolBall
+                ballNumber={ball}
+                size="md"
+                isPocketed={isPocketed}
+                isSelected={isSelected}
+                isDead={isDead}
+                pocketedBy={isCurrentPlayer ? 'player1' : isOtherPlayer ? 'player2' : undefined}
+                onClick={() => handleBallClick(ball)}
+                disabled={!isClickable}
+              />
+            </div>
           );
         })}
       </div>
       
-      {/* Instructions */}
-      <div className="mt-4 text-center">
-        <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
-          {remainingBalls.length === 0 
-            ? "All balls pocketed" 
-            : `Hit ball ${lowestBall} first`
-          }
-        </p>
-        {remainingBalls.length > 0 && (
-          <p className="text-slate-500 dark:text-slate-500 text-xs mt-1">
-            {remainingBalls.length} ball{remainingBalls.length !== 1 ? 's' : ''} remaining
-          </p>
+      {/* Instructions and Confirm Button */}
+      <div className="mt-4 text-center w-full max-w-md">
+        {selectedBalls.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
+              Selected: {selectedBalls.sort((a, b) => a - b).join(', ')}
+            </p>
+            {onBallsConfirm && (
+              <button
+                onClick={handleConfirmShot}
+                disabled={disabled}
+                className="px-4 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Confirm Shot
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
+              {remainingBalls.length === 0 
+                ? "All balls pocketed" 
+                : isBreak
+                ? "Break - Select balls made"
+                : `Hit ball ${lowestBall} first`
+              }
+            </p>
+            {remainingBalls.length > 0 && (
+              <p className="text-slate-500 dark:text-slate-500 text-xs mt-1">
+                {remainingBalls.length} ball{remainingBalls.length !== 1 ? 's' : ''} remaining
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

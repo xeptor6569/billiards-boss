@@ -122,10 +122,12 @@ function calculatePlayerScore(ballsMade: number[]): number {
 }
 
 // Calculate cumulative score from all racks for a player
+// Excludes dead balls from score calculation
 function calculateCumulativeScore(state: APA9BallGameState, player: 1 | 2): number {
   const playerData = state.gameData[player === 1 ? 'player1' : 'player2'];
-  // Score from current rack
-  const currentRackScore = calculatePlayerScore(playerData.ballsMade);
+  // Score from current rack (exclude dead balls)
+  const currentRackBalls = playerData.ballsMade.filter(ball => !playerData.deadBalls.includes(ball));
+  const currentRackScore = calculatePlayerScore(currentRackBalls);
   // Score from all completed racks
   const completedRacksScore = state.gameData.racks.reduce((total, rack) => {
     const rackBalls = player === 1 ? rack.player1Balls : rack.player2Balls;
@@ -166,6 +168,60 @@ function checkWinCondition(state: APA9BallGameState, player: 1 | 2): boolean {
   const playerData = state.gameData[player === 1 ? 'player1' : 'player2'];
   // Win if player reaches their target score
   return playerData.score >= playerData.targetScore;
+}
+
+// Helper function to get all balls made (including dead balls for display purposes)
+function getAllBallsMade(state: APA9BallGameState): number[] {
+  const allBallsMade = [...new Set([
+    ...state.gameData.player1.ballsMade,
+    ...state.gameData.player2.ballsMade,
+    ...state.gameData.player1.deadBalls,
+    ...state.gameData.player2.deadBalls
+  ])];
+  return allBallsMade;
+}
+
+// Helper function to validate combination shot
+// Must hit lowest ball first, then can make additional balls
+function validateCombinationShot(state: APA9BallGameState, ballNumbers: number[], isBreak: boolean): boolean {
+  if (isBreak) {
+    // On break, any combination is legal
+    return true;
+  }
+  
+  // Get all balls made (including dead balls)
+  const allBallsMade = getAllBallsMade(state);
+  const remainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !allBallsMade.includes(b));
+  const lowestBall = remainingBalls.length > 0 ? Math.min(...remainingBalls) : 9;
+  
+  // Must hit lowest ball first in combination shot
+  return ballNumbers.includes(lowestBall) || (lowestBall === 9 && ballNumbers.includes(9));
+}
+
+// Helper function to process multiple balls made in one shot
+function processBallsMade(
+  state: APA9BallGameState,
+  ballNumbers: number[],
+  isBreak: boolean
+): { valid: boolean; ballsToAdd: number[] } {
+  // Validate ball numbers
+  const validBalls = ballNumbers.filter(b => b >= 1 && b <= 9);
+  if (validBalls.length === 0) {
+    return { valid: false, ballsToAdd: [] };
+  }
+  
+  // Validate combination shot (must hit lowest ball first)
+  if (!validateCombinationShot(state, validBalls, isBreak)) {
+    return { valid: false, ballsToAdd: [] };
+  }
+  
+  // Get all balls already made (including dead balls)
+  const allBallsMade = getAllBallsMade(state);
+  
+  // Filter out balls that are already made
+  const ballsToAdd = validBalls.filter(b => !allBallsMade.includes(b));
+  
+  return { valid: true, ballsToAdd };
 }
 
 export const apa9ballGameType: GameType = {
@@ -223,8 +279,8 @@ export const apa9ballGameType: GameType = {
               state.gameData.player2.targetScore
             );
           } else {
-            // Check if all balls are pocketed (new rack)
-            const allBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
+            // Check if all balls are pocketed (new rack) - exclude dead balls
+            const allBallsMade = getAllBallsMade(state);
             if (allBallsMade.length === 9) {
               // All balls pocketed but game not won - save current rack to history
               // BUT don't reset yet - wait for user to click "Start New Rack"
@@ -274,14 +330,14 @@ export const apa9ballGameType: GameType = {
           // Update score to include current rack + all completed racks
           currentPlayerData.score = calculateCumulativeScore(state, state.gameData.currentPlayer);
           
-          // Update current ball to next lowest on table
-          const allBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
+          // Update current ball to next lowest on table - account for dead balls
+          const allBallsMade = getAllBallsMade(state);
           const remainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !allBallsMade.includes(b));
           state.gameData.currentBall = remainingBalls.length > 0 ? Math.min(...remainingBalls) : 9;
         }
       } else {
-        // Regular play - must hit lowest-numbered ball first
-        const allBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
+        // Regular play - must hit lowest-numbered ball first - account for dead balls
+        const allBallsMade = getAllBallsMade(state);
         const remainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !allBallsMade.includes(b));
         const lowestBall = remainingBalls.length > 0 ? Math.min(...remainingBalls) : 9;
         
@@ -294,8 +350,8 @@ export const apa9ballGameType: GameType = {
           // Update score to include current rack + all completed racks
           currentPlayerData.score = calculateCumulativeScore(state, state.gameData.currentPlayer);
           
-          // Update current ball
-          const newAllBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
+          // Update current ball - account for dead balls
+          const newAllBallsMade = getAllBallsMade(state);
           const newRemainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !newAllBallsMade.includes(b));
           state.gameData.currentBall = newRemainingBalls.length > 0 ? Math.min(...newRemainingBalls) : 9;
           
@@ -368,7 +424,118 @@ export const apa9ballGameType: GameType = {
           otherPlayerData.innings += 1;
         }
       }
+    } else if (input.type === 'ballsArray') {
+      // Combination shot - multiple balls made in one shot
+      const ballNumbers = input.ballNumbers;
+      const isBreak = state.gameData.breakPlayer === null && state.gameData.player1.innings === 0 && state.gameData.player2.innings === 0;
+      
+      // Process the balls
+      const result = processBallsMade(state, ballNumbers, isBreak);
+      
+      if (!result.valid || result.ballsToAdd.length === 0) {
+        // Invalid shot - foul
+        currentPlayerData.fouls += 1;
+        state.gameData.currentPlayer = state.gameData.currentPlayer === 1 ? 2 : 1;
+        otherPlayerData.innings += 1;
+        return state;
+      }
+      
+      // Handle break
+      if (isBreak) {
+        state.gameData.breakPlayer = state.gameData.currentPlayer;
+        currentPlayerData.innings = 1;
+        
+        // Check if 9-ball was made on break
+        if (result.ballsToAdd.includes(9)) {
+          state.gameData.nineBallOnBreak = true;
+        }
+      }
+      
+      // Add all valid balls to player's ballsMade
+      for (const ballNumber of result.ballsToAdd) {
+        if (!currentPlayerData.ballsMade.includes(ballNumber)) {
+          currentPlayerData.ballsMade.push(ballNumber);
+        }
+      }
+      
+      // Update score
+      currentPlayerData.score = calculateCumulativeScore(state, state.gameData.currentPlayer);
+      
+      // Update current ball
+      const newAllBallsMade = getAllBallsMade(state);
+      const newRemainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !newAllBallsMade.includes(b));
+      state.gameData.currentBall = newRemainingBalls.length > 0 ? Math.min(...newRemainingBalls) : 9;
+      
+      // Check for win condition
+      if (checkWinCondition(state, state.gameData.currentPlayer)) {
+        state.gameData.gameStatus = state.gameData.currentPlayer === 1 ? 'player1-won' : 'player2-won';
+        state.isComplete = true;
+        
+        if (state.gameData.breakPlayer === state.gameData.currentPlayer && 
+            otherPlayerData.innings === 0) {
+          state.gameData.breakAndRun = true;
+        }
+        
+        state.gameData.matchPoints = calculateMatchPoints(
+          state.gameData.player1.score,
+          state.gameData.player1.targetScore,
+          state.gameData.player2.score,
+          state.gameData.player2.targetScore
+        );
+      } else {
+            // Check if all balls are pocketed (new rack) - exclude dead balls
+            const allBallsMade = getAllBallsMade(state);
+            if (allBallsMade.length === 9) {
+          const lastRack = state.gameData.racks.length > 0 
+            ? state.gameData.racks[state.gameData.racks.length - 1]
+            : null;
+          const rackAlreadySaved = lastRack && lastRack.rackNumber === state.gameData.currentRack;
+          
+          if (!rackAlreadySaved) {
+            const completedRack: APA9BallRack = {
+              rackNumber: state.gameData.currentRack,
+              breakPlayer: state.gameData.breakPlayer || state.gameData.currentPlayer,
+              player1Balls: [...state.gameData.player1.ballsMade],
+              player2Balls: [...state.gameData.player2.ballsMade],
+              player1Innings: state.gameData.player1.innings,
+              player2Innings: state.gameData.player2.innings,
+              player1Fouls: state.gameData.player1.fouls,
+              player2Fouls: state.gameData.player2.fouls,
+              player1DefensiveShots: state.gameData.player1.defensiveShots,
+              player2DefensiveShots: state.gameData.player2.defensiveShots,
+              nineBallOnBreak: state.gameData.nineBallOnBreak,
+              completedAt: new Date(),
+            };
+            state.gameData.racks.push(completedRack);
+            
+            const nineBallMaker = state.gameData.currentPlayer;
+            state.gameData.breakPlayer = nineBallMaker;
+          }
+        }
+      }
     } else if (input.type === 'foul') {
+      // Handle foul - check if balls were made (dead balls)
+      if (input.ballNumbers && input.ballNumbers.length > 0) {
+        // Foul with balls made - these become dead balls
+        const ballNumbers = input.ballNumbers.filter(b => b >= 1 && b <= 9);
+        
+        for (const ballNumber of ballNumbers) {
+          // Remove from ballsMade if it was there
+          const ballIndex = currentPlayerData.ballsMade.indexOf(ballNumber);
+          if (ballIndex > -1) {
+            currentPlayerData.ballsMade.splice(ballIndex, 1);
+          }
+          
+          // Add to deadBalls if not already there
+          if (!currentPlayerData.deadBalls.includes(ballNumber)) {
+            currentPlayerData.deadBalls.push(ballNumber);
+          }
+        }
+        
+        // Recalculate score (dead balls don't count)
+        currentPlayerData.score = calculateCumulativeScore(state, state.gameData.currentPlayer);
+      }
+      
       currentPlayerData.fouls += 1;
       // Switch players after foul
       state.gameData.currentPlayer = state.gameData.currentPlayer === 1 ? 2 : 1;
@@ -383,13 +550,9 @@ export const apa9ballGameType: GameType = {
       } else if (input.data?.action === 'startNewRack') {
         // Manually start a new rack - reset balls and start fresh rack
         // The rack should already be saved when all 9 balls were made
-        // Check if all 9 balls are pocketed
-        const allBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
+        // Check if all 9 balls are pocketed - account for dead balls
+        const allBallsMade = getAllBallsMade(state);
         if (allBallsMade.length === 9) {
-          // Calculate cumulative scores BEFORE resetting (to avoid double-counting)
-          const player1ScoreBeforeReset = calculateCumulativeScore(state, 1);
-          const player2ScoreBeforeReset = calculateCumulativeScore(state, 2);
-          
           // The current player breaks the next rack (stay on current player)
           const currentPlayer = state.gameData.currentPlayer;
           state.gameData.breakPlayer = currentPlayer;
@@ -402,9 +565,11 @@ export const apa9ballGameType: GameType = {
           state.gameData.nineBallOnBreak = false;
           state.gameData.currentRack += 1;
           
-          // Restore cumulative scores (they should persist across racks)
-          state.gameData.player1.score = player1ScoreBeforeReset;
-          state.gameData.player2.score = player2ScoreBeforeReset;
+          // Recalculate scores after reset - calculateCumulativeScore will correctly
+          // sum all completed racks (now including the one we just completed) plus
+          // current rack (which is now empty, so score stays the same)
+          state.gameData.player1.score = calculateCumulativeScore(state, 1);
+          state.gameData.player2.score = calculateCumulativeScore(state, 2);
         }
       } else if (input.data?.action === 'defensiveShot') {
         // Mark defensive shot

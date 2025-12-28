@@ -712,6 +712,8 @@ export default function NewGamePage() {
     autoSaveGame(previousState);
   };
 
+  const [selectedBalls, setSelectedBalls] = useState<number[]>([]);
+  
   const handleAPA9BallInput = (ballNumber: number) => {
     if (!baseGameState || gameType !== 'apa9ball') return;
     const gameTypeHandler = getGameType('apa9ball');
@@ -732,19 +734,74 @@ export default function NewGamePage() {
       }, 1000);
     }
   };
+  
+  const handleAPA9BallsConfirm = (ballNumbers: number[]) => {
+    if (!baseGameState || gameType !== 'apa9ball') return;
+    const gameTypeHandler = getGameType('apa9ball');
+    if (gameTypeHandler && ballNumbers.length > 0) {
+      // Save current state to history before making changes
+      saveToHistory(baseGameState);
+      
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'ballsArray', ballNumbers });
+      setBaseGameState(newState);
+      setSelectedBalls([]); // Clear selection after confirming
+      hasShotsRef.current = true;
+      
+      // Auto-save
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        autoSaveGame(newState);
+      }, 1000);
+    }
+  };
+  
+  const handleFoulWithBalls = (ballNumbers: number[]) => {
+    if (!baseGameState || gameType !== 'apa9ball') return;
+    const gameTypeHandler = getGameType('apa9ball');
+    if (gameTypeHandler && ballNumbers.length > 0) {
+      // Save current state to history before making changes
+      saveToHistory(baseGameState);
+      
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'foul', ballNumbers });
+      setBaseGameState(newState);
+      setSelectedBalls([]); // Clear selection after foul
+      hasShotsRef.current = true;
+      
+      // Auto-save
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        autoSaveGame(newState);
+      }, 1000);
+    } else if (gameTypeHandler) {
+      // Foul without balls - use regular foul handler
+      handleFoul();
+    }
+  };
 
   const handleEndTurn = () => {
     if (!baseGameState || gameType !== 'apa9ball') return;
+    
+    // Clear any selected balls when ending turn
+    if (selectedBalls.length > 0) {
+      setSelectedBalls([]);
+    }
+    
     const gameTypeHandler = getGameType('apa9ball');
     if (gameTypeHandler) {
       // Save current state to history before making changes
       saveToHistory(baseGameState);
       
       const apa9State = baseGameState as APA9BallGameState;
-      // Check if rack is complete
+      // Check if rack is complete - account for dead balls
       const allBallsMade = [...new Set([
         ...apa9State.gameData.player1.ballsMade,
-        ...apa9State.gameData.player2.ballsMade
+        ...apa9State.gameData.player2.ballsMade,
+        ...apa9State.gameData.player1.deadBalls,
+        ...apa9State.gameData.player2.deadBalls
       ])];
       const lastCompletedRack = apa9State.gameData.racks.length > 0 
         ? apa9State.gameData.racks[apa9State.gameData.racks.length - 1]
@@ -1117,6 +1174,8 @@ export default function NewGamePage() {
               <APA9BallSelector
                 gameState={apa9State}
                 onBallSelect={handleAPA9BallInput}
+                onBallsConfirm={handleAPA9BallsConfirm}
+                onSelectionChange={setSelectedBalls}
                 disabled={isComplete || saving}
               />
             )}
@@ -1147,15 +1206,19 @@ export default function NewGamePage() {
               <APA9BallTurnControls
                 onEndTurn={handleEndTurn}
                 onFoul={handleFoul}
+                onFoulWithBalls={handleFoulWithBalls}
                 onDefensiveShot={handleDefensiveShot}
                 onUndo={handleUndo}
                 canUndo={gameHistory.length > 0 && !apa9State.isComplete}
                 disabled={saving}
+                selectedBalls={selectedBalls}
                 isRackComplete={(() => {
-                  // Check if all 9 balls are pocketed in current rack
+                  // Check if all 9 balls are pocketed in current rack - account for dead balls
                   const allBallsMade = [...new Set([
                     ...apa9State.gameData.player1.ballsMade,
-                    ...apa9State.gameData.player2.ballsMade
+                    ...apa9State.gameData.player2.ballsMade,
+                    ...apa9State.gameData.player1.deadBalls,
+                    ...apa9State.gameData.player2.deadBalls
                   ])];
                   
                   // Rack is complete if all 9 balls are made OR

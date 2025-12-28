@@ -17,7 +17,8 @@ export interface BaseGameState {
 export type ScoreInput = 
   | { type: 'balls'; count: number }
   | { type: 'ball'; ballNumber: number }
-  | { type: 'foul'; penalty?: number }
+  | { type: 'ballsArray'; ballNumbers: number[] } // Array of balls for combination shots
+  | { type: 'foul'; penalty?: number; ballNumbers?: number[] } // Foul with optional balls made (dead balls)
   | { type: 'custom'; data: Record<string, any> };
 
 /**
