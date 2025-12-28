@@ -67,7 +67,15 @@ export default function NewGameDropdown({
     }
   };
 
+  const isComingSoon = (gameTypeId: string) => {
+    return gameTypeId === 'apa8ball' || gameTypeId === 'straight-pool' || gameTypeId === 'custom';
+  };
+
   const handleGameTypeSelect = (gameTypeId: string, customGameId?: number) => {
+    // Don't allow selection of coming soon games
+    if (isComingSoon(gameTypeId)) {
+      return;
+    }
     setIsOpen(false);
     // Always add new=true to force creating a new game instead of loading existing
     if (customGameId) {
@@ -111,7 +119,7 @@ export default function NewGameDropdown({
 
       {isOpen && (
         <div className={`absolute z-50 mt-2 w-64 rounded-lg shadow-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden ${
-          variant === "desktop" ? "left-0" : "bottom-full mb-2 right-0"
+          variant === "desktop" ? "right-0" : "bottom-full mb-2 right-0"
         }`}>
           <div className="max-h-96 overflow-y-auto">
             {/* Standard Game Types */}
@@ -119,57 +127,90 @@ export default function NewGameDropdown({
               <div className="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                 Standard Games
               </div>
-              {standardTypes.map((gameType) => (
-                <button
-                  key={gameType.metadata.id}
-                  onClick={() => handleGameTypeSelect(gameType.metadata.id)}
-                  className="w-full text-left px-3 py-2 rounded-md text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                >
-                  <div className="font-medium">{gameType.metadata.name}</div>
-                  {gameType.metadata.description && (
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {gameType.metadata.description}
+              {standardTypes.map((gameType) => {
+                const comingSoon = isComingSoon(gameType.metadata.id);
+                return (
+                  <button
+                    key={gameType.metadata.id}
+                    onClick={() => handleGameTypeSelect(gameType.metadata.id)}
+                    disabled={comingSoon}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                      comingSoon
+                        ? "text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60"
+                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-medium">{gameType.metadata.name}</div>
+                      {comingSoon && (
+                        <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-500 text-white ml-2">
+                          Coming Soon
+                        </span>
+                      )}
                     </div>
-                  )}
-                </button>
-              ))}
+                    {gameType.metadata.description && (
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {gameType.metadata.description}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Custom Games (Premium) */}
-            {hasPremiumAccess && (
-              <div className="p-2 border-t border-slate-200 dark:border-slate-700">
-                <div className="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
-                  <span>Custom Games</span>
-                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-500 text-white">
-                    Premium
+            <div className="p-2 border-t border-slate-200 dark:border-slate-700">
+              <div className="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <span>Custom Games</span>
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-500 text-white">
+                  Premium
+                </span>
+              </div>
+              {/* Custom Game Type (Coming Soon) */}
+              <button
+                onClick={() => handleGameTypeSelect("custom")}
+                disabled={true}
+                className="w-full text-left px-3 py-2 rounded-md text-sm text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="font-medium">Custom Game Type</div>
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-500 text-white ml-2">
+                    Coming Soon
                   </span>
                 </div>
-                {loadingCustomGames ? (
-                  <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
-                    Loading...
-                  </div>
-                ) : customGames.length > 0 ? (
-                  customGames.map((customGame) => (
-                    <button
-                      key={customGame.id}
-                      onClick={() => handleGameTypeSelect("custom", customGame.id)}
-                      className="w-full text-left px-3 py-2 rounded-md text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      <div className="font-medium">{customGame.name}</div>
-                      {customGame.description && (
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          {customGame.description}
-                        </div>
-                      )}
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
-                    No custom games yet
-                  </div>
-                )}
-              </div>
-            )}
+                <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Create your own custom game rules via YAML
+                </div>
+              </button>
+              {hasPremiumAccess && (
+                <>
+                  {loadingCustomGames ? (
+                    <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+                      Loading...
+                    </div>
+                  ) : customGames.length > 0 ? (
+                    customGames.map((customGame) => (
+                      <button
+                        key={customGame.id}
+                        onClick={() => handleGameTypeSelect("custom", customGame.id)}
+                        className="w-full text-left px-3 py-2 rounded-md text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                      >
+                        <div className="font-medium">{customGame.name}</div>
+                        {customGame.description && (
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {customGame.description}
+                          </div>
+                        )}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">
+                      No custom games yet
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
