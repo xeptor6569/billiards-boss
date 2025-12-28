@@ -6,6 +6,8 @@ import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 import GameTypeCard from "@/components/dashboard/GameTypeCard";
+import NewsSection from "@/components/dashboard/NewsSection";
+import DevDeploymentCard from "@/components/dashboard/DevDeploymentCard";
 import { getStandardGameTypes } from "@/lib/game-types";
 import { gamePersistenceService } from "@/lib/services/game-persistence-service";
 
@@ -119,6 +121,14 @@ async function DashboardContent() {
           }
         </p>
       </div>
+
+      {/* News/Updates Section */}
+      <NewsSection />
+
+      {/* Dev Deployment Card - Only show in development or when explicitly enabled */}
+      {(process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_SHOW_DEV_CARD === "true") && (
+        <DevDeploymentCard userEmail={session.user?.email} />
+      )}
 
       {/* Onboarding for new users */}
       {isNewUser && (

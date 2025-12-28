@@ -200,6 +200,28 @@ NEXT_PUBLIC_WS_URL=https://billiardsboss.com
 APP_PORT=3000
 ```
 
+### Dev Deployment Features (Optional)
+
+For the dev deployment card on the dashboard, you can optionally configure GitHub issue creation:
+
+```env
+# GitHub token for creating issues (Personal Access Token with 'repo' scope)
+GITHUB_TOKEN=ghp_your_token_here
+
+# GitHub repository info (optional, defaults to cmarotto/billiards-boss)
+GITHUB_REPO_OWNER=cmarotto
+GITHUB_REPO_NAME=billiards-boss
+```
+
+**Setting up GitHub token:**
+
+1. Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+2. Generate a new token with `repo` scope
+3. Add the token to your `.env.local` or `.env.development` file
+4. The "Create GitHub Issue" button in the dev deployment card will now work
+
+**Note:** These variables are only used in development environments and are not required for production.
+
 ## Security Best Practices
 
 1. **Never commit `.env` files** - They are gitignored for a reason
