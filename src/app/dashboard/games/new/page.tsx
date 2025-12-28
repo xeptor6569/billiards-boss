@@ -60,6 +60,8 @@ export default function NewGamePage() {
         setCustomGameId(parseInt(urlCustomGameId, 10));
       }
       setShowGameTypeSelector(false);
+      // Reset modal state when starting new game
+      setShowSuccessModal(false);
       // For APA 9-ball, show skill level selector if baseGameState is not set
       if (urlGameType === 'apa9ball') {
         setShowSkillLevelSelector(true);
@@ -130,6 +132,7 @@ export default function NewGamePage() {
         setSavedGameId(null);
         savedGameIdRef.current = null;
         hasShotsRef.current = false;
+        setShowSuccessModal(false); // Reset modal when starting new game
         setLoading(false);
         return;
       }
@@ -141,6 +144,7 @@ export default function NewGamePage() {
         setSavedGameId(null);
         savedGameIdRef.current = null;
         hasShotsRef.current = false;
+        setShowSuccessModal(false); // Reset modal when starting new game
         setLoading(false);
         return;
       }
@@ -583,6 +587,7 @@ export default function NewGamePage() {
     setGameType(selectedGameType);
     setCustomGameId(selectedCustomGameId || null);
     setShowGameTypeSelector(false);
+    setShowSuccessModal(false); // Reset modal when starting new game
     
     // Create new game based on type
     if (selectedGameType === 'bowlliards') {
@@ -631,6 +636,7 @@ export default function NewGamePage() {
 
   const handleSkillLevelConfirm = (player1SL: number, player2SL: number) => {
     setShowSkillLevelSelector(false);
+    setShowSuccessModal(false); // Reset modal when starting new game
     const gameTypeHandler = getGameType('apa9ball');
     if (gameTypeHandler) {
       // createNewGame for apa9ball takes skill levels as arguments
@@ -734,7 +740,26 @@ export default function NewGamePage() {
       // Save current state to history before making changes
       saveToHistory(baseGameState);
       
-      const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action: 'endTurn' } });
+      const apa9State = baseGameState as APA9BallGameState;
+      // Check if rack is complete
+      const allBallsMade = [...new Set([
+        ...apa9State.gameData.player1.ballsMade,
+        ...apa9State.gameData.player2.ballsMade
+      ])];
+      const lastCompletedRack = apa9State.gameData.racks.length > 0 
+        ? apa9State.gameData.racks[apa9State.gameData.racks.length - 1]
+        : null;
+      const justCompletedRack = lastCompletedRack && 
+        lastCompletedRack.rackNumber === apa9State.gameData.currentRack - 1 &&
+        apa9State.gameData.player1.ballsMade.length === 0 &&
+        apa9State.gameData.player2.ballsMade.length === 0;
+      const isRackComplete = allBallsMade.length === 9 || justCompletedRack;
+      
+      // If rack is complete, start new rack (stays on current player)
+      // Otherwise, end turn (switches to other player)
+      const action = isRackComplete ? 'startNewRack' : 'endTurn';
+      
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action } });
       setBaseGameState(newState);
       hasShotsRef.current = true;
       autoSaveGame(newState);
@@ -936,6 +961,20 @@ export default function NewGamePage() {
       } else {
         setGameState(createNewGame());
       }
+    } else if (currentGameType === 'apa9ball') {
+      // For APA 9-ball, get skill levels from previous game or use defaults
+      const previousState = baseGameState as APA9BallGameState | null;
+      const player1SL = previousState?.gameData?.player1?.skillLevel || 3;
+      const player2SL = previousState?.gameData?.player2?.skillLevel || 3;
+      
+      const gameTypeHandler = getGameType('apa9ball');
+      if (gameTypeHandler) {
+        // createNewGame for apa9ball takes skill levels as arguments
+        const newState = (gameTypeHandler.createNewGame as (player1SL: number, player2SL: number) => BaseGameState)(player1SL, player2SL);
+        setBaseGameState(newState);
+        setGameState(null); // Clear gameState for APA 9-ball
+        setGameHistory([]); // Clear history
+      }
     } else {
       setGameState(createNewGame());
     }
@@ -1113,12 +1152,27 @@ export default function NewGamePage() {
                 canUndo={gameHistory.length > 0 && !apa9State.isComplete}
                 disabled={saving}
                 isRackComplete={(() => {
-                  // Check if all 9 balls are pocketed
+                  // Check if all 9 balls are pocketed in current rack
                   const allBallsMade = [...new Set([
                     ...apa9State.gameData.player1.ballsMade,
                     ...apa9State.gameData.player2.ballsMade
                   ])];
-                  return allBallsMade.length === 9;
+                  
+                  // Rack is complete if all 9 balls are made OR
+                  // if currentBall is 1 and ballsMade is empty (just started new rack after completion)
+                  // We check the last completed rack to see if it matches the current rack number
+                  const lastCompletedRack = apa9State.gameData.racks.length > 0 
+                    ? apa9State.gameData.racks[apa9State.gameData.racks.length - 1]
+                    : null;
+                  
+                  // If we just completed a rack (last rack number matches currentRack - 1, or currentRack was just incremented)
+                  // and ballsMade is empty, then the rack just completed
+                  const justCompletedRack = lastCompletedRack && 
+                    lastCompletedRack.rackNumber === apa9State.gameData.currentRack - 1 &&
+                    apa9State.gameData.player1.ballsMade.length === 0 &&
+                    apa9State.gameData.player2.ballsMade.length === 0;
+                  
+                  return allBallsMade.length === 9 || justCompletedRack;
                 })()}
               />
             )}

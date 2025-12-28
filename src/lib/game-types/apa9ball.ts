@@ -226,41 +226,44 @@ export const apa9ballGameType: GameType = {
             // Check if all balls are pocketed (new rack)
             const allBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
             if (allBallsMade.length === 9) {
-              // All balls pocketed - save current rack and start new rack
-              // Calculate cumulative scores BEFORE adding rack to array (to avoid double-counting)
-              const player1ScoreBeforeReset = calculateCumulativeScore(state, 1);
-              const player2ScoreBeforeReset = calculateCumulativeScore(state, 2);
+              // All balls pocketed but game not won - save current rack to history
+              // BUT don't reset yet - wait for user to click "Start New Rack"
+              // Check if this rack has already been saved (to avoid duplicate saves)
+              const lastRack = state.gameData.racks.length > 0 
+                ? state.gameData.racks[state.gameData.racks.length - 1]
+                : null;
+              const rackAlreadySaved = lastRack && lastRack.rackNumber === state.gameData.currentRack;
               
-              // Save the completed rack to history
-              const completedRack: APA9BallRack = {
-                rackNumber: state.gameData.currentRack,
-                breakPlayer: state.gameData.breakPlayer || state.gameData.currentPlayer,
-                player1Balls: [...state.gameData.player1.ballsMade],
-                player2Balls: [...state.gameData.player2.ballsMade],
-                player1Innings: state.gameData.player1.innings,
-                player2Innings: state.gameData.player2.innings,
-                player1Fouls: state.gameData.player1.fouls,
-                player2Fouls: state.gameData.player2.fouls,
-                player1DefensiveShots: state.gameData.player1.defensiveShots,
-                player2DefensiveShots: state.gameData.player2.defensiveShots,
-                nineBallOnBreak: state.gameData.nineBallOnBreak,
-                completedAt: new Date(),
-              };
-              state.gameData.racks.push(completedRack);
-              
-              // The player who made the 9-ball breaks the next rack
-              const nineBallMaker = state.gameData.currentPlayer;
-              state.gameData.breakPlayer = nineBallMaker;
-              state.gameData.currentPlayer = nineBallMaker;
-              state.gameData.player1.ballsMade = [];
-              state.gameData.player2.ballsMade = [];
-              state.gameData.currentBall = 1;
-              state.gameData.nineBallOnBreak = false;
-              state.gameData.currentRack += 1;
-              
-              // Restore cumulative scores (they should persist across racks)
-              state.gameData.player1.score = player1ScoreBeforeReset;
-              state.gameData.player2.score = player2ScoreBeforeReset;
+              if (!rackAlreadySaved) {
+                // Calculate cumulative scores BEFORE adding rack to array (to avoid double-counting)
+                const player1ScoreBeforeSave = calculateCumulativeScore(state, 1);
+                const player2ScoreBeforeSave = calculateCumulativeScore(state, 2);
+                
+                // Save the completed rack to history (but don't reset ballsMade yet)
+                const completedRack: APA9BallRack = {
+                  rackNumber: state.gameData.currentRack,
+                  breakPlayer: state.gameData.breakPlayer || state.gameData.currentPlayer,
+                  player1Balls: [...state.gameData.player1.ballsMade],
+                  player2Balls: [...state.gameData.player2.ballsMade],
+                  player1Innings: state.gameData.player1.innings,
+                  player2Innings: state.gameData.player2.innings,
+                  player1Fouls: state.gameData.player1.fouls,
+                  player2Fouls: state.gameData.player2.fouls,
+                  player1DefensiveShots: state.gameData.player1.defensiveShots,
+                  player2DefensiveShots: state.gameData.player2.defensiveShots,
+                  nineBallOnBreak: state.gameData.nineBallOnBreak,
+                  completedAt: new Date(),
+                };
+                state.gameData.racks.push(completedRack);
+                
+                // The player who made the 9-ball will break the next rack (set breakPlayer, but don't reset yet)
+                const nineBallMaker = state.gameData.currentPlayer;
+                state.gameData.breakPlayer = nineBallMaker;
+                // Keep currentPlayer the same for now - will be set when "Start New Rack" is clicked
+                
+                // Don't reset ballsMade, currentBall, or currentRack yet - wait for "Start New Rack" action
+                // Scores are already calculated correctly from cumulative function
+              }
             }
           }
         } else if (ballNumber >= 1 && ballNumber <= 8) {
@@ -316,43 +319,44 @@ export const apa9ballGameType: GameType = {
               state.gameData.player2.targetScore
             );
           } else if (newAllBallsMade.length === 9) {
-            // All balls pocketed but game not won - save current rack and start new rack
-            // Calculate cumulative scores BEFORE adding rack to array (to avoid double-counting)
-            const player1ScoreBeforeReset = calculateCumulativeScore(state, 1);
-            const player2ScoreBeforeReset = calculateCumulativeScore(state, 2);
+            // All balls pocketed but game not won - save current rack to history
+            // BUT don't reset yet - wait for user to click "Start New Rack"
+            // Check if this rack has already been saved (to avoid duplicate saves)
+            const lastRack = state.gameData.racks.length > 0 
+              ? state.gameData.racks[state.gameData.racks.length - 1]
+              : null;
+            const rackAlreadySaved = lastRack && lastRack.rackNumber === state.gameData.currentRack;
             
-            // Save the completed rack to history
-            const completedRack: APA9BallRack = {
-              rackNumber: state.gameData.currentRack,
-              breakPlayer: state.gameData.breakPlayer || state.gameData.currentPlayer,
-              player1Balls: [...state.gameData.player1.ballsMade],
-              player2Balls: [...state.gameData.player2.ballsMade],
-              player1Innings: state.gameData.player1.innings,
-              player2Innings: state.gameData.player2.innings,
-              player1Fouls: state.gameData.player1.fouls,
-              player2Fouls: state.gameData.player2.fouls,
-              player1DefensiveShots: state.gameData.player1.defensiveShots,
-              player2DefensiveShots: state.gameData.player2.defensiveShots,
-              nineBallOnBreak: state.gameData.nineBallOnBreak,
-              completedAt: new Date(),
-            };
-            state.gameData.racks.push(completedRack);
-            
-            // The player who made the 9-ball breaks the next rack
-            const nineBallMaker = state.gameData.currentPlayer;
-            state.gameData.breakPlayer = nineBallMaker;
-            state.gameData.currentPlayer = nineBallMaker;
-            
-            // Reset current rack balls (keep cumulative scores, innings, etc.)
-            state.gameData.player1.ballsMade = [];
-            state.gameData.player2.ballsMade = [];
-            state.gameData.currentBall = 1;
-            state.gameData.nineBallOnBreak = false;
-            state.gameData.currentRack += 1;
-            
-            // Restore cumulative scores (they should persist across racks)
-            state.gameData.player1.score = player1ScoreBeforeReset;
-            state.gameData.player2.score = player2ScoreBeforeReset;
+            if (!rackAlreadySaved) {
+              // Calculate cumulative scores BEFORE adding rack to array (to avoid double-counting)
+              const player1ScoreBeforeSave = calculateCumulativeScore(state, 1);
+              const player2ScoreBeforeSave = calculateCumulativeScore(state, 2);
+              
+              // Save the completed rack to history (but don't reset ballsMade yet)
+              const completedRack: APA9BallRack = {
+                rackNumber: state.gameData.currentRack,
+                breakPlayer: state.gameData.breakPlayer || state.gameData.currentPlayer,
+                player1Balls: [...state.gameData.player1.ballsMade],
+                player2Balls: [...state.gameData.player2.ballsMade],
+                player1Innings: state.gameData.player1.innings,
+                player2Innings: state.gameData.player2.innings,
+                player1Fouls: state.gameData.player1.fouls,
+                player2Fouls: state.gameData.player2.fouls,
+                player1DefensiveShots: state.gameData.player1.defensiveShots,
+                player2DefensiveShots: state.gameData.player2.defensiveShots,
+                nineBallOnBreak: state.gameData.nineBallOnBreak,
+                completedAt: new Date(),
+              };
+              state.gameData.racks.push(completedRack);
+              
+              // The player who made the 9-ball will break the next rack (set breakPlayer, but don't reset yet)
+              const nineBallMaker = state.gameData.currentPlayer;
+              state.gameData.breakPlayer = nineBallMaker;
+              // Keep currentPlayer the same for now - will be set when "Start New Rack" is clicked
+              
+              // Don't reset ballsMade, currentBall, or currentRack yet - wait for "Start New Rack" action
+              // Scores are already calculated correctly from cumulative function
+            }
             // Note: breakAndRun is only for winning the entire match, not a single rack
           }
         } else {
@@ -371,11 +375,37 @@ export const apa9ballGameType: GameType = {
       // Increment inning for the other player
       otherPlayerData.innings += 1;
     } else if (input.type === 'custom') {
-      // Handle custom inputs like 'endTurn', 'defensiveShot', etc.
+      // Handle custom inputs like 'endTurn', 'defensiveShot', 'startNewRack', etc.
       if (input.data?.action === 'endTurn') {
         // End current player's turn, switch to other player
         state.gameData.currentPlayer = state.gameData.currentPlayer === 1 ? 2 : 1;
         otherPlayerData.innings += 1;
+      } else if (input.data?.action === 'startNewRack') {
+        // Manually start a new rack - reset balls and start fresh rack
+        // The rack should already be saved when all 9 balls were made
+        // Check if all 9 balls are pocketed
+        const allBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
+        if (allBallsMade.length === 9) {
+          // Calculate cumulative scores BEFORE resetting (to avoid double-counting)
+          const player1ScoreBeforeReset = calculateCumulativeScore(state, 1);
+          const player2ScoreBeforeReset = calculateCumulativeScore(state, 2);
+          
+          // The current player breaks the next rack (stay on current player)
+          const currentPlayer = state.gameData.currentPlayer;
+          state.gameData.breakPlayer = currentPlayer;
+          // Keep currentPlayer the same (don't switch)
+          
+          // Reset current rack balls (keep cumulative scores, innings, etc.)
+          state.gameData.player1.ballsMade = [];
+          state.gameData.player2.ballsMade = [];
+          state.gameData.currentBall = 1;
+          state.gameData.nineBallOnBreak = false;
+          state.gameData.currentRack += 1;
+          
+          // Restore cumulative scores (they should persist across racks)
+          state.gameData.player1.score = player1ScoreBeforeReset;
+          state.gameData.player2.score = player2ScoreBeforeReset;
+        }
       } else if (input.data?.action === 'defensiveShot') {
         // Mark defensive shot
         currentPlayerData.defensiveShots += 1;
