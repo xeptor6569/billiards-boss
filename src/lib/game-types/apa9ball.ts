@@ -183,6 +183,7 @@ function getAllBallsMade(state: APA9BallGameState): number[] {
 
 // Helper function to validate combination shot
 // Must hit lowest ball first, then can make additional balls
+// Exception: If 9-ball is included and it's an early 9-ball (not all balls made), it's legal
 function validateCombinationShot(state: APA9BallGameState, ballNumbers: number[], isBreak: boolean): boolean {
   if (isBreak) {
     // On break, any combination is legal
@@ -194,8 +195,19 @@ function validateCombinationShot(state: APA9BallGameState, ballNumbers: number[]
   const remainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !allBallsMade.includes(b));
   const lowestBall = remainingBalls.length > 0 ? Math.min(...remainingBalls) : 9;
   
-  // Must hit lowest ball first in combination shot
-  return ballNumbers.includes(lowestBall) || (lowestBall === 9 && ballNumbers.includes(9));
+  // Check if this is an early 9-ball shot (9-ball included but not all balls made)
+  const hasNineBall = ballNumbers.includes(9);
+  const allBallsActuallyMade = [...new Set([
+    ...state.gameData.player1.ballsMade,
+    ...state.gameData.player2.ballsMade
+  ])];
+  // Calculate how many new balls would be added (excluding already-made balls)
+  const newBallsToAdd = ballNumbers.filter(b => !allBallsMade.includes(b));
+  // After this shot, total balls made would be current + new balls
+  const wouldBeEarlyNineBall = hasNineBall && (allBallsActuallyMade.length + newBallsToAdd.length) < 9;
+  
+  // Must hit lowest ball first in combination shot, OR it's an early 9-ball (legal)
+  return ballNumbers.includes(lowestBall) || (lowestBall === 9 && ballNumbers.includes(9)) || wouldBeEarlyNineBall;
 }
 
 // Helper function to process multiple balls made in one shot
@@ -374,6 +386,36 @@ export const apa9ballGameType: GameType = {
               state.gameData.player2.score,
               state.gameData.player2.targetScore
             );
+          } else if (ballNumber === 9 && newAllBallsMade.length < 9) {
+            // Early 9-ball made (before all other balls) - rack ends immediately
+            // Save the rack and set the player who made the 9-ball to break the next rack
+            const lastRack = state.gameData.racks.length > 0 
+              ? state.gameData.racks[state.gameData.racks.length - 1]
+              : null;
+            const rackAlreadySaved = lastRack && lastRack.rackNumber === state.gameData.currentRack;
+            
+            if (!rackAlreadySaved) {
+              // Save the completed rack to history (but don't reset ballsMade yet)
+              const completedRack: APA9BallRack = {
+                rackNumber: state.gameData.currentRack,
+                breakPlayer: state.gameData.breakPlayer || state.gameData.currentPlayer,
+                player1Balls: [...state.gameData.player1.ballsMade],
+                player2Balls: [...state.gameData.player2.ballsMade],
+                player1Innings: state.gameData.player1.innings,
+                player2Innings: state.gameData.player2.innings,
+                player1Fouls: state.gameData.player1.fouls,
+                player2Fouls: state.gameData.player2.fouls,
+                player1DefensiveShots: state.gameData.player1.defensiveShots,
+                player2DefensiveShots: state.gameData.player2.defensiveShots,
+                nineBallOnBreak: state.gameData.nineBallOnBreak,
+                completedAt: new Date(),
+              };
+              state.gameData.racks.push(completedRack);
+              
+              // The player who made the 9-ball will break the next rack
+              const nineBallMaker = state.gameData.currentPlayer;
+              state.gameData.breakPlayer = nineBallMaker;
+            }
           } else if (newAllBallsMade.length === 9) {
             // All balls pocketed but game not won - save current rack to history
             // BUT don't reset yet - wait for user to click "Start New Rack"
@@ -466,26 +508,44 @@ export const apa9ballGameType: GameType = {
       const newRemainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !newAllBallsMade.includes(b));
       state.gameData.currentBall = newRemainingBalls.length > 0 ? Math.min(...newRemainingBalls) : 9;
       
-      // Check for win condition
+      // Check for win condition FIRST (before any rack handling)
+      // This must happen immediately after score update to catch wins on break
       if (checkWinCondition(state, state.gameData.currentPlayer)) {
         state.gameData.gameStatus = state.gameData.currentPlayer === 1 ? 'player1-won' : 'player2-won';
         state.isComplete = true;
         
-        if (state.gameData.breakPlayer === state.gameData.currentPlayer && 
-            otherPlayerData.innings === 0) {
+        // Check for break and run (player broke and won without opponent shooting)
+        if (isBreak && otherPlayerData.innings === 0) {
           state.gameData.breakAndRun = true;
         }
         
+        // Calculate match points
         state.gameData.matchPoints = calculateMatchPoints(
           state.gameData.player1.score,
           state.gameData.player1.targetScore,
           state.gameData.player2.score,
           state.gameData.player2.targetScore
         );
-      } else {
-            // Check if all balls are pocketed (new rack) - exclude dead balls
-            const allBallsMade = getAllBallsMade(state);
-            if (allBallsMade.length === 9) {
+        
+        // Return immediately - game is won, don't process rack completion
+        return state;
+      }
+      
+      // Game not won - handle rack completion logic
+      {
+        // Check if 9-ball was made early (before all other balls) in this shot
+        const nineBallJustMade = result.ballsToAdd.includes(9);
+        // For early 9-ball detection, only count balls that are actually made (not dead balls)
+        // Dead balls don't count toward rack completion
+        const allBallsActuallyMade = [...new Set([
+          ...state.gameData.player1.ballsMade,
+          ...state.gameData.player2.ballsMade
+        ])];
+        const isEarlyNineBall = nineBallJustMade && allBallsActuallyMade.length < 9;
+        
+        if (isEarlyNineBall) {
+          // Early 9-ball made - rack ends immediately
+          // Save the rack and set the player who made the 9-ball to break the next rack
           const lastRack = state.gameData.racks.length > 0 
             ? state.gameData.racks[state.gameData.racks.length - 1]
             : null;
@@ -508,8 +568,39 @@ export const apa9ballGameType: GameType = {
             };
             state.gameData.racks.push(completedRack);
             
+            // The player who made the 9-ball will break the next rack
             const nineBallMaker = state.gameData.currentPlayer;
             state.gameData.breakPlayer = nineBallMaker;
+          }
+        } else {
+          // Check if all balls are pocketed (new rack) - use getAllBallsMade which includes dead balls
+          const allBallsMade = getAllBallsMade(state);
+          if (allBallsMade.length === 9) {
+            const lastRack = state.gameData.racks.length > 0 
+              ? state.gameData.racks[state.gameData.racks.length - 1]
+              : null;
+            const rackAlreadySaved = lastRack && lastRack.rackNumber === state.gameData.currentRack;
+            
+            if (!rackAlreadySaved) {
+              const completedRack: APA9BallRack = {
+                rackNumber: state.gameData.currentRack,
+                breakPlayer: state.gameData.breakPlayer || state.gameData.currentPlayer,
+                player1Balls: [...state.gameData.player1.ballsMade],
+                player2Balls: [...state.gameData.player2.ballsMade],
+                player1Innings: state.gameData.player1.innings,
+                player2Innings: state.gameData.player2.innings,
+                player1Fouls: state.gameData.player1.fouls,
+                player2Fouls: state.gameData.player2.fouls,
+                player1DefensiveShots: state.gameData.player1.defensiveShots,
+                player2DefensiveShots: state.gameData.player2.defensiveShots,
+                nineBallOnBreak: state.gameData.nineBallOnBreak,
+                completedAt: new Date(),
+              };
+              state.gameData.racks.push(completedRack);
+              
+              const nineBallMaker = state.gameData.currentPlayer;
+              state.gameData.breakPlayer = nineBallMaker;
+            }
           }
         }
       }
@@ -549,13 +640,27 @@ export const apa9ballGameType: GameType = {
         otherPlayerData.innings += 1;
       } else if (input.data?.action === 'startNewRack') {
         // Manually start a new rack - reset balls and start fresh rack
-        // The rack should already be saved when all 9 balls were made
-        // Check if all 9 balls are pocketed - account for dead balls
+        // The rack should already be saved when all 9 balls were made OR when early 9-ball was made
+        // Check if all 9 balls are pocketed OR if 9-ball was made early OR if rack was just saved
         const allBallsMade = getAllBallsMade(state);
-        if (allBallsMade.length === 9) {
-          // The current player breaks the next rack (stay on current player)
-          const currentPlayer = state.gameData.currentPlayer;
-          state.gameData.breakPlayer = currentPlayer;
+        const hasNineBall = state.gameData.player1.ballsMade.includes(9) || 
+                           state.gameData.player2.ballsMade.includes(9);
+        const isEarlyNineBall = hasNineBall && allBallsMade.length < 9;
+        
+        // Check if a rack was just saved (rack number matches currentRack)
+        const lastCompletedRack = state.gameData.racks.length > 0 
+          ? state.gameData.racks[state.gameData.racks.length - 1]
+          : null;
+        const rackJustSaved = lastCompletedRack !== null && 
+          lastCompletedRack.rackNumber === state.gameData.currentRack;
+        
+        if (allBallsMade.length === 9 || isEarlyNineBall || rackJustSaved) {
+          // breakPlayer should already be set to the player who made the 9-ball
+          // (either from early 9-ball logic or from all-balls-made logic)
+          // If not set, use current player as fallback
+          if (!state.gameData.breakPlayer) {
+            state.gameData.breakPlayer = state.gameData.currentPlayer;
+          }
           // Keep currentPlayer the same (don't switch)
           
           // Reset current rack balls (keep cumulative scores, innings, etc.)

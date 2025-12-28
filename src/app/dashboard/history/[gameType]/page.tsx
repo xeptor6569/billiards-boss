@@ -85,6 +85,10 @@ async function HistoryList({ gameType }: HistoryListProps) {
         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
           {games.map((game) => {
             const totalScore = game.gameState.totalScore;
+            // Check if game is actually complete based on gameState, not just database status
+            // This handles cases where game completes but hasn't been saved yet
+            const isActuallyComplete = game.gameState.isComplete || game.status === 'completed';
+            const effectiveStatus = isActuallyComplete ? 'completed' : game.status;
             return (
               <HistoryTableRow
                 key={game.id}
@@ -93,7 +97,7 @@ async function HistoryList({ gameType }: HistoryListProps) {
                   gameMode: game.gameMode,
                   gameType: game.gameType,
                   gameTypeSequence: game.gameTypeSequence,
-                  status: game.status,
+                  status: effectiveStatus,
                   createdAt: game.createdAt,
                   frames: [], // Not needed for display
                 }}

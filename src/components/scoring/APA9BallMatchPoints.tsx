@@ -47,12 +47,12 @@ export default function APA9BallMatchPoints({
           </div>
           <div className="text-3xl font-black mb-1">
             <span className={player1Won ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400"}>
-              {matchPoints.player1}
+              {player1.score}
             </span>
-            <span className="text-lg text-slate-500 dark:text-slate-500">/20</span>
+            <span className="text-lg text-slate-500 dark:text-slate-500">/{player1.targetScore}</span>
           </div>
           <div className="text-xs text-slate-600 dark:text-slate-400">
-            {player1.score} points
+            SL-{player1.skillLevel} | {matchPoints.player1} match points
           </div>
           {player1Won && (
             <div className="mt-2 text-xs font-bold text-blue-600 dark:text-blue-400">
@@ -74,12 +74,12 @@ export default function APA9BallMatchPoints({
           </div>
           <div className="text-3xl font-black mb-1">
             <span className={player2Won ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}>
-              {matchPoints.player2}
+              {player2.score}
             </span>
-            <span className="text-lg text-slate-500 dark:text-slate-500">/20</span>
+            <span className="text-lg text-slate-500 dark:text-slate-500">/{player2.targetScore}</span>
           </div>
           <div className="text-xs text-slate-600 dark:text-slate-400">
-            {player2.score} points
+            SL-{player2.skillLevel} | {matchPoints.player2} match points
           </div>
           {player2Won && (
             <div className="mt-2 text-xs font-bold text-red-600 dark:text-red-400">

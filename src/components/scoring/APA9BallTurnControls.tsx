@@ -30,12 +30,12 @@ export default function APA9BallTurnControls({
   const hasSelectedBalls = selectedBalls.length > 0;
 
   return (
-    <div className="flex flex-col gap-2 h-full p-3 pb-4 justify-center">
+    <div className="flex flex-col gap-4 h-full p-3 pb-4 justify-center">
       {/* Primary Action - End Turn / Start New Rack */}
       <button
         onClick={onEndTurn}
         disabled={disabled || hasSelectedBalls}
-        className={`${btnBase} ${btnAction} w-full py-3 text-base bg-blue-500 shadow-blue-500/30`}
+        className={`${btnBase} ${btnAction} w-full py-9 text-base bg-blue-500 shadow-blue-500/30`}
       >
         {isRackComplete ? "Start New Rack" : "End Turn"}
       </button>
@@ -52,7 +52,7 @@ export default function APA9BallTurnControls({
             }
           }}
           disabled={disabled}
-          className={`${btnBase} ${btnAction} py-2.5 ${
+          className={`${btnBase} ${btnAction} py-[1.0rem] ${
             hasSelectedBalls 
               ? 'bg-orange-600 dark:bg-orange-500 shadow-orange-600/30 dark:shadow-orange-500/30' 
               : 'bg-red-600 dark:bg-red-400 shadow-red-600/30 dark:shadow-red-400/30'
@@ -66,7 +66,7 @@ export default function APA9BallTurnControls({
         <button
           onClick={onDefensiveShot}
           disabled={disabled || hasSelectedBalls}
-          className={`${btnBase} ${btnSurface} py-2.5 text-sm`}
+          className={`${btnBase} ${btnSurface} py-[1.0rem] text-sm`}
         >
           Defensive
         </button>
@@ -75,7 +75,7 @@ export default function APA9BallTurnControls({
         <button
           onClick={onUndo}
           disabled={disabled || !canUndo || hasSelectedBalls}
-          className={`${btnBase} ${btnSurface} py-2.5 text-sm flex items-center justify-center gap-1`}
+          className={`${btnBase} ${btnSurface} py-[1.0rem] text-sm flex items-center justify-center gap-1`}
           title="Undo last action"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">

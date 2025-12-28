@@ -796,21 +796,38 @@ export default function NewGamePage() {
       saveToHistory(baseGameState);
       
       const apa9State = baseGameState as APA9BallGameState;
-      // Check if rack is complete - account for dead balls
+      // Check if rack is complete - use same logic as UI check
       const allBallsMade = [...new Set([
         ...apa9State.gameData.player1.ballsMade,
         ...apa9State.gameData.player2.ballsMade,
         ...apa9State.gameData.player1.deadBalls,
         ...apa9State.gameData.player2.deadBalls
       ])];
+      
+      // Check if 9-ball was made (early 9-ball ends the rack)
+      // For early 9-ball detection, only count balls actually made (not dead balls)
+      const allBallsActuallyMade = [...new Set([
+        ...apa9State.gameData.player1.ballsMade,
+        ...apa9State.gameData.player2.ballsMade
+      ])];
+      const hasNineBall = apa9State.gameData.player1.ballsMade.includes(9) || 
+                         apa9State.gameData.player2.ballsMade.includes(9);
+      const isEarlyNineBall = hasNineBall && allBallsActuallyMade.length < 9;
+      
+      // Check if a rack was just saved (rack number matches currentRack, meaning rack completed but not reset yet)
       const lastCompletedRack = apa9State.gameData.racks.length > 0 
         ? apa9State.gameData.racks[apa9State.gameData.racks.length - 1]
         : null;
-      const justCompletedRack = lastCompletedRack && 
-        lastCompletedRack.rackNumber === apa9State.gameData.currentRack - 1 &&
-        apa9State.gameData.player1.ballsMade.length === 0 &&
-        apa9State.gameData.player2.ballsMade.length === 0;
-      const isRackComplete = allBallsMade.length === 9 || justCompletedRack;
+      
+      // Rack is complete if:
+      // 1. All 9 balls are made, OR
+      // 2. 9-ball was made early (before all other balls), OR
+      // 3. A rack was just saved (last rack number matches currentRack - rack completed but balls not reset yet)
+      // Note: We don't check for "just started new rack" because that means the rack is already reset and we're in a new rack
+      const rackJustSaved = lastCompletedRack !== null && 
+        lastCompletedRack.rackNumber === apa9State.gameData.currentRack;
+      
+      const isRackComplete = allBallsMade.length === 9 || isEarlyNineBall || rackJustSaved;
       
       // If rack is complete, start new rack (stays on current player)
       // Otherwise, end turn (switches to other player)
@@ -1221,21 +1238,30 @@ export default function NewGamePage() {
                     ...apa9State.gameData.player2.deadBalls
                   ])];
                   
-                  // Rack is complete if all 9 balls are made OR
-                  // if currentBall is 1 and ballsMade is empty (just started new rack after completion)
-                  // We check the last completed rack to see if it matches the current rack number
+                  // Check if 9-ball was made (early 9-ball ends the rack)
+                  // For early 9-ball detection, only count balls actually made (not dead balls)
+                  const allBallsActuallyMade = [...new Set([
+                    ...apa9State.gameData.player1.ballsMade,
+                    ...apa9State.gameData.player2.ballsMade
+                  ])];
+                  const hasNineBall = apa9State.gameData.player1.ballsMade.includes(9) || 
+                                     apa9State.gameData.player2.ballsMade.includes(9);
+                  const isEarlyNineBall = hasNineBall && allBallsActuallyMade.length < 9;
+                  
+                  // Check if a rack was just saved (rack number matches currentRack, meaning rack completed but not reset yet)
                   const lastCompletedRack = apa9State.gameData.racks.length > 0 
                     ? apa9State.gameData.racks[apa9State.gameData.racks.length - 1]
                     : null;
                   
-                  // If we just completed a rack (last rack number matches currentRack - 1, or currentRack was just incremented)
-                  // and ballsMade is empty, then the rack just completed
-                  const justCompletedRack = lastCompletedRack && 
-                    lastCompletedRack.rackNumber === apa9State.gameData.currentRack - 1 &&
-                    apa9State.gameData.player1.ballsMade.length === 0 &&
-                    apa9State.gameData.player2.ballsMade.length === 0;
+                  // Rack is complete if:
+                  // 1. All 9 balls are made, OR
+                  // 2. 9-ball was made early (before all other balls), OR
+                  // 3. A rack was just saved (last rack number matches currentRack - rack completed but balls not reset yet)
+                  // Note: We don't check for "just started new rack" because that means the rack is already reset and we're in a new rack
+                  const rackJustSaved = lastCompletedRack !== null && 
+                    lastCompletedRack.rackNumber === apa9State.gameData.currentRack;
                   
-                  return allBallsMade.length === 9 || justCompletedRack;
+                  return allBallsMade.length === 9 || isEarlyNineBall || rackJustSaved;
                 })()}
               />
             )}
