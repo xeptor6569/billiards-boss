@@ -21,8 +21,8 @@ async function DashboardContent() {
   // Get game types
   const gameTypes = getStandardGameTypes();
   
-  // Fetch game counts per type
-  const gameTypeStats: Record<string, { active: number; recent: number }> = {};
+  // Fetch game counts per type and active game IDs
+  const gameTypeStats: Record<string, { active: number; recent: number; activeGameId?: number }> = {};
   
   try {
     if (session?.user?.id) {
@@ -39,9 +39,13 @@ async function DashboardContent() {
           limit: 5,
         });
         
+        // Get the most recent active game ID (if any)
+        const activeGameId = activeGames.length > 0 ? activeGames[0].id : undefined;
+        
         gameTypeStats[gameType.metadata.id] = {
           active: activeGames.length,
           recent: recentGames.length,
+          activeGameId,
         };
       }
     }
@@ -152,19 +156,35 @@ async function DashboardContent() {
           </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {gameTypes.map((gameType) => (
-            <GameTypeCard
-              key={gameType.metadata.id}
-              gameType={{
-                id: gameType.metadata.id,
-                name: gameType.metadata.name,
-                description: gameType.metadata.description,
-                requiresPayment: gameType.metadata.requiresPayment,
-              }}
-              activeGamesCount={gameTypeStats[gameType.metadata.id]?.active || 0}
-              recentGamesCount={gameTypeStats[gameType.metadata.id]?.recent || 0}
-            />
-          ))}
+          {gameTypes.map((gameType) => {
+            const isComingSoon = gameType.metadata.id === 'apa8ball' || gameType.metadata.id === 'straight-pool';
+            return (
+              <GameTypeCard
+                key={gameType.metadata.id}
+                gameType={{
+                  id: gameType.metadata.id,
+                  name: gameType.metadata.name,
+                  description: gameType.metadata.description,
+                  requiresPayment: gameType.metadata.requiresPayment,
+                  comingSoon: isComingSoon,
+                }}
+                activeGamesCount={gameTypeStats[gameType.metadata.id]?.active || 0}
+                recentGamesCount={gameTypeStats[gameType.metadata.id]?.recent || 0}
+                activeGameId={gameTypeStats[gameType.metadata.id]?.activeGameId}
+              />
+            );
+          })}
+          {/* Custom Game Type Card */}
+          <GameTypeCard
+            key="custom"
+            gameType={{
+              id: 'custom',
+              name: 'Custom Game Type',
+              description: 'Create your own custom game rules via YAML',
+              requiresPayment: true,
+              comingSoon: true,
+            }}
+          />
         </div>
       </div>
 

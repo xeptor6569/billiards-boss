@@ -85,6 +85,45 @@ export default function NewGamePage() {
       // If gameType is already set from URL, skip loading existing game
       const urlGameType = searchParams.get("gameType");
       const forceNew = searchParams.get("new") === "true";
+      const gameIdParam = searchParams.get("gameId");
+      
+      // If specific gameId is provided, load that game
+      if (gameIdParam) {
+        try {
+          const gameResponse = await fetch(`/api/games/${gameIdParam}`);
+          if (gameResponse.ok) {
+            const gameData = await gameResponse.json();
+            
+            // Only load if game is active
+            if (gameData.status === 'active') {
+              const savedGameType = gameData.gameType || 'bowlliards';
+              setGameType(savedGameType);
+              setCustomGameId(gameData.customGameId || null);
+              
+              // For Bowlliards, use existing logic
+              if (savedGameType === 'bowlliards' && gameData.frames && gameData.frames.length > 0) {
+                const restoredState = reconstructGameStateFromFrames(gameData.frames);
+                setGameState(restoredState);
+                setSavedGameId(parseInt(gameIdParam, 10));
+                hasShotsRef.current = true;
+                setLoading(false);
+                return;
+              } else if (gameData.gameState) {
+                // For other game types (including APA 9-ball), use the reconstructed state
+                setBaseGameState(gameData.gameState);
+                setSavedGameId(parseInt(gameIdParam, 10));
+                hasShotsRef.current = true;
+                setGameHistory([]);
+                setLoading(false);
+                return;
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error loading game by ID:", error);
+        }
+        // If game not found or not active, fall through to show selector
+      }
       
       // If gameType is in URL, don't load existing game (user selected from dropdown)
       if (urlGameType) {

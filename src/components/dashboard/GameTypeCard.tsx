@@ -8,21 +8,26 @@ interface GameTypeCardProps {
     name: string;
     description: string;
     requiresPayment?: boolean;
+    comingSoon?: boolean;
   };
   recentGamesCount?: number;
   activeGamesCount?: number;
+  activeGameId?: number;
 }
 
 export default function GameTypeCard({
   gameType,
   recentGamesCount = 0,
   activeGamesCount = 0,
+  activeGameId,
 }: GameTypeCardProps) {
-  return (
-    <Link
-      href={`/dashboard/history/${gameType.id}`}
-      className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-all bg-slate-50 dark:bg-slate-800 border-2 border-transparent hover:border-[var(--accent)]"
-    >
+  // If there's an active game, link to resume it via new game page, otherwise link to history
+  const href = activeGameId 
+    ? `/dashboard/games/new?gameId=${activeGameId}`
+    : `/dashboard/history/${gameType.id}`;
+  
+  const cardContent = (
+    <>
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-1">
@@ -32,24 +37,48 @@ export default function GameTypeCard({
             {gameType.description}
           </p>
         </div>
-        {gameType.requiresPayment && (
-          <span className="px-2 py-1 text-xs font-bold rounded bg-amber-500 text-white">
-            Premium
-          </span>
-        )}
+        <div className="flex flex-col items-end gap-2">
+          {gameType.comingSoon && (
+            <span className="px-2 py-1 text-xs font-bold rounded bg-blue-500 text-white">
+              Coming Soon
+            </span>
+          )}
+          {gameType.requiresPayment && !gameType.comingSoon && (
+            <span className="px-2 py-1 text-xs font-bold rounded bg-amber-500 text-white">
+              Premium
+            </span>
+          )}
+        </div>
       </div>
       
       <div className="flex items-center gap-4 mt-4 text-sm text-slate-600 dark:text-slate-400">
-        {activeGamesCount > 0 && (
+        {!gameType.comingSoon && activeGamesCount > 0 && (
           <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500"></span>
-            {activeGamesCount} active
+            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            {activeGamesCount} active {activeGameId && "(Click to resume)"}
           </span>
         )}
-        {recentGamesCount > 0 && (
+        {!gameType.comingSoon && recentGamesCount > 0 && (
           <span>{recentGamesCount} recent</span>
         )}
       </div>
+    </>
+  );
+
+  if (gameType.comingSoon) {
+    return (
+      <div className="block p-6 rounded-lg shadow-md bg-slate-50 dark:bg-slate-800 border-2 border-transparent opacity-75 cursor-not-allowed">
+        {cardContent}
+      </div>
+    );
+  }
+  
+  return (
+    <Link
+      href={href}
+      className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-all bg-slate-50 dark:bg-slate-800 border-2 border-transparent hover:border-[var(--accent)]"
+    >
+      {cardContent}
     </Link>
   );
 }

@@ -121,6 +121,19 @@ function calculatePlayerScore(ballsMade: number[]): number {
   }, 0);
 }
 
+// Calculate cumulative score from all racks for a player
+function calculateCumulativeScore(state: APA9BallGameState, player: 1 | 2): number {
+  const playerData = state.gameData[player === 1 ? 'player1' : 'player2'];
+  // Score from current rack
+  const currentRackScore = calculatePlayerScore(playerData.ballsMade);
+  // Score from all completed racks
+  const completedRacksScore = state.gameData.racks.reduce((total, rack) => {
+    const rackBalls = player === 1 ? rack.player1Balls : rack.player2Balls;
+    return total + calculatePlayerScore(rackBalls);
+  }, 0);
+  return completedRacksScore + currentRackScore;
+}
+
 // Calculate match points (simplified version - full APA chart can be added later)
 function calculateMatchPoints(
   player1Score: number,
@@ -195,7 +208,8 @@ export const apa9ballGameType: GameType = {
           if (!currentPlayerData.ballsMade.includes(9)) {
             currentPlayerData.ballsMade.push(9);
           }
-          currentPlayerData.score = calculatePlayerScore(currentPlayerData.ballsMade);
+          // Update score to include current rack + all completed racks
+          currentPlayerData.score = calculateCumulativeScore(state, state.gameData.currentPlayer);
           
           // Check if this wins the game FIRST (before resetting rack)
           if (checkWinCondition(state, state.gameData.currentPlayer)) {
@@ -213,6 +227,10 @@ export const apa9ballGameType: GameType = {
             const allBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
             if (allBallsMade.length === 9) {
               // All balls pocketed - save current rack and start new rack
+              // Calculate cumulative scores BEFORE adding rack to array (to avoid double-counting)
+              const player1ScoreBeforeReset = calculateCumulativeScore(state, 1);
+              const player2ScoreBeforeReset = calculateCumulativeScore(state, 2);
+              
               // Save the completed rack to history
               const completedRack: APA9BallRack = {
                 rackNumber: state.gameData.currentRack,
@@ -239,6 +257,10 @@ export const apa9ballGameType: GameType = {
               state.gameData.currentBall = 1;
               state.gameData.nineBallOnBreak = false;
               state.gameData.currentRack += 1;
+              
+              // Restore cumulative scores (they should persist across racks)
+              state.gameData.player1.score = player1ScoreBeforeReset;
+              state.gameData.player2.score = player2ScoreBeforeReset;
             }
           }
         } else if (ballNumber >= 1 && ballNumber <= 8) {
@@ -246,7 +268,8 @@ export const apa9ballGameType: GameType = {
           if (!currentPlayerData.ballsMade.includes(ballNumber)) {
             currentPlayerData.ballsMade.push(ballNumber);
           }
-          currentPlayerData.score = calculatePlayerScore(currentPlayerData.ballsMade);
+          // Update score to include current rack + all completed racks
+          currentPlayerData.score = calculateCumulativeScore(state, state.gameData.currentPlayer);
           
           // Update current ball to next lowest on table
           const allBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
@@ -265,7 +288,8 @@ export const apa9ballGameType: GameType = {
           if (!currentPlayerData.ballsMade.includes(ballNumber)) {
             currentPlayerData.ballsMade.push(ballNumber);
           }
-          currentPlayerData.score = calculatePlayerScore(currentPlayerData.ballsMade);
+          // Update score to include current rack + all completed racks
+          currentPlayerData.score = calculateCumulativeScore(state, state.gameData.currentPlayer);
           
           // Update current ball
           const newAllBallsMade = [...new Set([...state.gameData.player1.ballsMade, ...state.gameData.player2.ballsMade])];
@@ -293,6 +317,10 @@ export const apa9ballGameType: GameType = {
             );
           } else if (newAllBallsMade.length === 9) {
             // All balls pocketed but game not won - save current rack and start new rack
+            // Calculate cumulative scores BEFORE adding rack to array (to avoid double-counting)
+            const player1ScoreBeforeReset = calculateCumulativeScore(state, 1);
+            const player2ScoreBeforeReset = calculateCumulativeScore(state, 2);
+            
             // Save the completed rack to history
             const completedRack: APA9BallRack = {
               rackNumber: state.gameData.currentRack,
@@ -321,6 +349,10 @@ export const apa9ballGameType: GameType = {
             state.gameData.currentBall = 1;
             state.gameData.nineBallOnBreak = false;
             state.gameData.currentRack += 1;
+            
+            // Restore cumulative scores (they should persist across racks)
+            state.gameData.player1.score = player1ScoreBeforeReset;
+            state.gameData.player2.score = player2ScoreBeforeReset;
             // Note: breakAndRun is only for winning the entire match, not a single rack
           }
         } else {
@@ -384,11 +416,9 @@ export const apa9ballGameType: GameType = {
         state.gameData.currentRack = state.gameData.racks.length + 1;
       }
       
-      // Recalculate scores in case they're missing
-      const player1Balls = (state.gameData.player1.ballsMade || []) as number[];
-      const player2Balls = (state.gameData.player2.ballsMade || []) as number[];
-      state.gameData.player1.score = calculatePlayerScore(player1Balls);
-      state.gameData.player2.score = calculatePlayerScore(player2Balls);
+      // Recalculate scores from all racks (cumulative)
+      state.gameData.player1.score = calculateCumulativeScore(state, 1);
+      state.gameData.player2.score = calculateCumulativeScore(state, 2);
     }
     if (typeof data.totalScore === 'number') state.totalScore = data.totalScore;
     if (typeof data.isComplete === 'boolean') state.isComplete = data.isComplete;
