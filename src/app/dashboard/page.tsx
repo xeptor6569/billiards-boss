@@ -166,16 +166,13 @@ async function DashboardContent() {
 
       {/* Game Types Section - Primary Navigation */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
             Game Types
           </h2>
-          <Link
-            href="/dashboard/games/new"
-            className="px-4 py-2 rounded-lg font-semibold text-white transition-opacity hover:opacity-90 bg-[var(--accent)] text-sm"
-          >
-            New Game
-          </Link>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Click a game type to view history or resume an active game
+          </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {gameTypes.map((gameType) => {
@@ -213,14 +210,14 @@ async function DashboardContent() {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Link
-          href="/dashboard/games/new"
+          href="/dashboard/history"
           className="block p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow bg-slate-50 dark:bg-slate-800"
         >
           <h2 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
-            Start New Game
+            Game History
           </h2>
           <p className="text-slate-600 dark:text-slate-400">
-            Choose a game type and start scoring
+            View all your completed and active games
           </p>
         </Link>
 
