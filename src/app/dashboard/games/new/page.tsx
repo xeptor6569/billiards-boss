@@ -1184,7 +1184,7 @@ export default function NewGamePage() {
           </div>
 
           {/* Visualizer Stage (45%) - Ball selector */}
-          <div className="h-[45%] min-h-[200px] bg-slate-50 dark:bg-slate-800 relative flex flex-col items-center justify-center p-4 overflow-y-auto">
+          <div className="h-[45%] min-h-[200px] bg-slate-50 dark:bg-slate-800 relative flex flex-col items-center justify-center p-4 overflow-y-auto scrollbar-hide">
             {isComplete ? (
               <APA9BallMatchPoints gameState={apa9State} />
             ) : (

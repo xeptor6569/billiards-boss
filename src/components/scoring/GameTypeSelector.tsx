@@ -55,7 +55,7 @@ export default function GameTypeSelector({
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto scrollbar-hide">
         <div className="p-6">
           <h2 className="text-2xl font-bold mb-4 text-slate-900 dark:text-slate-100">
             Select Game Type

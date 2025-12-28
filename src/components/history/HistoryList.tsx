@@ -71,7 +71,7 @@ export default function HistoryList({ games, showGameType = false, gameTypeName 
 
       {/* Desktop Table View */}
       <div className="hidden md:block rounded-lg shadow-md overflow-hidden bg-slate-50 dark:bg-slate-800">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto scrollbar-hide">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
             <thead className="bg-slate-100 dark:bg-slate-700">
               <tr>

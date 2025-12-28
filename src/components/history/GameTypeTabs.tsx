@@ -24,7 +24,7 @@ export default function GameTypeTabs({ currentGameType, basePath }: GameTypeTabs
   return (
     <div className="mb-6">
       <div className="border-b border-slate-200 dark:border-slate-700">
-        <nav className="-mb-px flex space-x-2 sm:space-x-4 overflow-x-auto" aria-label="Game types">
+        <nav className="-mb-px flex space-x-2 sm:space-x-4 overflow-x-auto scrollbar-hide" aria-label="Game types">
           <Link
             href={basePath}
             className={`whitespace-nowrap py-3 px-3 sm:px-4 border-b-2 font-medium text-sm transition-colors ${
