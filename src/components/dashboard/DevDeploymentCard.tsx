@@ -23,7 +23,7 @@ export default function DevDeploymentCard({ userEmail }: DevDeploymentCardProps)
       `Environment: Development\n\n` +
       `[Describe your issue here]`
     );
-    window.location.href = `mailto:dev@billiardsboss.com?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:billiardsboss.dev@cameronmarotto.com?subject=${subject}&body=${body}`;
   };
 
   const handleCreateIssue = async () => {
