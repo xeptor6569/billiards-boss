@@ -3,15 +3,15 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { gamePersistenceService } from "@/lib/services/game-persistence-service";
 import { getGameType } from "@/lib/game-types";
-import HistoryTableRow from "@/components/history/HistoryTableRow";
-import HistoryCard from "@/components/history/HistoryCard";
+import HistoryList from "@/components/history/HistoryList";
+import GameTypeTabs from "@/components/history/GameTypeTabs";
 import { Suspense } from "react";
 
-interface HistoryListProps {
+interface HistoryListContentProps {
   gameType: string;
 }
 
-async function HistoryList({ gameType }: HistoryListProps) {
+async function HistoryListContent({ gameType }: HistoryListContentProps) {
   const session = await auth();
 
   if (!session) {
@@ -58,78 +58,7 @@ async function HistoryList({ gameType }: HistoryListProps) {
     );
   }
 
-  // Prepare game data
-  const gameData = games.map((game) => {
-    const totalScore = game.gameState.totalScore;
-    const isActuallyComplete = game.gameState.isComplete || game.status === 'completed';
-    const effectiveStatus = isActuallyComplete ? 'completed' : game.status;
-    return {
-      game: {
-        id: game.id,
-        gameMode: game.gameMode,
-        gameType: game.gameType,
-        gameTypeSequence: game.gameTypeSequence,
-        status: effectiveStatus,
-        createdAt: game.createdAt,
-        frames: [], // Not needed for display
-      },
-      totalScore,
-    };
-  });
-
-  return (
-    <>
-      {/* Mobile Card View */}
-      <div className="md:hidden space-y-3">
-        {gameData.map(({ game, totalScore }) => (
-          <HistoryCard
-            key={game.id}
-            game={game}
-            totalScore={totalScore}
-          />
-        ))}
-      </div>
-
-      {/* Desktop Table View */}
-      <div className="hidden md:block rounded-lg shadow-md overflow-hidden bg-slate-50 dark:bg-slate-800">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-            <thead className="bg-slate-100 dark:bg-slate-700">
-              <tr>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                  Game #
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400 hidden md:table-cell">
-                  Mode
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                  Status
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                  Score
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400 hidden lg:table-cell">
-                  Date
-                </th>
-                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-              {gameData.map(({ game, totalScore }) => (
-                <HistoryTableRow
-                  key={game.id}
-                  game={game}
-                  totalScore={totalScore}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </>
-  );
+  return <HistoryList games={games} gameTypeName={gameTypeHandler.metadata.name} />;
 }
 
 export default function GameTypeHistoryPage({
@@ -170,14 +99,18 @@ async function GameTypeHistoryContent({
           </Link>
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
-          {gameTypeHandler.metadata.name} History
+          Game History
         </h1>
         <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-400">
-          View all your {gameTypeHandler.metadata.name} games and scores.
+          View and manage all your games.
         </p>
       </div>
 
-      <HistoryList gameType={gameType} />
+      <GameTypeTabs currentGameType={gameType} basePath="/dashboard/history" />
+      
+      <Suspense fallback={<div className="text-center py-12">Loading history...</div>}>
+        <HistoryListContent gameType={gameType} />
+      </Suspense>
     </>
   );
 }

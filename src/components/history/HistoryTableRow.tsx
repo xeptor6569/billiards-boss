@@ -110,83 +110,54 @@ export default function HistoryTableRow({ game, totalScore }: HistoryTableRowPro
   };
 
   return (
-    <tr className="transition-colors hover:bg-slate-100 dark:hover:bg-slate-700">
-      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
-        {gameNumber}
-      </td>
-      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 hidden md:table-cell">
-        {game.gameMode}
-      </td>
-      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-        <span
-          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full text-white ${
-            game.status === "completed" 
-              ? 'bg-green-600 dark:bg-green-400' 
-              : game.status === "abandoned"
-              ? 'bg-slate-500 dark:bg-slate-400'
-              : 'bg-[var(--accent)]'
-          }`}
-        >
-          {game.status}
-        </span>
-      </td>
-      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-slate-100">
-        {totalScore}
-      </td>
-      <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 hidden lg:table-cell">
-        {new Date(game.createdAt).toLocaleDateString()}
-      </td>
-      <td className="px-3 sm:px-6 py-3 sm:py-4 text-sm font-medium">
-        <div className="flex items-center gap-2 flex-wrap">
-          {isActive ? (
-            <>
-              <Link
-                href={`/dashboard/games/new?gameId=${game.id}`}
-                className="px-2 py-1 text-xs sm:text-sm transition-opacity hover:opacity-80 text-green-600 dark:text-green-400 font-semibold whitespace-nowrap"
-              >
-                Resume
-              </Link>
-              <button
-                onClick={handleAbandon}
-                disabled={abandoning}
-                className="px-2 py-1 text-xs sm:text-sm transition-opacity hover:opacity-80 text-red-600 dark:text-red-400 disabled:opacity-50 whitespace-nowrap"
-              >
-                {abandoning ? "Abandoning..." : "Abandon"}
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                href={`/dashboard/games/${game.id}`}
-                className="px-2 py-1 text-xs sm:text-sm transition-opacity hover:opacity-80 text-[var(--accent)] whitespace-nowrap"
-              >
-                View
-              </Link>
-              {canShare && reconstructedGameState && (
-                <div className="whitespace-nowrap">
-                  <ShareGame
-                    gameState={reconstructedGameState}
-                    gameId={game.id}
-                    createdAt={game.createdAt instanceof Date ? game.createdAt.toISOString() : new Date(game.createdAt).toISOString()}
-                    gameMode={game.gameMode}
-                    compact={true}
-                  />
-                </div>
-              )}
-              {!isAbandoned && (
-                <button
-                  onClick={handleAbandon}
-                  disabled={abandoning}
-                  className="px-2 py-1 text-xs sm:text-sm transition-opacity hover:opacity-80 text-red-600 dark:text-red-400 disabled:opacity-50 whitespace-nowrap"
-                >
-                  {abandoning ? "Abandoning..." : "Abandon"}
-                </button>
-              )}
-            </>
+    <div className="flex items-center gap-2 flex-wrap">
+      {isActive ? (
+        <>
+          <Link
+            href={`/dashboard/games/new?gameId=${game.id}`}
+            className="px-2 py-1 text-xs sm:text-sm transition-opacity hover:opacity-80 text-green-600 dark:text-green-400 font-semibold whitespace-nowrap"
+          >
+            Resume
+          </Link>
+          <button
+            onClick={handleAbandon}
+            disabled={abandoning}
+            className="px-2 py-1 text-xs sm:text-sm transition-opacity hover:opacity-80 text-red-600 dark:text-red-400 disabled:opacity-50 whitespace-nowrap"
+          >
+            {abandoning ? "Abandoning..." : "Abandon"}
+          </button>
+        </>
+      ) : (
+        <>
+          <Link
+            href={`/dashboard/games/${game.id}`}
+            className="px-2 py-1 text-xs sm:text-sm transition-opacity hover:opacity-80 text-[var(--accent)] whitespace-nowrap"
+          >
+            View
+          </Link>
+          {canShare && reconstructedGameState && (
+            <div className="whitespace-nowrap">
+              <ShareGame
+                gameState={reconstructedGameState}
+                gameId={game.id}
+                createdAt={game.createdAt instanceof Date ? game.createdAt.toISOString() : new Date(game.createdAt).toISOString()}
+                gameMode={game.gameMode}
+                compact={true}
+              />
+            </div>
           )}
-        </div>
-      </td>
-    </tr>
+          {!isAbandoned && (
+            <button
+              onClick={handleAbandon}
+              disabled={abandoning}
+              className="px-2 py-1 text-xs sm:text-sm transition-opacity hover:opacity-80 text-red-600 dark:text-red-400 disabled:opacity-50 whitespace-nowrap"
+            >
+              {abandoning ? "Abandoning..." : "Abandon"}
+            </button>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 

@@ -51,15 +51,35 @@ export default function GameTypeCard({
         </div>
       </div>
       
-      <div className="flex items-center gap-4 mt-4 text-sm text-slate-600 dark:text-slate-400">
-        {!gameType.comingSoon && activeGamesCount > 0 && (
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            {activeGamesCount} active {activeGameId && "(Click to resume)"}
-          </span>
-        )}
-        {!gameType.comingSoon && recentGamesCount > 0 && (
-          <span>{recentGamesCount} recent</span>
+      <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+          {!gameType.comingSoon && activeGamesCount > 0 && (
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              {activeGamesCount} active {activeGameId && "(Click to resume)"}
+            </span>
+          )}
+          {!gameType.comingSoon && recentGamesCount > 0 && (
+            <span>{recentGamesCount} recent</span>
+          )}
+        </div>
+        {!gameType.comingSoon && (
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <Link
+              href={`/dashboard/history/${gameType.id}`}
+              className="px-2 py-1 text-xs font-medium rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              History
+            </Link>
+            <Link
+              href={`/dashboard/stats?gameType=${gameType.id}`}
+              className="px-2 py-1 text-xs font-medium rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Stats
+            </Link>
+          </div>
         )}
       </div>
     </>
