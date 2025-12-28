@@ -19,6 +19,18 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// Helper function to convert hex to RGB
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+}
+
 // Helper function to get initial theme from localStorage (safe for SSR)
 function getInitialTheme(): { mode: ThemeMode; accent: AccentColorName } {
   if (typeof window === "undefined") {
@@ -72,18 +84,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     
     setMounted(true);
   }, [mode, accentColor]);
-
-  // Helper function to convert hex to RGB
-  function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result
-      ? {
-          r: parseInt(result[1], 16),
-          g: parseInt(result[2], 16),
-          b: parseInt(result[3], 16),
-        }
-      : null;
-  }
 
   const setMode = (newMode: ThemeMode) => {
     setModeState(newMode);

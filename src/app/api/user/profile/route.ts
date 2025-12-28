@@ -12,11 +12,12 @@ export async function GET() {
     let session;
     try {
       session = await auth();
-    } catch (authError: any) {
+    } catch (authError: unknown) {
       // If this is a prerender/build-time error, return a safe response
+      const errorMessage = authError instanceof Error ? authError.message : String(authError);
       if (
-        authError?.message?.includes("prerender") ||
-        authError?.message?.includes("headers()")
+        errorMessage.includes("prerender") ||
+        errorMessage.includes("headers()")
       ) {
         // During build, return a placeholder response
         // This route will work correctly at runtime
@@ -64,11 +65,12 @@ export async function PATCH(request: NextRequest) {
     let session;
     try {
       session = await auth();
-    } catch (authError: any) {
+    } catch (authError: unknown) {
       // If this is a prerender/build-time error, return a safe response
+      const errorMessage = authError instanceof Error ? authError.message : String(authError);
       if (
-        authError?.message?.includes("prerender") ||
-        authError?.message?.includes("headers()")
+        errorMessage.includes("prerender") ||
+        errorMessage.includes("headers()")
       ) {
         // During build, return a placeholder response
         // This route will work correctly at runtime

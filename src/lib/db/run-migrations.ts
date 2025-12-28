@@ -27,6 +27,8 @@ async function runMigrations() {
     // Read migration files
     const migration1Path = join(process.cwd(), "src/lib/db/migrations/0000_thankful_metal_master.sql");
     const migration2Path = join(process.cwd(), "src/lib/db/migrations/0001_stiff_korvac.sql");
+    const migration3Path = join(process.cwd(), "src/lib/db/migrations/0002_add_game_types.sql");
+    const migration4Path = join(process.cwd(), "src/lib/db/migrations/0003_unified_storage.sql");
 
     if (!existsSync(migration1Path) || !existsSync(migration2Path)) {
       console.error("❌ Migration files not found!");
@@ -36,6 +38,8 @@ async function runMigrations() {
 
     const migration1 = readFileSync(migration1Path, "utf-8");
     const migration2 = readFileSync(migration2Path, "utf-8");
+    const migration3 = existsSync(migration3Path) ? readFileSync(migration3Path, "utf-8") : null;
+    const migration4 = existsSync(migration4Path) ? readFileSync(migration4Path, "utf-8") : null;
 
     // Split by statement breakpoint and execute each statement
     const executeSQL = async (sqlContent: string, migrationName: string) => {
@@ -109,6 +113,18 @@ async function runMigrations() {
 
     await executeSQL(migration1, "0000_thankful_metal_master");
     await executeSQL(migration2, "0001_stiff_korvac");
+    
+    if (migration3) {
+      await executeSQL(migration3, "0002_add_game_types");
+    } else {
+      console.log("⚠️  Migration 0002_add_game_types.sql not found, skipping...");
+    }
+
+    if (migration4) {
+      await executeSQL(migration4, "0003_unified_storage");
+    } else {
+      console.log("⚠️  Migration 0003_unified_storage.sql not found, skipping...");
+    }
 
     console.log("✅ Migrations completed successfully!");
   } catch (error: any) {

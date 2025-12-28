@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { games, frames, gameParticipants } from "@/lib/db/schema";
+import { gameParticipants } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { gamePersistenceService } from "@/lib/services/game-persistence-service";
 
 export async function GET(
   request: NextRequest,
@@ -21,33 +22,32 @@ export async function GET(
       return NextResponse.json({ error: "Invalid game ID" }, { status: 400 });
     }
 
-    const game = await db.query.games.findFirst({
-      where: eq(games.id, gameId),
-      with: {
-        frames: true,
-        participants: true,
-      },
-    });
+    // Load game using persistence service
+    const game = await gamePersistenceService.loadGame(gameId, session.user.id);
 
     if (!game) {
       return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
 
-    // Check ownership
-    if (game.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    // Load participants
+    const participants = await db.query.gameParticipants.findMany({
+      where: eq(gameParticipants.gameId, gameId),
+    });
 
-    // Parse ballsPocketed JSON array for each frame
-    const gameWithParsedFrames = {
-      ...game,
-      frames: game.frames.map((frame) => ({
-        ...frame,
-        ballsPocketed: JSON.parse(frame.ballsPocketed as string),
-      })),
-    };
-
-    return NextResponse.json(gameWithParsedFrames);
+    // Return game with state
+    return NextResponse.json({
+      id: game.id,
+      userId: game.userId,
+      gameMode: game.gameMode,
+      gameType: game.gameType,
+      gameTypeSequence: game.gameTypeSequence,
+      customGameId: game.customGameId,
+      status: game.status,
+      createdAt: game.createdAt,
+      completedAt: game.completedAt,
+      gameState: game.gameState,
+      participants,
+    });
   } catch (error) {
     console.error("Error fetching game:", error);
     return NextResponse.json(
@@ -75,56 +75,29 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid game ID" }, { status: 400 });
     }
 
-    // Verify ownership
-    const game = await db.query.games.findFirst({
-      where: eq(games.id, gameId),
+    // Update game using persistence service
+    const updatedGame = await gamePersistenceService.updateGame(gameId, session.user.id, {
+      status: body.status,
+      completedAt: body.completedAt ? new Date(body.completedAt) : undefined,
+      gameState: body.gameState,
     });
 
-    if (!game) {
+    if (!updatedGame) {
       return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
 
-    if (game.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Update game
-    const [updatedGame] = await db
-      .update(games)
-      .set({
-        status: body.status || game.status,
-        completedAt: body.completedAt ? new Date(body.completedAt) : game.completedAt,
-        ...(body.gameState?.frames && {
-          // Update frames if provided
-        }),
-      })
-      .where(eq(games.id, gameId))
-      .returning();
-
-    // Update frames if provided - store individual shots as JSON array
-    if (body.gameState?.frames) {
-      // Delete existing frames
-      await db.delete(frames).where(eq(frames.gameId, gameId));
-
-      // Insert new frames with full shot-by-shot data
-      const frameInserts = body.gameState.frames
-        .filter((frame: any) => frame.ballsPocketed.length > 0) // Only save frames with shots
-        .map((frame: any) => ({
-          gameId,
-          frameNumber: frame.frameNumber,
-          score: frame.score,
-          isStrike: frame.isStrike,
-          isSpare: frame.isSpare,
-          // Store the full array of individual shots as JSON
-          ballsPocketed: JSON.stringify(frame.ballsPocketed),
-        }));
-
-      if (frameInserts.length > 0) {
-        await db.insert(frames).values(frameInserts);
-      }
-    }
-
-    return NextResponse.json(updatedGame);
+    // Return simplified game record
+    return NextResponse.json({
+      id: updatedGame.id,
+      userId: updatedGame.userId,
+      gameMode: updatedGame.gameMode,
+      gameType: updatedGame.gameType,
+      gameTypeSequence: updatedGame.gameTypeSequence,
+      customGameId: updatedGame.customGameId,
+      status: updatedGame.status,
+      createdAt: updatedGame.createdAt,
+      completedAt: updatedGame.completedAt,
+    });
   } catch (error) {
     console.error("Error updating game:", error);
     return NextResponse.json(
@@ -151,23 +124,15 @@ export async function DELETE(
       return NextResponse.json({ error: "Invalid game ID" }, { status: 400 });
     }
 
-    // Verify ownership
-    const game = await db.query.games.findFirst({
-      where: eq(games.id, gameId),
-    });
+    // Delete game using persistence service
+    const deleted = await gamePersistenceService.deleteGame(gameId, session.user.id);
 
-    if (!game) {
+    if (!deleted) {
       return NextResponse.json({ error: "Game not found" }, { status: 404 });
     }
 
-    if (game.userId !== session.user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    // Delete frames first (foreign key constraint)
-    await db.delete(frames).where(eq(frames.gameId, gameId));
+    // Delete participants
     await db.delete(gameParticipants).where(eq(gameParticipants.gameId, gameId));
-    await db.delete(games).where(eq(games.id, gameId));
 
     return NextResponse.json({ message: "Game deleted" });
   } catch (error) {
