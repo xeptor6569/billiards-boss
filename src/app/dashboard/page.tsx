@@ -24,8 +24,27 @@ async function DashboardContent() {
   // Fetch game counts per type and active game IDs
   const gameTypeStats: Record<string, { active: number; recent: number; activeGameId?: number }> = {};
   
+  // Find the most recent active game across ALL game types
+  let mostRecentActiveGame: { id: number; gameType: string; createdAt: Date } | null = null;
+  
   try {
     if (session?.user?.id) {
+      // First, find the most recent active game across all types
+      const allActiveGames = await gamePersistenceService.listGames(session.user.id, {
+        status: "active",
+        limit: 100,
+      });
+      
+      if (allActiveGames.length > 0) {
+        // Games are already ordered by createdAt desc, so first one is most recent
+        mostRecentActiveGame = {
+          id: allActiveGames[0].id,
+          gameType: allActiveGames[0].gameType,
+          createdAt: allActiveGames[0].createdAt,
+        };
+      }
+      
+      // Then fetch stats per game type
       for (const gameType of gameTypes) {
         const activeGames = await gamePersistenceService.listGames(session.user.id, {
           gameType: gameType.metadata.id,
@@ -39,8 +58,11 @@ async function DashboardContent() {
           limit: 5,
         });
         
-        // Get the most recent active game ID (if any)
-        const activeGameId = activeGames.length > 0 ? activeGames[0].id : undefined;
+        // Only set activeGameId if this is the most recent active game
+        const activeGameId = mostRecentActiveGame && 
+          mostRecentActiveGame.gameType === gameType.metadata.id 
+          ? mostRecentActiveGame.id 
+          : undefined;
         
         gameTypeStats[gameType.metadata.id] = {
           active: activeGames.length,
