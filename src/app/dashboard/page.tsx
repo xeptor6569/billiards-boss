@@ -126,7 +126,10 @@ async function DashboardContent() {
       <NewsSection />
 
       {/* Dev Deployment Card - Only show in development or when explicitly enabled */}
-      {(process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_SHOW_DEV_CARD === "true") && (
+      {(process.env.NODE_ENV !== "production" || 
+        process.env.NEXT_PUBLIC_SHOW_DEV_CARD === "true" ||
+        process.env.NEXT_PUBLIC_IS_DEV === "true" ||
+        (process.env.NEXT_PUBLIC_APP_URL?.includes("dev.billiardsboss.com"))) && (
         <DevDeploymentCard userEmail={session.user?.email} />
       )}
 

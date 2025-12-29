@@ -202,9 +202,12 @@ APP_PORT=3000
 
 ### Dev Deployment Features (Optional)
 
-For the dev deployment card on the dashboard, you can optionally configure GitHub issue creation:
+For the dev deployment card on the dashboard, you can optionally configure:
 
 ```env
+# Show dev deployment card on dashboard (set to "true" in dev environments)
+NEXT_PUBLIC_IS_DEV=true
+
 # GitHub token for creating issues (Personal Access Token with 'repo' scope)
 GITHUB_TOKEN=ghp_your_token_here
 
@@ -213,7 +216,16 @@ GITHUB_REPO_OWNER=cmarotto
 GITHUB_REPO_NAME=billiards-boss
 ```
 
-**Setting up GitHub token:**
+**Setting up the dev deployment card:**
+
+1. Set `NEXT_PUBLIC_IS_DEV=true` in your `.env.development` file to show the dev deployment card
+2. The card will automatically show if:
+   - `NODE_ENV !== "production"` (local development)
+   - `NEXT_PUBLIC_IS_DEV=true` is set
+   - `NEXT_PUBLIC_APP_URL` contains "dev.billiardsboss.com"
+   - `NEXT_PUBLIC_SHOW_DEV_CARD=true` is set
+
+**Setting up GitHub issue creation:**
 
 1. Go to GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
 2. Generate a new token with `repo` scope
