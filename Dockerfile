@@ -47,8 +47,8 @@ COPY --from=builder /app/src/lib/game-logic.ts ./src/lib/game-logic.ts
 # Copy tsconfig.json for TypeScript compilation (needed for @/ path aliases)
 COPY --from=builder /app/tsconfig.json ./
 
-# Install wget for healthcheck
-RUN apk add --no-cache wget
+# Install curl for healthcheck (with retry for transient network issues)
+RUN apk update && apk add --no-cache curl || (sleep 5 && apk update && apk add --no-cache curl)
 
 # Expose port
 EXPOSE 3000
