@@ -44,6 +44,8 @@ COPY --from=builder /app/src/lib/db ./src/lib/db
 COPY --from=builder /app/src/lib/websocket ./src/lib/websocket
 # Copy game-logic (needed by websocket server and uses @/ alias)
 COPY --from=builder /app/src/lib/game-logic.ts ./src/lib/game-logic.ts
+# Copy scripts directory (needed for seed-test-users and other scripts)
+COPY --from=builder /app/scripts ./scripts
 # Copy tsconfig.json for TypeScript compilation (needed for @/ path aliases)
 COPY --from=builder /app/tsconfig.json ./
 
