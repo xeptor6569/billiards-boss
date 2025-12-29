@@ -36,7 +36,7 @@ export async function calculateUserStatistics(userId: string, gameType?: string)
     0
   );
 
-  // Extract scores from gameState for all game types
+  // Extract scores from frames for all game types
   const gameScores = completedGames.map((game) => {
     try {
       // For bowlliards, calculate from frames
@@ -56,20 +56,29 @@ export async function calculateUserStatistics(userId: string, gameType?: string)
           });
         return calculateTotalScore(parsedFrames);
       } else {
-        // For other game types, get score from gameState JSON
-        const gameState = typeof game.gameState === 'string' 
-          ? JSON.parse(game.gameState) 
-          : game.gameState;
-        return gameState?.totalScore || 0;
+        // For other game types, get score from scoreData JSON in frames
+        if (game.frames.length > 0) {
+          const firstFrame = game.frames[0];
+          // Try to get totalScore from scoreData (unified format)
+          if (firstFrame.scoreData) {
+            try {
+              const scoreData = JSON.parse(firstFrame.scoreData);
+              return scoreData?.totalScore || firstFrame.score || 0;
+            } catch {
+              // If parsing fails, fallback to frame score
+              return firstFrame.score || 0;
+            }
+          }
+          // Fallback to frame score if no scoreData
+          return firstFrame.score || 0;
+        }
+        return 0;
       }
     } catch (error) {
-      // Fallback: try to get score from gameState or sum frame scores
+      // Fallback: try to sum frame scores
       console.error("Error parsing game data, using fallback:", error);
       try {
-        const gameState = typeof game.gameState === 'string' 
-          ? JSON.parse(game.gameState) 
-          : game.gameState;
-        return gameState?.totalScore || game.frames.reduce((sum, frame) => sum + frame.score, 0);
+        return game.frames.reduce((sum, frame) => sum + frame.score, 0);
       } catch {
         return 0;
       }
