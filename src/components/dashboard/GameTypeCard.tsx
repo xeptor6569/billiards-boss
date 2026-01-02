@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface GameTypeCardProps {
   gameType: {
@@ -21,10 +22,24 @@ export default function GameTypeCard({
   activeGamesCount = 0,
   activeGameId,
 }: GameTypeCardProps) {
+  const router = useRouter();
+  
   // If there's an active game, link to resume it via new game page, otherwise link to history
   const href = activeGameId 
     ? `/dashboard/games/new?gameId=${activeGameId}`
     : `/dashboard/history/${gameType.id}`;
+  
+  const handleHistoryClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/dashboard/history/${gameType.id}`);
+  };
+
+  const handleStatsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/dashboard/stats?gameType=${gameType.id}`);
+  };
   
   const cardContent = (
     <>
@@ -64,21 +79,21 @@ export default function GameTypeCard({
           )}
         </div>
         {!gameType.comingSoon && (
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Link
-              href={`/dashboard/history/${gameType.id}`}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleHistoryClick}
               className="px-2 py-1 text-xs font-medium rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
-              onClick={(e) => e.stopPropagation()}
             >
               History
-            </Link>
-            <Link
-              href={`/dashboard/stats?gameType=${gameType.id}`}
+            </button>
+            <button
+              type="button"
+              onClick={handleStatsClick}
               className="px-2 py-1 text-xs font-medium rounded transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700"
-              onClick={(e) => e.stopPropagation()}
             >
               Stats
-            </Link>
+            </button>
           </div>
         )}
       </div>

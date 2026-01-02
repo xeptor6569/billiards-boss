@@ -66,40 +66,40 @@ async function StatsContent({ gameType }: StatsContentProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
-          <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="rounded-lg shadow-md p-4 sm:p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">
             Games Played
           </h3>
-          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+          <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
             {stats.gamesPlayed}
           </p>
         </div>
 
-        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
-          <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
+        <div className="rounded-lg shadow-md p-4 sm:p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">
             Average Score
           </h3>
-          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+          <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
             {stats.averageScore.toFixed(1)}
           </p>
         </div>
 
-        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
-          <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
+        <div className="rounded-lg shadow-md p-4 sm:p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">
             Best Score
           </h3>
-          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+          <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
             {stats.bestScore}
           </p>
         </div>
 
         {supportsStrikesSpares && (
-          <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
-            <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400">
+          <div className="rounded-lg shadow-md p-4 sm:p-6 bg-slate-50 dark:bg-slate-800">
+            <h3 className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400">
               Total Frames
             </h3>
-            <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">
+            <p className="mt-2 text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
               {stats.totalFrames}
             </p>
           </div>
@@ -107,12 +107,12 @@ async function StatsContent({ gameType }: StatsContentProps) {
       </div>
 
       {supportsStrikesSpares && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
-            <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="rounded-lg shadow-md p-4 sm:p-6 bg-slate-50 dark:bg-slate-800">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-slate-900 dark:text-slate-100">
               Strikes & Spares
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <div className="flex justify-between mb-2">
                   <span className="text-sm text-slate-600 dark:text-slate-400">
@@ -148,8 +148,8 @@ async function StatsContent({ gameType }: StatsContentProps) {
             </div>
           </div>
 
-          <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
-            <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">
+          <div className="rounded-lg shadow-md p-4 sm:p-6 bg-slate-50 dark:bg-slate-800">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-slate-900 dark:text-slate-100">
               Performance Overview
             </h3>
             <StatsChart chartData={chartData} />
@@ -158,8 +158,8 @@ async function StatsContent({ gameType }: StatsContentProps) {
       )}
 
       {!supportsStrikesSpares && (
-        <div className="rounded-lg shadow-md p-6 bg-slate-50 dark:bg-slate-800">
-          <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">
+        <div className="rounded-lg shadow-md p-4 sm:p-6 bg-slate-50 dark:bg-slate-800">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-slate-900 dark:text-slate-100">
             Performance Overview
           </h3>
           <StatsChart chartData={chartData} />
