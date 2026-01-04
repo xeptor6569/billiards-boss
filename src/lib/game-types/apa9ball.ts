@@ -210,6 +210,24 @@ function validateCombinationShot(state: APA9BallGameState, ballNumbers: number[]
   return ballNumbers.includes(lowestBall) || (lowestBall === 9 && ballNumbers.includes(9)) || wouldBeEarlyNineBall;
 }
 
+// Helper function to check if current shot is a break shot
+// Break can be: first shot of game OR first shot of a new rack
+function isBreakShot(state: APA9BallGameState): boolean {
+  // First shot of the game: breakPlayer is null and both players have 0 innings
+  const isFirstGameBreak = state.gameData.breakPlayer === null && 
+                          state.gameData.player1.innings === 0 && 
+                          state.gameData.player2.innings === 0;
+  
+  // First shot of a new rack: breakPlayer is set, currentPlayer matches breakPlayer,
+  // and both players have no balls made in current rack (ballsMade arrays are empty)
+  const isNewRackBreak = state.gameData.breakPlayer !== null &&
+                        state.gameData.currentPlayer === state.gameData.breakPlayer &&
+                        state.gameData.player1.ballsMade.length === 0 &&
+                        state.gameData.player2.ballsMade.length === 0;
+  
+  return isFirstGameBreak || isNewRackBreak;
+}
+
 // Helper function to process multiple balls made in one shot
 function processBallsMade(
   state: APA9BallGameState,
@@ -265,10 +283,17 @@ export const apa9ballGameType: GameType = {
         return state;
       }
       
-      // Handle break (first shot of the game)
-      if (state.gameData.breakPlayer === null && state.gameData.player1.innings === 0 && state.gameData.player2.innings === 0) {
-        state.gameData.breakPlayer = state.gameData.currentPlayer;
-        currentPlayerData.innings = 1; // Break counts as first inning
+      // Handle break (first shot of the game OR first shot of a new rack)
+      const isBreak = isBreakShot(state);
+      if (isBreak) {
+        // If this is the first game break, set breakPlayer
+        if (state.gameData.breakPlayer === null) {
+          state.gameData.breakPlayer = state.gameData.currentPlayer;
+        }
+        // Break counts as first inning for current player (only increment if innings is 0)
+        if (currentPlayerData.innings === 0) {
+          currentPlayerData.innings = 1;
+        }
         
         if (ballNumber === 9) {
           // 9-ball on break - win if legal
@@ -469,7 +494,7 @@ export const apa9ballGameType: GameType = {
     } else if (input.type === 'ballsArray') {
       // Combination shot - multiple balls made in one shot
       const ballNumbers = input.ballNumbers;
-      const isBreak = state.gameData.breakPlayer === null && state.gameData.player1.innings === 0 && state.gameData.player2.innings === 0;
+      const isBreak = isBreakShot(state);
       
       // Process the balls
       const result = processBallsMade(state, ballNumbers, isBreak);
@@ -484,8 +509,14 @@ export const apa9ballGameType: GameType = {
       
       // Handle break
       if (isBreak) {
-        state.gameData.breakPlayer = state.gameData.currentPlayer;
-        currentPlayerData.innings = 1;
+        // If this is the first game break, set breakPlayer
+        if (state.gameData.breakPlayer === null) {
+          state.gameData.breakPlayer = state.gameData.currentPlayer;
+        }
+        // Break counts as first inning for current player (only increment if innings is 0)
+        if (currentPlayerData.innings === 0) {
+          currentPlayerData.innings = 1;
+        }
         
         // Check if 9-ball was made on break
         if (result.ballsToAdd.includes(9)) {
