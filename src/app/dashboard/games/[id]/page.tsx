@@ -305,8 +305,10 @@ function GameDetailContent() {
   }
 
   // TypeScript now knows gameState exists and is for bowliards
-  const currentFrame = gameState.frames[gameState.currentFrame - 1] || gameState.frames[9];
-  const isComplete = gameState.isComplete;
+  // Use non-null assertion since we've checked above
+  const activeGameState = gameState;
+  const currentFrame = activeGameState.frames[activeGameState.currentFrame - 1] || activeGameState.frames[9];
+  const isComplete = activeGameState.isComplete;
   const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
   const totalPocketed = currentFrame
     ? currentFrame.ballsPocketed.reduce((sum, count) => sum + count, 0)
@@ -390,7 +392,7 @@ function GameDetailContent() {
       <div className="flex items-center gap-4">
         <div className="text-right">
           <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Score</div>
-          <div className="text-3xl font-black text-[var(--accent)]">{gameState.totalScore}</div>
+          <div className="text-3xl font-black text-[var(--accent)]">{activeGameState.totalScore}</div>
         </div>
         <ThemeSwitcherCompact />
       </div>
@@ -398,8 +400,8 @@ function GameDetailContent() {
   );
 
   const editingFrame =
-    editingFrameIndex !== null && gameState
-      ? gameState.frames[editingFrameIndex]
+    editingFrameIndex !== null && activeGameState
+      ? activeGameState.frames[editingFrameIndex]
       : null;
 
   return (
@@ -408,8 +410,8 @@ function GameDetailContent() {
         header={HeaderCmp}
         frameStrip={
           <FrameRibbon
-            frames={gameState.frames}
-            currentFrameIndex={gameState.currentFrame - 1}
+            frames={activeGameState.frames}
+            currentFrameIndex={activeGameState.currentFrame - 1}
             calculateCumulativeScore={() => 0}
             onFrameClick={handleFrameClick}
             isEditable={!isComplete}
@@ -448,10 +450,10 @@ function GameDetailContent() {
           onSave={handleModalSave}
         />
       )}
-      {gameState && game && (
+      {activeGameState && game && (
         <GameSaveSuccessModal
           isOpen={showSuccessModal}
-          totalScore={gameState.totalScore}
+          totalScore={activeGameState.totalScore}
           gameId={game.id}
           onViewGame={() => setShowSuccessModal(false)}
           onNewGame={() => router.push("/dashboard/games/new")}
