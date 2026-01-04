@@ -8,7 +8,7 @@ interface APA9BallSelectorProps {
   gameState: APA9BallGameState;
   onBallSelect: (ballNumber: number) => void;
   onBallsConfirm?: (ballNumbers: number[]) => void;
-  onSelectionChange?: (ballNumbers: number[]) => void;
+  onSelectionChange?: (ballStates: Record<number, 'pocketed' | 'dead'>) => void;
   disabled?: boolean;
 }
 
@@ -32,12 +32,12 @@ export default function APA9BallSelector({
   onSelectionChange,
   disabled = false,
 }: APA9BallSelectorProps) {
-  const [selectedBalls, setSelectedBalls] = useState<number[]>([]);
+  const [ballStates, setBallStates] = useState<Record<number, 'pocketed' | 'dead'>>({});
   
   // Notify parent of selection changes
-  const updateSelection = (newSelection: number[]) => {
-    setSelectedBalls(newSelection);
-    onSelectionChange?.(newSelection);
+  const updateBallStates = (newStates: Record<number, 'pocketed' | 'dead'>) => {
+    setBallStates(newStates);
+    onSelectionChange?.(newStates);
   };
   
   const currentPlayer = gameState.gameData.currentPlayer;
@@ -85,28 +85,34 @@ export default function APA9BallSelector({
   };
   
   const handleBallClick = (ballNumber: number) => {
-    if (disabled || isBallPocketed(ballNumber) || isBallDead(ballNumber)) {
-      return;
-    }
+    // Allow clicking balls that are already pocketed or dead to cycle their state
+    // But don't allow clicking if the ball is already pocketed/dead in the game state
+    // (those are final states from previous shots)
+    const currentState = ballStates[ballNumber];
     
-    // Toggle selection - allow selecting any unpocketed ball directly
-    if (selectedBalls.includes(ballNumber)) {
-      const newSelection = selectedBalls.filter(b => b !== ballNumber);
-      updateSelection(newSelection);
-    } else {
-      const newSelection = [...selectedBalls, ballNumber];
-      updateSelection(newSelection);
+    if (!currentState) {
+      // First click: mark as pocketed
+      updateBallStates({ ...ballStates, [ballNumber]: 'pocketed' });
+    } else if (currentState === 'pocketed') {
+      // Second click: mark as dead
+      updateBallStates({ ...ballStates, [ballNumber]: 'dead' });
+    } else if (currentState === 'dead') {
+      // Third click: remove (back to active)
+      const newStates = { ...ballStates };
+      delete newStates[ballNumber];
+      updateBallStates(newStates);
     }
   };
   
   const handleConfirmShot = () => {
-    if (selectedBalls.length > 0 && onBallsConfirm) {
-      onBallsConfirm(selectedBalls);
-      updateSelection([]);
-    } else if (selectedBalls.length === 1 && onBallSelect) {
+    const allSelectedBalls = Object.keys(ballStates).map(Number);
+    if (allSelectedBalls.length > 0 && onBallsConfirm) {
+      onBallsConfirm(allSelectedBalls);
+      updateBallStates({});
+    } else if (allSelectedBalls.length === 1 && onBallSelect) {
       // Single ball - use old handler for backward compatibility
-      onBallSelect(selectedBalls[0]);
-      updateSelection([]);
+      onBallSelect(allSelectedBalls[0]);
+      updateBallStates({});
     }
   };
 
@@ -119,8 +125,12 @@ export default function APA9BallSelector({
           const isCurrentPlayer = isBallPocketedByCurrentPlayer(ball);
           const isOtherPlayer = isBallPocketedByOtherPlayer(ball);
           const isValid = isBallValid(ball);
-          const isClickable = !disabled && !isPocketed && !isDead && isValid;
-          const isSelected = selectedBalls.includes(ball);
+          // Allow clicking if ball is in selection state (even if already pocketed/dead in game)
+          const ballState = ballStates[ball];
+          const isClickable = !disabled && (isValid || ballState !== undefined);
+          const isSelected = ballState !== undefined;
+          const isPocketedState = ballState === 'pocketed';
+          const isDeadState = ballState === 'dead';
           
           return (
             <div
@@ -135,12 +145,13 @@ export default function APA9BallSelector({
               <PoolBall
                 ballNumber={ball}
                 size="md"
-                isPocketed={isPocketed}
+                isPocketed={isPocketed || isPocketedState}
                 isSelected={isSelected}
-                isDead={isDead}
+                isDead={isDead || isDeadState}
                 pocketedBy={isCurrentPlayer ? 'player1' : isOtherPlayer ? 'player2' : undefined}
                 onClick={() => handleBallClick(ball)}
                 disabled={!isClickable}
+                ballState={ballState}
               />
             </div>
           );
@@ -149,11 +160,18 @@ export default function APA9BallSelector({
       
       {/* Instructions and Confirm Button */}
       <div className="mt-4 text-center w-full max-w-md">
-        {selectedBalls.length > 0 ? (
+        {Object.keys(ballStates).length > 0 ? (
           <div className="space-y-2">
-            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
-              Selected: {selectedBalls.sort((a, b) => a - b).join(', ')}
-            </p>
+            <div className="text-slate-600 dark:text-slate-400 text-sm font-medium space-y-1">
+              {Object.entries(ballStates).map(([ball, state]) => (
+                <div key={ball} className="flex items-center justify-center gap-2">
+                  <span>Ball {ball}:</span>
+                  <span className={state === 'pocketed' ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
+                    {state === 'pocketed' ? '✓ Pocketed' : '✗ Dead'}
+                  </span>
+                </div>
+              ))}
+            </div>
             {onBallsConfirm && (
               <button
                 onClick={handleConfirmShot}

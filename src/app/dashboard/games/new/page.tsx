@@ -638,7 +638,8 @@ export default function NewGamePage() {
     autoSaveGame(previousState);
   };
 
-  const [selectedBalls, setSelectedBalls] = useState<number[]>([]);
+  // Track ball states: 'pocketed' or 'dead' (active balls are not in this object)
+  const [ballStates, setBallStates] = useState<Record<number, 'pocketed' | 'dead'>>({});
   
   const handleAPA9BallInput = (ballNumber: number) => {
     if (!baseGameState || gameType !== 'apa9ball') return;
@@ -668,9 +669,30 @@ export default function NewGamePage() {
       // Save current state to history before making changes
       saveToHistory(baseGameState);
       
-      const newState = gameTypeHandler.addScore(baseGameState, { type: 'ballsArray', ballNumbers });
+      // Separate balls by state
+      const pocketedBalls = ballNumbers.filter(b => ballStates[b] === 'pocketed');
+      const deadBalls = ballNumbers.filter(b => ballStates[b] === 'dead');
+      
+      let newState = baseGameState;
+      
+      // Process pocketed balls (normal shot)
+      if (pocketedBalls.length > 0) {
+        newState = gameTypeHandler.addScore(newState, { type: 'ballsArray', ballNumbers: pocketedBalls });
+      }
+      
+      // Process dead balls (foul balls, but don't switch players)
+      if (deadBalls.length > 0) {
+        newState = gameTypeHandler.addScore(newState, { 
+          type: 'custom', 
+          data: { 
+            action: 'markDeadBalls', 
+            ballNumbers: deadBalls 
+          } 
+        });
+      }
+      
       setBaseGameState(newState);
-      setSelectedBalls([]); // Clear selection after confirming
+      setBallStates({}); // Clear selection after confirming
       hasShotsRef.current = true;
       
       // Auto-save
@@ -692,7 +714,7 @@ export default function NewGamePage() {
       
       const newState = gameTypeHandler.addScore(baseGameState, { type: 'foul', ballNumbers });
       setBaseGameState(newState);
-      setSelectedBalls([]); // Clear selection after foul
+      setBallStates({}); // Clear selection after foul
       hasShotsRef.current = true;
       
       // Auto-save
@@ -712,8 +734,8 @@ export default function NewGamePage() {
     if (!baseGameState || gameType !== 'apa9ball') return;
     
     // Clear any selected balls when ending turn
-    if (selectedBalls.length > 0) {
-      setSelectedBalls([]);
+    if (Object.keys(ballStates).length > 0) {
+      setBallStates({});
     }
     
     const gameTypeHandler = getGameType('apa9ball');
@@ -1104,7 +1126,7 @@ export default function NewGamePage() {
                 gameState={apa9State}
                 onBallSelect={handleAPA9BallInput}
                 onBallsConfirm={handleAPA9BallsConfirm}
-                onSelectionChange={setSelectedBalls}
+                onSelectionChange={setBallStates}
                 disabled={isComplete || saving}
               />
             )}
@@ -1140,7 +1162,7 @@ export default function NewGamePage() {
                 onUndo={handleUndo}
                 canUndo={gameHistory.length > 0 && !apa9State.isComplete}
                 disabled={saving}
-                selectedBalls={selectedBalls}
+                ballStates={ballStates}
                 isRackComplete={(() => {
                   // Check if all 9 balls are pocketed in current rack - account for dead balls
                   const allBallsMade = [...new Set([

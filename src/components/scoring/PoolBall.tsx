@@ -9,6 +9,7 @@ interface PoolBallProps {
   pocketedBy?: 'player1' | 'player2';
   onClick?: () => void;
   disabled?: boolean;
+  ballState?: 'pocketed' | 'dead';
 }
 
 // Standard pool ball colors for 9-ball
@@ -39,19 +40,24 @@ export default function PoolBall({
   pocketedBy,
   onClick,
   disabled = false,
+  ballState,
 }: PoolBallProps) {
   const colors = BALL_COLORS[ballNumber] || BALL_COLORS[1];
   const sizeClass = SIZE_CLASSES[size];
   
-  // Determine visual state
+  // Determine visual state - ballState (from selection) takes precedence for visual feedback
   let visualState: 'normal' | 'pocketed' | 'dead' | 'invalid';
-  if (isDead) {
+  if (ballState === 'dead' || isDead) {
     visualState = 'dead';
-  } else if (isPocketed) {
+  } else if (ballState === 'pocketed' || isPocketed) {
     visualState = 'pocketed';
   } else {
     visualState = 'normal';
   }
+  
+  // Allow clicking if ball is in selection state (even if already pocketed/dead in game)
+  const isInSelection = ballState !== undefined;
+  const actuallyDisabled = disabled && !isInSelection;
   
   // Ball 9 has a stripe pattern - use gradient
   const isNineBall = ballNumber === 9;
@@ -59,7 +65,7 @@ export default function PoolBall({
   return (
     <button
       onClick={onClick}
-      disabled={disabled || isPocketed || isDead}
+      disabled={actuallyDisabled || (!isInSelection && (isPocketed || isDead))}
       className={`
         relative rounded-full flex items-center justify-center
         font-bold transition-all duration-300
@@ -103,18 +109,23 @@ export default function PoolBall({
       </div>
       
       {/* Dead ball indicator */}
-      {isDead && (
+      {(isDead || ballState === 'dead') && (
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-red-600 dark:text-red-400 font-bold text-lg">✕</span>
         </div>
       )}
       
-      {/* Selected indicator */}
-      {isSelected && !isPocketed && !isDead && (
-        <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center">
+      {/* Selected indicator - show checkmark for pocketed state, X for dead state */}
+      {isSelected && ballState === 'pocketed' && (
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center">
           <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
           </svg>
+        </div>
+      )}
+      {isSelected && ballState === 'dead' && (
+        <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center">
+          <span className="text-white text-xs font-bold">✕</span>
         </div>
       )}
     </button>

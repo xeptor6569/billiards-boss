@@ -9,7 +9,7 @@ interface APA9BallTurnControlsProps {
   canUndo: boolean;
   disabled?: boolean;
   isRackComplete?: boolean;
-  selectedBalls?: number[];
+  ballStates?: Record<number, 'pocketed' | 'dead'>;
 }
 
 export default function APA9BallTurnControls({
@@ -21,13 +21,14 @@ export default function APA9BallTurnControls({
   canUndo,
   disabled = false,
   isRackComplete = false,
-  selectedBalls = [],
+  ballStates = {},
 }: APA9BallTurnControlsProps) {
   const btnBase = "relative flex items-center justify-center rounded-xl font-bold transition-all active:scale-95 touch-manipulation select-none disabled:opacity-50 disabled:cursor-not-allowed";
   const btnSurface = "bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100";
   const btnAction = "text-white shadow-lg";
   
-  const hasSelectedBalls = selectedBalls.length > 0;
+  const hasSelectedBalls = Object.keys(ballStates).length > 0;
+  const deadBalls = Object.keys(ballStates).filter(b => ballStates[Number(b)] === 'dead').map(Number);
 
   return (
     <div className="flex flex-col gap-4 h-full p-3 pb-4 justify-center">
@@ -42,24 +43,26 @@ export default function APA9BallTurnControls({
 
       {/* Secondary Actions */}
       <div className="grid grid-cols-3 gap-2">
-        {/* Foul Button - changes to "Mark as Foul" if balls are selected */}
+        {/* Foul Button - only show "Mark Foul" if there are dead balls in selection */}
         <button
           onClick={() => {
-            if (hasSelectedBalls && onFoulWithBalls) {
-              onFoulWithBalls(selectedBalls);
+            if (deadBalls.length > 0 && onFoulWithBalls) {
+              // Legacy support: if user somehow has dead balls selected, mark them as foul
+              // But this shouldn't happen with new state cycling flow
+              onFoulWithBalls(deadBalls);
             } else {
               onFoul();
             }
           }}
           disabled={disabled}
           className={`${btnBase} ${btnAction} py-[1.0rem] ${
-            hasSelectedBalls 
+            deadBalls.length > 0
               ? 'bg-orange-600 dark:bg-orange-500 shadow-orange-600/30 dark:shadow-orange-500/30' 
               : 'bg-red-600 dark:bg-red-400 shadow-red-600/30 dark:shadow-red-400/30'
           } text-sm`}
-          title={hasSelectedBalls ? "Mark selected balls as dead (foul)" : "Foul"}
+          title={deadBalls.length > 0 ? "Mark selected dead balls as foul (legacy)" : "Foul"}
         >
-          {hasSelectedBalls ? "Mark Foul" : "Foul"}
+          {deadBalls.length > 0 ? "Mark Foul" : "Foul"}
         </button>
 
         {/* Defensive Shot Button */}

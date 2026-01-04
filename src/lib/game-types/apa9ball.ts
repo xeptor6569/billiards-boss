@@ -639,6 +639,8 @@ export const apa9ballGameType: GameType = {
       // Handle foul - check if balls were made (dead balls)
       if (input.ballNumbers && input.ballNumbers.length > 0) {
         // Foul with balls made - these become dead balls
+        // NOTE: This path is now deprecated in favor of markDeadBalls action
+        // But we keep it for backward compatibility with the old "Mark Foul" button
         const ballNumbers = input.ballNumbers.filter(b => b >= 1 && b <= 9);
         
         for (const ballNumber of ballNumbers) {
@@ -656,13 +658,16 @@ export const apa9ballGameType: GameType = {
         
         // Recalculate score (dead balls don't count)
         currentPlayerData.score = calculateCumulativeScore(state, state.gameData.currentPlayer);
+        
+        // Update current ball
+        const newAllBallsMade = getAllBallsMade(state);
+        const newRemainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !newAllBallsMade.includes(b));
+        state.gameData.currentBall = newRemainingBalls.length > 0 ? Math.min(...newRemainingBalls) : 9;
       }
       
       currentPlayerData.fouls += 1;
-      // Switch players after foul
-      state.gameData.currentPlayer = state.gameData.currentPlayer === 1 ? 2 : 1;
-      // Increment inning for the other player
-      otherPlayerData.innings += 1;
+      // Don't switch players automatically - user must manually end turn
+      // This gives user control over when to switch players
     } else if (input.type === 'custom') {
       // Handle custom inputs like 'endTurn', 'defensiveShot', 'startNewRack', etc.
       if (input.data?.action === 'endTurn') {
@@ -697,6 +702,9 @@ export const apa9ballGameType: GameType = {
           // Reset current rack balls (keep cumulative scores, innings, etc.)
           state.gameData.player1.ballsMade = [];
           state.gameData.player2.ballsMade = [];
+          // Clear dead balls when starting new rack
+          state.gameData.player1.deadBalls = [];
+          state.gameData.player2.deadBalls = [];
           state.gameData.currentBall = 1;
           state.gameData.nineBallOnBreak = false;
           state.gameData.currentRack += 1;
@@ -710,6 +718,31 @@ export const apa9ballGameType: GameType = {
       } else if (input.data?.action === 'defensiveShot') {
         // Mark defensive shot
         currentPlayerData.defensiveShots += 1;
+      } else if (input.data?.action === 'markDeadBalls') {
+        // Mark balls as dead without switching players or incrementing fouls
+        // This is used when user marks balls as dead during shot confirmation
+        const ballNumbers = (input.data.ballNumbers as number[])?.filter(b => b >= 1 && b <= 9) || [];
+        
+        for (const ballNumber of ballNumbers) {
+          // Remove from ballsMade if it was there
+          const ballIndex = currentPlayerData.ballsMade.indexOf(ballNumber);
+          if (ballIndex > -1) {
+            currentPlayerData.ballsMade.splice(ballIndex, 1);
+          }
+          
+          // Add to deadBalls if not already there
+          if (!currentPlayerData.deadBalls.includes(ballNumber)) {
+            currentPlayerData.deadBalls.push(ballNumber);
+          }
+        }
+        
+        // Recalculate score (dead balls don't count)
+        currentPlayerData.score = calculateCumulativeScore(state, state.gameData.currentPlayer);
+        
+        // Update current ball
+        const newAllBallsMade = getAllBallsMade(state);
+        const newRemainingBalls = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(b => !newAllBallsMade.includes(b));
+        state.gameData.currentBall = newRemainingBalls.length > 0 ? Math.min(...newRemainingBalls) : 9;
       }
     }
     
