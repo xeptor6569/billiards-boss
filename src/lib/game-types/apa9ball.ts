@@ -79,10 +79,16 @@ function createNewAPA9BallGame(
   player1SkillLevel: number = 3, 
   player2SkillLevel: number = 3,
   player1Name: string = 'Player 1',
-  player2Name: string = 'Player 2'
+  player2Name: string = 'Player 2',
+  breakPlayer?: 1 | 2
 ): APA9BallGameState {
   const player1Target = SKILL_LEVEL_TARGETS[player1SkillLevel] || SKILL_LEVEL_TARGETS[3];
   const player2Target = SKILL_LEVEL_TARGETS[player2SkillLevel] || SKILL_LEVEL_TARGETS[3];
+  
+  // If breakPlayer is provided, set both breakPlayer and currentPlayer
+  // Otherwise, default to currentPlayer: 1 and breakPlayer: null
+  const initialBreakPlayer = breakPlayer ?? null;
+  const initialCurrentPlayer = breakPlayer ?? 1;
   
   return {
     gameType: 'apa9ball',
@@ -109,11 +115,11 @@ function createNewAPA9BallGame(
         fouls: 0,
         deadBalls: [],
       },
-      currentPlayer: 1,
+      currentPlayer: initialCurrentPlayer,
       gameStatus: 'in-progress',
       breakAndRun: false,
       nineBallOnBreak: false,
-      breakPlayer: null,
+      breakPlayer: initialBreakPlayer,
       currentBall: 1, // Start with ball 1
       currentRack: 1, // Start with rack 1
       racks: [], // No completed racks yet
@@ -273,12 +279,13 @@ export const apa9ballGameType: GameType = {
   },
   
   createNewGame(...args: unknown[]): BaseGameState {
-    // args[0] = player1SkillLevel, args[1] = player2SkillLevel, args[2] = player1Name, args[3] = player2Name
+    // args[0] = player1SkillLevel, args[1] = player2SkillLevel, args[2] = player1Name, args[3] = player2Name, args[4] = breakPlayer (optional)
     const player1SL = (typeof args[0] === 'number' ? args[0] : 3) || 3;
     const player2SL = (typeof args[1] === 'number' ? args[1] : 3) || 3;
     const player1Name = (typeof args[2] === 'string' ? args[2] : 'Player 1') || 'Player 1';
     const player2Name = (typeof args[3] === 'string' ? args[3] : 'Player 2') || 'Player 2';
-    return createNewAPA9BallGame(player1SL, player2SL, player1Name, player2Name);
+    const breakPlayer = (typeof args[4] === 'number' && (args[4] === 1 || args[4] === 2)) ? args[4] as 1 | 2 : undefined;
+    return createNewAPA9BallGame(player1SL, player2SL, player1Name, player2Name, breakPlayer);
   },
   
   addScore(gameState: BaseGameState, input: ScoreInput): BaseGameState {

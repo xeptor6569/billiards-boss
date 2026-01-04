@@ -15,6 +15,7 @@ import { getGameType, BaseGameState } from "@/lib/game-types";
 import APA9BallSelector from "@/components/scoring/APA9BallSelector";
 import APA9BallScoreDisplay from "@/components/scoring/APA9BallScoreDisplay";
 import APA9BallSkillLevelSelector from "@/components/scoring/APA9BallSkillLevelSelector";
+import APA9BallBreakDetermination from "@/components/scoring/APA9BallBreakDetermination";
 import APA9BallMatchPoints from "@/components/scoring/APA9BallMatchPoints";
 import APA9BallTurnControls from "@/components/scoring/APA9BallTurnControls";
 import { APA9BallGameState } from "@/lib/game-types/apa9ball";
@@ -34,6 +35,13 @@ export default function NewGamePage() {
   const [savedGameId, setSavedGameId] = useState<number | null>(null);
   const [savedGameCreatedAt, setSavedGameCreatedAt] = useState<string | null>(null);
   const [showSkillLevelSelector, setShowSkillLevelSelector] = useState(false);
+  const [showBreakDetermination, setShowBreakDetermination] = useState(false);
+  const [pendingGameConfig, setPendingGameConfig] = useState<{
+    player1SL: number;
+    player2SL: number;
+    player1Name: string;
+    player2Name: string;
+  } | null>(null);
   const [gameHistory, setGameHistory] = useState<BaseGameState[]>([]); // History stack for undo
   const hasShotsRef = useRef(false);
   const autoSaveInProgressRef = useRef(false);
@@ -563,13 +571,36 @@ export default function NewGamePage() {
   const handleSkillLevelConfirm = (player1SL: number, player2SL: number, player1Name: string, player2Name: string) => {
     setShowSkillLevelSelector(false);
     setShowSuccessModal(false); // Reset modal when starting new game
+    // Store config and show break determination instead of creating game immediately
+    setPendingGameConfig({ player1SL, player2SL, player1Name, player2Name });
+    setShowBreakDetermination(true);
+  };
+
+  const handleBreakDetermined = (breakPlayer: 1 | 2) => {
+    if (!pendingGameConfig) return;
+    
+    setShowBreakDetermination(false);
     const gameTypeHandler = getGameType('apa9ball');
     if (gameTypeHandler) {
-      // createNewGame for apa9ball takes skill levels and player names as arguments
-      const newState = (gameTypeHandler.createNewGame as (player1SL: number, player2SL: number, player1Name: string, player2Name: string) => BaseGameState)(player1SL, player2SL, player1Name, player2Name);
+      // createNewGame for apa9ball takes skill levels, player names, and breakPlayer
+      const newState = (gameTypeHandler.createNewGame as (
+        player1SL: number,
+        player2SL: number,
+        player1Name: string,
+        player2Name: string,
+        breakPlayer?: 1 | 2
+      ) => BaseGameState)(
+        pendingGameConfig.player1SL,
+        pendingGameConfig.player2SL,
+        pendingGameConfig.player1Name,
+        pendingGameConfig.player2Name,
+        breakPlayer
+      );
       setBaseGameState(newState);
       // Clear history when starting a new game
       setGameHistory([]);
+      // Clear pending config
+      setPendingGameConfig(null);
     }
   };
 
@@ -1057,6 +1088,22 @@ export default function NewGamePage() {
       <APA9BallSkillLevelSelector
         onConfirm={handleSkillLevelConfirm}
         onCancel={() => router.push("/dashboard")}
+      />
+    );
+  }
+
+  // Show break determination for APA 9-ball
+  if (showBreakDetermination && pendingGameConfig) {
+    return (
+      <APA9BallBreakDetermination
+        player1Name={pendingGameConfig.player1Name}
+        player2Name={pendingGameConfig.player2Name}
+        onConfirm={handleBreakDetermined}
+        onCancel={() => {
+          setShowBreakDetermination(false);
+          setPendingGameConfig(null);
+          router.push("/dashboard");
+        }}
       />
     );
   }
