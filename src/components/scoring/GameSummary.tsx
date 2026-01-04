@@ -2,11 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { GameState, Frame } from "@/lib/game-logic";
+import { BaseGameState } from "@/lib/game-types";
 import FrameDisplay from "./FrameDisplay";
 import ShareGame from "@/components/sharing/ShareGame";
+import APA9BallScoresheet from "./APA9BallScoresheet";
 
 interface GameSummaryProps {
-  gameState: GameState;
+  gameState: GameState | null;
+  baseGameState: BaseGameState | null;
+  gameType: string;
   gameId: number;
   createdAt: string;
   gameMode?: string;
@@ -55,10 +59,8 @@ function calculateCumulativeScore(frames: Frame[], upToIndex: number): number {
   return total;
 }
 
-export default function GameSummary({ gameState, gameId, createdAt, gameMode }: GameSummaryProps) {
+export default function GameSummary({ gameState, baseGameState, gameType, gameId, createdAt, gameMode }: GameSummaryProps) {
   const router = useRouter();
-  const strikes = gameState.frames.filter(f => f.isStrike).length;
-  const spares = gameState.frames.filter(f => f.isSpare && !f.isStrike).length;
   const date = new Date(createdAt);
   const formattedDate = date.toLocaleDateString('en-US', { 
     month: 'short', 
@@ -68,23 +70,32 @@ export default function GameSummary({ gameState, gameId, createdAt, gameMode }: 
     minute: '2-digit'
   });
 
+  // For bowliards, calculate strikes and spares
+  const strikes = gameState?.frames.filter(f => f.isStrike).length || 0;
+  const spares = gameState?.frames.filter(f => f.isSpare && !f.isStrike).length || 0;
+  const totalScore = gameState?.totalScore || baseGameState?.totalScore || 0;
+
   return (
     <div className="w-full max-w-4xl mx-auto p-4 space-y-6">
       {/* Header Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center">
           <div className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Total Score</div>
-          <div className="text-3xl font-black text-[var(--accent)]">{gameState.totalScore}</div>
+          <div className="text-3xl font-black text-[var(--accent)]">{totalScore}</div>
         </div>
-        <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center">
-          <div className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Strikes</div>
-          <div className="text-3xl font-black text-amber-500">{strikes}</div>
-        </div>
-        <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center">
-          <div className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Spares</div>
-          <div className="text-3xl font-black text-green-600 dark:text-green-400">{spares}</div>
-        </div>
-        <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center">
+        {gameType === 'bowlliards' && (
+          <>
+            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center">
+              <div className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Strikes</div>
+              <div className="text-3xl font-black text-amber-500">{strikes}</div>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center">
+              <div className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Spares</div>
+              <div className="text-3xl font-black text-green-600 dark:text-green-400">{spares}</div>
+            </div>
+          </>
+        )}
+        <div className={`bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 text-center ${gameType === 'bowlliards' ? '' : 'md:col-span-2'}`}>
           <div className="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Date</div>
           <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formattedDate}</div>
         </div>
@@ -93,26 +104,35 @@ export default function GameSummary({ gameState, gameId, createdAt, gameMode }: 
       {/* Scoresheet */}
       <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6">
         <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Scoresheet</h2>
-        <div className="grid grid-cols-5 md:grid-cols-10 gap-2 md:gap-4">
-          {gameState.frames.map((frame, index) => {
-            const cumulativeScore = calculateCumulativeScore(gameState.frames, index);
-            return (
-              <FrameDisplay
-                key={frame.frameNumber}
-                frame={frame}
-                isCurrent={false}
-                cumulativeScore={cumulativeScore}
-                isEditable={false}
-              />
-            );
-          })}
-        </div>
+        {gameType === 'bowlliards' && gameState ? (
+          <div className="grid grid-cols-5 md:grid-cols-10 gap-2 md:gap-4">
+            {gameState.frames.map((frame, index) => {
+              const cumulativeScore = calculateCumulativeScore(gameState.frames, index);
+              return (
+                <FrameDisplay
+                  key={frame.frameNumber}
+                  frame={frame}
+                  isCurrent={false}
+                  cumulativeScore={cumulativeScore}
+                  isEditable={false}
+                />
+              );
+            })}
+          </div>
+        ) : gameType === 'apa9ball' && baseGameState ? (
+          <APA9BallScoresheet gameState={baseGameState} />
+        ) : (
+          <div className="text-center text-slate-600 dark:text-slate-400 py-8">
+            Scoresheet not available for this game type.
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <ShareGame
-          gameState={gameState}
+          gameState={gameType === 'bowlliards' ? gameState || undefined : undefined}
+          baseGameState={gameType !== 'bowlliards' ? baseGameState || undefined : undefined}
           gameId={gameId}
           createdAt={createdAt}
           gameMode={gameMode}
