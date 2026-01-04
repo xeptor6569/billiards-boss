@@ -4,7 +4,7 @@ import { SKILL_LEVEL_TARGETS } from "@/lib/game-types/apa9ball";
 import { useState } from "react";
 
 interface APA9BallSkillLevelSelectorProps {
-  onConfirm: (player1SL: number, player2SL: number) => void;
+  onConfirm: (player1SL: number, player2SL: number, player1Name: string, player2Name: string) => void;
   onCancel: () => void;
 }
 
@@ -14,6 +14,8 @@ export default function APA9BallSkillLevelSelector({
 }: APA9BallSkillLevelSelectorProps) {
   const [player1SL, setPlayer1SL] = useState<number>(3);
   const [player2SL, setPlayer2SL] = useState<number>(3);
+  const [player1Name, setPlayer1Name] = useState<string>('Player 1');
+  const [player2Name, setPlayer2Name] = useState<string>('Player 2');
 
   const skillLevels = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -29,6 +31,16 @@ export default function APA9BallSkillLevelSelector({
 
         {/* Player 1 Selection */}
         <div className="mb-6">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            Player 1 Name
+          </label>
+          <input
+            type="text"
+            value={player1Name}
+            onChange={(e) => setPlayer1Name(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Player 1"
+          />
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Player 1 Skill Level
           </label>
@@ -56,6 +68,16 @@ export default function APA9BallSkillLevelSelector({
 
         {/* Player 2 Selection */}
         <div className="mb-6">
+          <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            Player 2 Name
+          </label>
+          <input
+            type="text"
+            value={player2Name}
+            onChange={(e) => setPlayer2Name(e.target.value)}
+            className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 mb-4 focus:outline-none focus:ring-2 focus:ring-red-500"
+            placeholder="Player 2"
+          />
           <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
             Player 2 Skill Level
           </label>
@@ -85,11 +107,11 @@ export default function APA9BallSkillLevelSelector({
         <div className="mb-6 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
           <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
             <div className="flex justify-between">
-              <span>Player 1 (SL-{player1SL}):</span>
+              <span>{player1Name} (SL-{player1SL}):</span>
               <span className="font-semibold">{SKILL_LEVEL_TARGETS[player1SL]} points to win</span>
             </div>
             <div className="flex justify-between">
-              <span>Player 2 (SL-{player2SL}):</span>
+              <span>{player2Name} (SL-{player2SL}):</span>
               <span className="font-semibold">{SKILL_LEVEL_TARGETS[player2SL]} points to win</span>
             </div>
           </div>
@@ -104,7 +126,7 @@ export default function APA9BallSkillLevelSelector({
             Cancel
           </button>
           <button
-            onClick={() => onConfirm(player1SL, player2SL)}
+            onClick={() => onConfirm(player1SL, player2SL, player1Name.trim() || 'Player 1', player2Name.trim() || 'Player 2')}
             className="flex-1 py-3 px-4 bg-[var(--accent)] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity"
           >
             Start Game

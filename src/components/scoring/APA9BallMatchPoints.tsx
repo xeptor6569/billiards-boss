@@ -9,7 +9,7 @@ interface APA9BallMatchPointsProps {
 export default function APA9BallMatchPoints({
   gameState,
 }: APA9BallMatchPointsProps) {
-  const { player1, player2, matchPoints, gameStatus, breakAndRun } = gameState.gameData;
+  const { player1, player2, matchPoints, gameStatus, breakAndRun, player1Name, player2Name } = gameState.gameData;
   
   if (!matchPoints) {
     return null;
@@ -43,7 +43,7 @@ export default function APA9BallMatchPoints({
           }
         `}>
           <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-            Player 1
+            {player1Name}
           </div>
           <div className="text-3xl font-black mb-1">
             <span className={player1Won ? "text-blue-600 dark:text-blue-400" : "text-slate-600 dark:text-slate-400"}>
@@ -70,7 +70,7 @@ export default function APA9BallMatchPoints({
           }
         `}>
           <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-            Player 2
+            {player2Name}
           </div>
           <div className="text-3xl font-black mb-1">
             <span className={player2Won ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}>
@@ -93,11 +93,11 @@ export default function APA9BallMatchPoints({
       <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
         <div className="text-xs text-slate-600 dark:text-slate-400 space-y-1">
           <div className="flex justify-between">
-            <span>Player 1 (SL-{player1.skillLevel}):</span>
+            <span>{player1Name} (SL-{player1.skillLevel}):</span>
             <span className="font-semibold">{player1.score} / {player1.targetScore}</span>
           </div>
           <div className="flex justify-between">
-            <span>Player 2 (SL-{player2.skillLevel}):</span>
+            <span>{player2Name} (SL-{player2.skillLevel}):</span>
             <span className="font-semibold">{player2.score} / {player2.targetScore}</span>
           </div>
           <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-600">

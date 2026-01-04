@@ -560,13 +560,13 @@ export default function NewGamePage() {
   };
 
 
-  const handleSkillLevelConfirm = (player1SL: number, player2SL: number) => {
+  const handleSkillLevelConfirm = (player1SL: number, player2SL: number, player1Name: string, player2Name: string) => {
     setShowSkillLevelSelector(false);
     setShowSuccessModal(false); // Reset modal when starting new game
     const gameTypeHandler = getGameType('apa9ball');
     if (gameTypeHandler) {
-      // createNewGame for apa9ball takes skill levels as arguments
-      const newState = (gameTypeHandler.createNewGame as (player1SL: number, player2SL: number) => BaseGameState)(player1SL, player2SL);
+      // createNewGame for apa9ball takes skill levels and player names as arguments
+      const newState = (gameTypeHandler.createNewGame as (player1SL: number, player2SL: number, player1Name: string, player2Name: string) => BaseGameState)(player1SL, player2SL, player1Name, player2Name);
       setBaseGameState(newState);
       // Clear history when starting a new game
       setGameHistory([]);
@@ -984,15 +984,17 @@ export default function NewGamePage() {
         setGameState(createNewGame());
       }
     } else if (currentGameType === 'apa9ball') {
-      // For APA 9-ball, get skill levels from previous game or use defaults
+      // For APA 9-ball, get skill levels and player names from previous game or use defaults
       const previousState = baseGameState as APA9BallGameState | null;
       const player1SL = previousState?.gameData?.player1?.skillLevel || 3;
       const player2SL = previousState?.gameData?.player2?.skillLevel || 3;
+      const player1Name = previousState?.gameData?.player1Name || 'Player 1';
+      const player2Name = previousState?.gameData?.player2Name || 'Player 2';
       
       const gameTypeHandler = getGameType('apa9ball');
       if (gameTypeHandler) {
-        // createNewGame for apa9ball takes skill levels as arguments
-        const newState = (gameTypeHandler.createNewGame as (player1SL: number, player2SL: number) => BaseGameState)(player1SL, player2SL);
+        // createNewGame for apa9ball takes skill levels and player names as arguments
+        const newState = (gameTypeHandler.createNewGame as (player1SL: number, player2SL: number, player1Name: string, player2Name: string) => BaseGameState)(player1SL, player2SL, player1Name, player2Name);
         setBaseGameState(newState);
         setGameState(null); // Clear gameState for APA 9-ball
         setGameHistory([]); // Clear history

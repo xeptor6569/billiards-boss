@@ -9,7 +9,7 @@ interface APA9BallScoreDisplayProps {
 export default function APA9BallScoreDisplay({
   gameState,
 }: APA9BallScoreDisplayProps) {
-  const { player1, player2, currentPlayer } = gameState.gameData;
+  const { player1, player2, currentPlayer, player1Name, player2Name } = gameState.gameData;
   const isPlayer1Turn = currentPlayer === 1;
   
   const getProgressPercentage = (score: number, target: number): number => {
@@ -30,7 +30,7 @@ export default function APA9BallScoreDisplay({
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                Player 1
+                {player1Name}
               </span>
               {isPlayer1Turn && (
                 <span className="px-1.5 py-0.5 bg-blue-500 text-white text-xs font-bold rounded">
@@ -84,7 +84,7 @@ export default function APA9BallScoreDisplay({
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                Player 2
+                {player2Name}
               </span>
               {!isPlayer1Turn && (
                 <span className="px-1.5 py-0.5 bg-red-500 text-white text-xs font-bold rounded">

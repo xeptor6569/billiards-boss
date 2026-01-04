@@ -70,10 +70,17 @@ export interface APA9BallGameState extends BaseGameState {
       player1: number;
       player2: number;
     };
+    player1Name: string; // Custom name for player 1
+    player2Name: string; // Custom name for player 2
   };
 }
 
-function createNewAPA9BallGame(player1SkillLevel: number = 3, player2SkillLevel: number = 3): APA9BallGameState {
+function createNewAPA9BallGame(
+  player1SkillLevel: number = 3, 
+  player2SkillLevel: number = 3,
+  player1Name: string = 'Player 1',
+  player2Name: string = 'Player 2'
+): APA9BallGameState {
   const player1Target = SKILL_LEVEL_TARGETS[player1SkillLevel] || SKILL_LEVEL_TARGETS[3];
   const player2Target = SKILL_LEVEL_TARGETS[player2SkillLevel] || SKILL_LEVEL_TARGETS[3];
   
@@ -110,6 +117,8 @@ function createNewAPA9BallGame(player1SkillLevel: number = 3, player2SkillLevel:
       currentBall: 1, // Start with ball 1
       currentRack: 1, // Start with rack 1
       racks: [], // No completed racks yet
+      player1Name,
+      player2Name,
     },
   };
 }
@@ -264,10 +273,12 @@ export const apa9ballGameType: GameType = {
   },
   
   createNewGame(...args: unknown[]): BaseGameState {
-    // args[0] = player1SkillLevel, args[1] = player2SkillLevel
+    // args[0] = player1SkillLevel, args[1] = player2SkillLevel, args[2] = player1Name, args[3] = player2Name
     const player1SL = (typeof args[0] === 'number' ? args[0] : 3) || 3;
     const player2SL = (typeof args[1] === 'number' ? args[1] : 3) || 3;
-    return createNewAPA9BallGame(player1SL, player2SL);
+    const player1Name = (typeof args[2] === 'string' ? args[2] : 'Player 1') || 'Player 1';
+    const player2Name = (typeof args[3] === 'string' ? args[3] : 'Player 2') || 'Player 2';
+    return createNewAPA9BallGame(player1SL, player2SL, player1Name, player2Name);
   },
   
   addScore(gameState: BaseGameState, input: ScoreInput): BaseGameState {
@@ -767,7 +778,9 @@ export const apa9ballGameType: GameType = {
     const gameData = data.gameData as Record<string, unknown> | undefined;
     const player1SL = (gameData?.player1 as Record<string, unknown>)?.skillLevel as number || 3;
     const player2SL = (gameData?.player2 as Record<string, unknown>)?.skillLevel as number || 3;
-    const state = createNewAPA9BallGame(player1SL, player2SL);
+    const player1Name = (gameData?.player1Name as string) || 'Player 1';
+    const player2Name = (gameData?.player2Name as string) || 'Player 2';
+    const state = createNewAPA9BallGame(player1SL, player2SL, player1Name, player2Name);
     if (gameData) {
       // Merge game data, ensuring scores are recalculated
       state.gameData = { ...state.gameData, ...gameData } as typeof state.gameData;
