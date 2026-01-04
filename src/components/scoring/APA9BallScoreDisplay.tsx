@@ -18,11 +18,11 @@ export default function APA9BallScoreDisplay({
   };
   
   return (
-    <div className="w-full h-full p-2">
-      <div className="grid grid-cols-2 gap-2 h-full">
+    <div className="w-full h-full p-2 overflow-y-auto scrollbar-hide">
+      <div className="grid grid-cols-2 gap-2 h-full min-h-0">
         {/* Player 1 */}
         <div className={`
-          rounded-lg border-2 p-3 transition-all flex flex-col
+          rounded-lg border-2 p-3 transition-all flex flex-col min-h-0
           ${isPlayer1Turn 
             ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg" 
             : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
@@ -70,8 +70,8 @@ export default function APA9BallScoreDisplay({
             // Combine ballsMade and deadBalls to show all balls made this rack
             const allBalls = [...new Set([...player1.ballsMade, ...player1.deadBalls])];
             return allBalls.length > 0 ? (
-              <div className="mb-1.5">
-                <div className="flex flex-wrap gap-1.5 items-center">
+              <div className="mb-1.5 flex-shrink-0">
+                <div className="flex flex-wrap gap-1 items-center">
                   {allBalls.map((ballNumber, index) => {
                     const isDead = player1.deadBalls.includes(ballNumber);
                     return (
@@ -102,7 +102,7 @@ export default function APA9BallScoreDisplay({
         
         {/* Player 2 */}
         <div className={`
-          rounded-lg border-2 p-3 transition-all flex flex-col
+          rounded-lg border-2 p-3 transition-all flex flex-col min-h-0
           ${!isPlayer1Turn 
             ? "border-red-500 bg-red-50 dark:bg-red-900/20 shadow-lg" 
             : "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
@@ -150,8 +150,8 @@ export default function APA9BallScoreDisplay({
             // Combine ballsMade and deadBalls to show all balls made this rack
             const allBalls = [...new Set([...player2.ballsMade, ...player2.deadBalls])];
             return allBalls.length > 0 ? (
-              <div className="mb-1.5">
-                <div className="flex flex-wrap gap-1.5 items-center">
+              <div className="mb-1.5 flex-shrink-0">
+                <div className="flex flex-wrap gap-1 items-center">
                   {allBalls.map((ballNumber, index) => {
                     const isDead = player2.deadBalls.includes(ballNumber);
                     return (

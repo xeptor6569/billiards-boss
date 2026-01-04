@@ -114,7 +114,7 @@ export default function APA9BallSelector({
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center p-4">
-      <div className="relative w-[300px] h-[220px] sm:w-[360px] sm:h-[280px]">
+      <div className="relative w-[300px] h-[240px] sm:w-[360px] sm:h-[300px] overflow-visible">
         {RACK_POSITIONS.map(({ row, col, ball }) => {
           const isPocketed = isBallPocketed(ball);
           const isDead = isBallDead(ball);
@@ -142,14 +142,22 @@ export default function APA9BallSelector({
           const shouldShowAsPocketed = isPocketed && !isSelected;
           const shouldShowAsDead = isDead && !isSelected;
           
+          // Calculate adjusted positions to prevent overlap
+          // Ball 1 needs extra top padding to prevent overflow
+          // Outer balls (6, 7, 8) need slight adjustments to prevent ring overlap
+          const topOffset = ball === 1 ? 3 : 0; // Extra padding for ball 1 at top
+          const leftOffset = 0; // Keep horizontal positioning as-is
+          
           return (
             <div
               key={ball}
               className="absolute"
               style={{
-                left: `${(col / 8) * 100}%`,
-                top: `${(row / 4) * 100}%`,
+                left: `${(col / 8) * 100 + leftOffset}%`,
+                top: `${(row / 4) * 100 + topOffset}%`,
                 transform: 'translate(-50%, -50%)',
+                // Add z-index to prevent overlapping - outer balls have higher z-index
+                zIndex: ball === 1 ? 10 : ball === 2 || ball === 3 ? 9 : ball === 4 || ball === 5 ? 8 : 7,
               }}
             >
               <PoolBall

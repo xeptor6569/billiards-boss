@@ -1162,7 +1162,7 @@ export default function NewGamePage() {
           </div>
 
           {/* Score Display (20%) - Side by side player cards */}
-          <div className="h-[20%] min-h-[100px] bg-white dark:bg-slate-900 relative z-10 shadow-sm overflow-hidden">
+          <div className="h-[20%] min-h-[120px] sm:min-h-[100px] bg-white dark:bg-slate-900 relative z-10 shadow-sm overflow-hidden">
             <APA9BallScoreDisplay gameState={apa9State} />
           </div>
 
