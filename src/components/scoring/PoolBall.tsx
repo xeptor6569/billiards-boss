@@ -45,11 +45,12 @@ export default function PoolBall({
   const colors = BALL_COLORS[ballNumber] || BALL_COLORS[1];
   const sizeClass = SIZE_CLASSES[size];
   
-  // Determine visual state - ballState (from selection) takes precedence for visual feedback
+  // Determine visual state - only use isPocketed/isDead props, not ballState
+  // ballState is only for selection indicators (ring, checkmark), not visual greying
   let visualState: 'normal' | 'pocketed' | 'dead' | 'invalid';
-  if (ballState === 'dead' || isDead) {
+  if (isDead) {
     visualState = 'dead';
-  } else if (ballState === 'pocketed' || isPocketed) {
+  } else if (isPocketed) {
     visualState = 'pocketed';
   } else {
     visualState = 'normal';
@@ -61,6 +62,9 @@ export default function PoolBall({
   
   // Ball 9 has a stripe pattern - use gradient
   const isNineBall = ballNumber === 9;
+  
+  // Dim the ball if selected as dead (but not fully greyed like actually dead)
+  const isSelectedAsDead = isSelected && ballState === 'dead';
   
   return (
     <button
@@ -76,7 +80,7 @@ export default function PoolBall({
           ? 'bg-slate-400 dark:bg-slate-600 border-2 border-slate-500 dark:border-slate-500 opacity-60 cursor-not-allowed'
           : disabled
           ? 'bg-slate-300 dark:bg-slate-600 border-2 border-slate-400 dark:border-slate-500 opacity-50 cursor-not-allowed'
-          : `${colors.bg} ${colors.border} border-2 shadow-lg hover:scale-110 active:scale-95 cursor-pointer`
+          : `${colors.bg} ${colors.border} border-2 shadow-lg hover:scale-110 active:scale-95 cursor-pointer ${isSelectedAsDead ? 'opacity-60' : ''}`
         }
         ${isSelected ? 'ring-4 ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-800' : ''}
         ${pocketedBy === 'player1' ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
@@ -108,8 +112,8 @@ export default function PoolBall({
         <span className="font-black drop-shadow-sm">{ballNumber}</span>
       </div>
       
-      {/* Dead ball indicator */}
-      {(isDead || ballState === 'dead') && (
+      {/* Dead ball indicator - only show if actually dead in game state, not just selected as dead */}
+      {isDead && (
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-red-600 dark:text-red-400 font-bold text-lg">✕</span>
         </div>

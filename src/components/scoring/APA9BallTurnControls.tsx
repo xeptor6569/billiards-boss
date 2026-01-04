@@ -36,7 +36,7 @@ export default function APA9BallTurnControls({
       <button
         onClick={onEndTurn}
         disabled={disabled || hasSelectedBalls}
-        className={`${btnBase} ${btnAction} w-full py-9 text-base bg-blue-500 shadow-blue-500/30`}
+        className={`${btnBase} ${btnAction} w-full py-10 sm:py-12 text-lg sm:text-xl bg-blue-500 shadow-blue-500/30`}
       >
         {isRackComplete ? "Start New Rack" : "End Turn"}
       </button>
@@ -55,11 +55,11 @@ export default function APA9BallTurnControls({
             }
           }}
           disabled={disabled}
-          className={`${btnBase} ${btnAction} py-[1.0rem] ${
+          className={`${btnBase} ${btnAction} py-3 sm:py-4 ${
             deadBalls.length > 0
               ? 'bg-orange-600 dark:bg-orange-500 shadow-orange-600/30 dark:shadow-orange-500/30' 
               : 'bg-red-600 dark:bg-red-400 shadow-red-600/30 dark:shadow-red-400/30'
-          } text-sm`}
+          } text-base sm:text-lg`}
           title={deadBalls.length > 0 ? "Mark selected dead balls as foul (legacy)" : "Foul"}
         >
           {deadBalls.length > 0 ? "Mark Foul" : "Foul"}
@@ -69,7 +69,7 @@ export default function APA9BallTurnControls({
         <button
           onClick={onDefensiveShot}
           disabled={disabled || hasSelectedBalls}
-          className={`${btnBase} ${btnSurface} py-[1.0rem] text-sm`}
+          className={`${btnBase} ${btnSurface} py-3 sm:py-4 text-base sm:text-lg`}
         >
           Defensive
         </button>
@@ -78,10 +78,10 @@ export default function APA9BallTurnControls({
         <button
           onClick={onUndo}
           disabled={disabled || !canUndo || hasSelectedBalls}
-          className={`${btnBase} ${btnSurface} py-[1.0rem] text-sm flex items-center justify-center gap-1`}
+          className={`${btnBase} ${btnSurface} py-3 sm:py-4 text-base sm:text-lg flex items-center justify-center gap-1.5`}
           title="Undo last action"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
           </svg>
           <span>Undo</span>

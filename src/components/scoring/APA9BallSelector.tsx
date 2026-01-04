@@ -40,10 +40,6 @@ export default function APA9BallSelector({
     onSelectionChange?.(newStates);
   };
   
-  const currentPlayer = gameState.gameData.currentPlayer;
-  const currentPlayerData = gameState.gameData[currentPlayer === 1 ? 'player1' : 'player2'];
-  const otherPlayerData = gameState.gameData[currentPlayer === 1 ? 'player2' : 'player1'];
-  
   // Check if this is the break
   const isBreak = gameState.gameData.breakPlayer === null && 
                   gameState.gameData.player1.innings === 0 && 
@@ -71,12 +67,12 @@ export default function APA9BallSelector({
            gameState.gameData.player2.deadBalls.includes(ballNumber);
   };
   
-  const isBallPocketedByCurrentPlayer = (ballNumber: number): boolean => {
-    return currentPlayerData.ballsMade.includes(ballNumber);
+  const isBallPocketedByPlayer1 = (ballNumber: number): boolean => {
+    return gameState.gameData.player1.ballsMade.includes(ballNumber);
   };
   
-  const isBallPocketedByOtherPlayer = (ballNumber: number): boolean => {
-    return otherPlayerData.ballsMade.includes(ballNumber);
+  const isBallPocketedByPlayer2 = (ballNumber: number): boolean => {
+    return gameState.gameData.player2.ballsMade.includes(ballNumber);
   };
   
   const isBallValid = (ballNumber: number): boolean => {
@@ -122,15 +118,29 @@ export default function APA9BallSelector({
         {RACK_POSITIONS.map(({ row, col, ball }) => {
           const isPocketed = isBallPocketed(ball);
           const isDead = isBallDead(ball);
-          const isCurrentPlayer = isBallPocketedByCurrentPlayer(ball);
-          const isOtherPlayer = isBallPocketedByOtherPlayer(ball);
+          const isPocketedByPlayer1 = isBallPocketedByPlayer1(ball);
+          const isPocketedByPlayer2 = isBallPocketedByPlayer2(ball);
           const isValid = isBallValid(ball);
           // Allow clicking if ball is in selection state (even if already pocketed/dead in game)
           const ballState = ballStates[ball];
           const isClickable = !disabled && (isValid || ballState !== undefined);
           const isSelected = ballState !== undefined;
-          const isPocketedState = ballState === 'pocketed';
-          const isDeadState = ballState === 'dead';
+          
+          // Determine which player pocketed this ball (for color indicator)
+          // Only show player color if ball is actually pocketed in game state, not just selected
+          let pocketedBy: 'player1' | 'player2' | undefined = undefined;
+          if (isPocketed && !isDead && !isSelected) {
+            if (isPocketedByPlayer1) {
+              pocketedBy = 'player1';
+            } else if (isPocketedByPlayer2) {
+              pocketedBy = 'player2';
+            }
+          }
+          
+          // When ball is selected, don't grey it out - keep it in normal state
+          // The selection ring and checkmark will indicate it's selected
+          const shouldShowAsPocketed = isPocketed && !isSelected;
+          const shouldShowAsDead = isDead && !isSelected;
           
           return (
             <div
@@ -144,11 +154,11 @@ export default function APA9BallSelector({
             >
               <PoolBall
                 ballNumber={ball}
-                size="md"
-                isPocketed={isPocketed || isPocketedState}
+                size="lg"
+                isPocketed={shouldShowAsPocketed}
                 isSelected={isSelected}
-                isDead={isDead || isDeadState}
-                pocketedBy={isCurrentPlayer ? 'player1' : isOtherPlayer ? 'player2' : undefined}
+                isDead={shouldShowAsDead}
+                pocketedBy={pocketedBy}
                 onClick={() => handleBallClick(ball)}
                 disabled={!isClickable}
                 ballState={ballState}
@@ -160,31 +170,17 @@ export default function APA9BallSelector({
       
       {/* Instructions and Confirm Button */}
       <div className="mt-4 text-center w-full max-w-md">
-        {Object.keys(ballStates).length > 0 ? (
-          <div className="space-y-2">
-            <div className="text-slate-600 dark:text-slate-400 text-sm font-medium space-y-1">
-              {Object.entries(ballStates).map(([ball, state]) => (
-                <div key={ball} className="flex items-center justify-center gap-2">
-                  <span>Ball {ball}:</span>
-                  <span className={state === 'pocketed' ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'}>
-                    {state === 'pocketed' ? '✓ Pocketed' : '✗ Dead'}
-                  </span>
-                </div>
-              ))}
-            </div>
-            {onBallsConfirm && (
-              <button
-                onClick={handleConfirmShot}
-                disabled={disabled}
-                className="px-4 py-2 bg-blue-500 text-white font-bold rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Confirm Shot
-              </button>
-            )}
-          </div>
+        {Object.keys(ballStates).length > 0 && onBallsConfirm ? (
+          <button
+            onClick={handleConfirmShot}
+            disabled={disabled}
+            className="px-6 py-3 bg-blue-500 text-white text-base sm:text-lg font-bold rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Confirm Shot ({Object.keys(ballStates).length} ball{Object.keys(ballStates).length !== 1 ? 's' : ''})
+          </button>
         ) : (
           <>
-            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
+            <p className="text-slate-600 dark:text-slate-400 text-base sm:text-lg font-medium">
               {remainingBalls.length === 0 
                 ? "All balls pocketed" 
                 : isBreak
@@ -193,7 +189,7 @@ export default function APA9BallSelector({
               }
             </p>
             {remainingBalls.length > 0 && (
-              <p className="text-slate-500 dark:text-slate-500 text-xs mt-1">
+              <p className="text-slate-500 dark:text-slate-500 text-sm sm:text-base mt-1">
                 {remainingBalls.length} ball{remainingBalls.length !== 1 ? 's' : ''} remaining
               </p>
             )}
