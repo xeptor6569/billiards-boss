@@ -296,6 +296,15 @@ function GameDetailContent() {
   }
 
   // Active game - show scorekeeper interface
+  // Only bowliards games use the active game interface (gameState)
+  // Other game types should be handled in the new game page
+  if (gameType !== 'bowlliards' || !gameState) {
+    // Redirect non-bowliards active games to new game page
+    router.push(`/dashboard/games/new?gameId=${game.id}`);
+    return <div className="p-8 text-center">Redirecting...</div>;
+  }
+
+  // TypeScript now knows gameState exists and is for bowliards
   const currentFrame = gameState.frames[gameState.currentFrame - 1] || gameState.frames[9];
   const isComplete = gameState.isComplete;
   const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
