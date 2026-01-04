@@ -11,10 +11,7 @@ import FrameEditModal from "@/components/scoring/FrameEditModal";
 import GameSaveSuccessModal from "@/components/scoring/GameSaveSuccessModal";
 import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
 import ShareGame from "@/components/sharing/ShareGame";
-import GameTypeSelector from "@/components/scoring/GameTypeSelector";
-import { createGame } from "@/lib/game-types/factory";
 import { getGameType, BaseGameState } from "@/lib/game-types";
-import { createCustomGame } from "@/lib/game-types/custom";
 import APA9BallSelector from "@/components/scoring/APA9BallSelector";
 import APA9BallScoreDisplay from "@/components/scoring/APA9BallScoreDisplay";
 import APA9BallSkillLevelSelector from "@/components/scoring/APA9BallSkillLevelSelector";
@@ -31,8 +28,6 @@ export default function NewGamePage() {
   const [baseGameState, setBaseGameState] = useState<BaseGameState | null>(null);
   const [gameType, setGameType] = useState<string | null>(null);
   const [customGameId, setCustomGameId] = useState<number | null>(null);
-  const [showGameTypeSelector, setShowGameTypeSelector] = useState(false);
-  const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -59,7 +54,6 @@ export default function NewGamePage() {
       if (urlCustomGameId) {
         setCustomGameId(parseInt(urlCustomGameId, 10));
       }
-      setShowGameTypeSelector(false);
       // Reset modal state when starting new game
       setShowSuccessModal(false);
       // For APA 9-ball, show skill level selector if baseGameState is not set
@@ -73,13 +67,12 @@ export default function NewGamePage() {
       return;
     }
     
-    // If "new=true" is in the URL but no gameType, show selector
+    // If "new=true" is in the URL but no gameType, navigate to dashboard
     if (forceNew) {
-      setShowGameTypeSelector(true);
-      setLoading(false);
+      router.push("/dashboard");
       return;
     }
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   // Check for active game on mount (only if not forced to create new)
   useEffect(() => {
@@ -139,13 +132,7 @@ export default function NewGamePage() {
       
       // Don't load existing game if "new=true" is in URL (but no gameType)
       if (forceNew) {
-        setGameType(null);
-        setShowGameTypeSelector(true);
-        setSavedGameId(null);
-        savedGameIdRef.current = null;
-        hasShotsRef.current = false;
-        setShowSuccessModal(false); // Reset modal when starting new game
-        setLoading(false);
+        router.push("/dashboard");
         return;
       }
       
@@ -189,23 +176,12 @@ export default function NewGamePage() {
       } catch (error) {
         console.error("Error checking for active game:", error);
       }
-      // No active game found, show game type selector
-      setGameType(null);
-      setShowGameTypeSelector(true);
-      setSavedGameId(null);
-      savedGameIdRef.current = null;
-      hasShotsRef.current = false;
-      // Reset auto-save state
-      autoSaveInProgressRef.current = false;
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-        autoSaveTimeoutRef.current = null;
-      }
-      setLoading(false);
+      // No active game found, navigate to dashboard
+      router.push("/dashboard");
     };
 
     checkActiveGame();
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   const handleGameCompletion = async () => {
     if (!gameState || !gameState.isComplete) return;
@@ -583,56 +559,6 @@ export default function NewGamePage() {
     }
   };
 
-  const handleGameTypeSelect = async (selectedGameType: string, selectedCustomGameId?: number) => {
-    setGameType(selectedGameType);
-    setCustomGameId(selectedCustomGameId || null);
-    setShowGameTypeSelector(false);
-    setShowSuccessModal(false); // Reset modal when starting new game
-    
-    // Create new game based on type
-    if (selectedGameType === 'bowlliards') {
-      // Use game type handler to create proper BaseGameState
-      const gameTypeHandler = getGameType('bowlliards');
-      if (gameTypeHandler) {
-        const newBaseState = gameTypeHandler.createNewGame();
-        // Convert to old GameState format for backward compatibility with existing UI
-        const newState = {
-          frames: (newBaseState.gameData as { frames: unknown[] }).frames as Frame[],
-          currentFrame: (newBaseState.gameData as { currentFrame: number }).currentFrame,
-          totalScore: newBaseState.totalScore,
-          isComplete: newBaseState.isComplete,
-        };
-        setGameState(newState);
-        // Also store as baseGameState for API calls
-        setBaseGameState(newBaseState);
-      } else {
-        // Fallback to old method if handler not found
-        const newState = createNewGame();
-        setGameState(newState);
-      }
-    } else if (selectedGameType === 'apa9ball') {
-      // Show skill level selector for APA 9-ball
-      setShowSkillLevelSelector(true);
-    } else if (selectedGameType === 'custom' && selectedCustomGameId) {
-      // Load custom game config and create game
-      try {
-        const response = await fetch(`/api/custom-games/${selectedCustomGameId}`);
-        if (response.ok) {
-          const customGame = await response.json();
-          const customState = createCustomGame(selectedCustomGameId, customGame.yamlConfig);
-          setBaseGameState(customState);
-        }
-      } catch (error) {
-        console.error("Error loading custom game:", error);
-        alert("Failed to load custom game");
-        setShowGameTypeSelector(true);
-      }
-    } else {
-      // Use game type factory for other game types
-      const newState = createGame(selectedGameType);
-      setBaseGameState(newState);
-    }
-  };
 
   const handleSkillLevelConfirm = (player1SL: number, player2SL: number) => {
     setShowSkillLevelSelector(false);
@@ -1101,26 +1027,12 @@ export default function NewGamePage() {
   const editingFrame =
     editingFrameIndex !== null && gameState ? gameState.frames[editingFrameIndex] : null;
 
-  // Show game type selector if no game type selected
-  if (showGameTypeSelector) {
-    return (
-      <GameTypeSelector
-        onSelect={handleGameTypeSelect}
-        onCancel={() => router.push("/dashboard")}
-        hasPremiumAccess={hasPremiumAccess}
-      />
-    );
-  }
-
   // Show skill level selector for APA 9-ball
   if (showSkillLevelSelector) {
     return (
       <APA9BallSkillLevelSelector
         onConfirm={handleSkillLevelConfirm}
-        onCancel={() => {
-          setShowSkillLevelSelector(false);
-          setShowGameTypeSelector(true);
-        }}
+        onCancel={() => router.push("/dashboard")}
       />
     );
   }
@@ -1289,10 +1201,7 @@ export default function NewGamePage() {
             Game type &quot;{gameType}&quot; UI is coming soon!
           </div>
           <button
-            onClick={() => {
-              setGameType(null);
-              setShowGameTypeSelector(true);
-            }}
+            onClick={() => router.push("/dashboard")}
             className="px-4 py-2 bg-[var(--accent)] text-white rounded-lg mr-2"
           >
             Choose Different Game
