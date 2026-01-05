@@ -195,14 +195,14 @@ async function DashboardContent() {
                 </span>
                 {gameLimit && (
                   <span className="text-sm text-slate-600 dark:text-slate-400">
-                    {gameLimit.maxGames === null 
+                    {gameLimit.maxGames === null || gameLimit.maxGames === undefined
                       ? 'Unlimited games' 
                       : `${gameLimit.gamesCount || 0} / ${gameLimit.maxGames} games used`
                     }
                   </span>
                 )}
               </div>
-              {user.plan.tier === 'free' && gameLimit && gameLimit.maxGames !== null && (
+              {user.plan.tier === 'free' && gameLimit && gameLimit.maxGames !== null && gameLimit.maxGames !== undefined && (
                 <p className="text-sm text-slate-600 dark:text-slate-400">
                   {gameLimit.gamesCount && gameLimit.gamesCount >= gameLimit.maxGames * 0.8 
                     ? `⚠️ You're running low on free games. Upgrade for unlimited games, multiplayer, tournaments, and more!`
