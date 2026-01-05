@@ -19,6 +19,11 @@ import APA9BallBreakDetermination from "@/components/scoring/APA9BallBreakDeterm
 import APA9BallMatchPoints from "@/components/scoring/APA9BallMatchPoints";
 import APA9BallTurnControls from "@/components/scoring/APA9BallTurnControls";
 import { APA9BallGameState } from "@/lib/game-types/apa9ball";
+import APA8BallScoreDisplay from "@/components/scoring/APA8BallScoreDisplay";
+import APA8BallSkillLevelSelector from "@/components/scoring/APA8BallSkillLevelSelector";
+import APA8BallTurnControls from "@/components/scoring/APA8BallTurnControls";
+import TimeoutTimer from "@/components/scoring/TimeoutTimer";
+import { APA8BallGameState } from "@/lib/game-types/apa8ball";
 
 export default function NewGamePage() {
   const router = useRouter();
@@ -43,6 +48,7 @@ export default function NewGamePage() {
     player2Name: string;
   } | null>(null);
   const [gameHistory, setGameHistory] = useState<BaseGameState[]>([]); // History stack for undo
+  const [timeoutActive, setTimeoutActive] = useState(false); // For 8-ball timeout timer
   const hasShotsRef = useRef(false);
   const autoSaveInProgressRef = useRef(false);
   const gameStateRef = useRef<GameState | null>(null);
@@ -64,8 +70,8 @@ export default function NewGamePage() {
       }
       // Reset modal state when starting new game
       setShowSuccessModal(false);
-      // For APA 9-ball, show skill level selector if baseGameState is not set
-      if (urlGameType === 'apa9ball') {
+      // For APA 9-ball and 8-ball, show skill level selector if baseGameState is not set
+      if (urlGameType === 'apa9ball' || urlGameType === 'apa8ball') {
         setShowSkillLevelSelector(true);
       }
       // If "new=true" is also present, we'll skip loading existing game
@@ -577,12 +583,12 @@ export default function NewGamePage() {
   };
 
   const handleBreakDetermined = (breakPlayer: 1 | 2) => {
-    if (!pendingGameConfig) return;
+    if (!pendingGameConfig || !gameType) return;
     
     setShowBreakDetermination(false);
-    const gameTypeHandler = getGameType('apa9ball');
+    const gameTypeHandler = getGameType(gameType);
     if (gameTypeHandler) {
-      // createNewGame for apa9ball takes skill levels, player names, and breakPlayer
+      // createNewGame for apa9ball/apa8ball takes skill levels, player names, and breakPlayer
       const newState = (gameTypeHandler.createNewGame as (
         player1SL: number,
         player2SL: number,
@@ -645,7 +651,7 @@ export default function NewGamePage() {
 
   // Helper to save state to history before making changes
   const saveToHistory = (state: BaseGameState) => {
-    if (gameType === 'apa9ball' && state) {
+    if ((gameType === 'apa9ball' || gameType === 'apa8ball') && state) {
       // Deep clone the state for history
       const historyEntry = JSON.parse(JSON.stringify(state));
       setGameHistory(prev => [...prev, historyEntry]);
@@ -654,7 +660,7 @@ export default function NewGamePage() {
 
   // Undo last action
   const handleUndo = () => {
-    if (gameType !== 'apa9ball' || gameHistory.length === 0 || !baseGameState) return;
+    if ((gameType !== 'apa9ball' && gameType !== 'apa8ball') || gameHistory.length === 0 || !baseGameState) return;
     
     // Get the last state from history
     const previousState = gameHistory[gameHistory.length - 1];
@@ -834,13 +840,76 @@ export default function NewGamePage() {
   };
 
   const handleDefensiveShot = () => {
-    if (!baseGameState || gameType !== 'apa9ball') return;
-    const gameTypeHandler = getGameType('apa9ball');
+    if (!baseGameState || (gameType !== 'apa9ball' && gameType !== 'apa8ball')) return;
+    const gameTypeHandler = getGameType(gameType);
     if (gameTypeHandler) {
       // Save current state to history before making changes
       saveToHistory(baseGameState);
       
       const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action: 'defensiveShot' } });
+      setBaseGameState(newState);
+      hasShotsRef.current = true;
+      autoSaveGame(newState);
+    }
+  };
+
+  // 8-ball specific handlers
+  const handleAPA8BallEndTurn = () => {
+    if (!baseGameState || gameType !== 'apa8ball') return;
+    const gameTypeHandler = getGameType('apa8ball');
+    if (gameTypeHandler) {
+      saveToHistory(baseGameState);
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action: 'endTurn' } });
+      setBaseGameState(newState);
+      hasShotsRef.current = true;
+      autoSaveGame(newState);
+    }
+  };
+
+  const handleAPA8BallDefense = () => {
+    if (!baseGameState || gameType !== 'apa8ball') return;
+    handleDefensiveShot(); // Reuse the same logic
+  };
+
+  const handleAPA8BallFoul = () => {
+    if (!baseGameState || gameType !== 'apa8ball') return;
+    const gameTypeHandler = getGameType('apa8ball');
+    if (gameTypeHandler) {
+      saveToHistory(baseGameState);
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'foul' });
+      setBaseGameState(newState);
+      hasShotsRef.current = true;
+      autoSaveGame(newState);
+    }
+  };
+
+  const handleAPA8BallTimeout = () => {
+    if (!baseGameState || gameType !== 'apa8ball') return;
+    const gameTypeHandler = getGameType('apa8ball');
+    if (gameTypeHandler) {
+      saveToHistory(baseGameState);
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action: 'timeout' } });
+      setBaseGameState(newState);
+      setTimeoutActive(true); // Start the timer
+      hasShotsRef.current = true;
+      autoSaveGame(newState);
+    }
+  };
+
+  const handleAPA8BallTimeoutComplete = () => {
+    setTimeoutActive(false); // Timer finished
+  };
+
+  const handleAPA8BallTimeoutEndEarly = () => {
+    setTimeoutActive(false); // End timeout early
+  };
+
+  const handleAPA8BallRackComplete = (winner: 1 | 2) => {
+    if (!baseGameState || gameType !== 'apa8ball') return;
+    const gameTypeHandler = getGameType('apa8ball');
+    if (gameTypeHandler) {
+      saveToHistory(baseGameState);
+      const newState = gameTypeHandler.addScore(baseGameState, { type: 'custom', data: { action: 'rackComplete', winner } });
       setBaseGameState(newState);
       hasShotsRef.current = true;
       autoSaveGame(newState);
@@ -1030,6 +1099,20 @@ export default function NewGamePage() {
         setGameState(null); // Clear gameState for APA 9-ball
         setGameHistory([]); // Clear history
       }
+    } else if (currentGameType === 'apa8ball') {
+      // For APA 8-ball, get skill levels and player names from previous game or use defaults
+      const previousState = baseGameState as APA8BallGameState | null;
+      const player1SL = previousState?.gameData?.player1?.skillLevel || 3;
+      const player2SL = previousState?.gameData?.player2?.skillLevel || 3;
+      const player1Name = previousState?.gameData?.player1Name || 'Player 1';
+      const player2Name = previousState?.gameData?.player2Name || 'Player 2';
+      
+      // Show skill level selector for new game
+      setShowSkillLevelSelector(true);
+      setBaseGameState(null);
+      setGameState(null);
+      setGameHistory([]);
+      setTimeoutActive(false);
     } else {
       setGameState(createNewGame());
     }
@@ -1082,17 +1165,26 @@ export default function NewGamePage() {
   const editingFrame =
     editingFrameIndex !== null && gameState ? gameState.frames[editingFrameIndex] : null;
 
-  // Show skill level selector for APA 9-ball
+  // Show skill level selector for APA 9-ball and 8-ball
   if (showSkillLevelSelector) {
-    return (
-      <APA9BallSkillLevelSelector
-        onConfirm={handleSkillLevelConfirm}
-        onCancel={() => router.push("/dashboard")}
-      />
-    );
+    if (gameType === 'apa8ball') {
+      return (
+        <APA8BallSkillLevelSelector
+          onConfirm={handleSkillLevelConfirm}
+          onCancel={() => router.push("/dashboard")}
+        />
+      );
+    } else if (gameType === 'apa9ball') {
+      return (
+        <APA9BallSkillLevelSelector
+          onConfirm={handleSkillLevelConfirm}
+          onCancel={() => router.push("/dashboard")}
+        />
+      );
+    }
   }
 
-  // Show break determination for APA 9-ball
+  // Show break determination for APA 9-ball and 8-ball
   if (showBreakDetermination && pendingGameConfig) {
     return (
       <APA9BallBreakDetermination
@@ -1263,8 +1355,147 @@ export default function NewGamePage() {
     );
   }
 
+  // Render APA 8-ball UI (only if baseGameState is initialized)
+  if (gameType === 'apa8ball') {
+    // If baseGameState is not set, we should be showing skill level selector
+    if (!baseGameState) {
+      if (!showSkillLevelSelector) {
+        setShowSkillLevelSelector(true);
+      }
+      return null;
+    }
+    
+    const apa8State = baseGameState as APA8BallGameState;
+    const isComplete = apa8State.isComplete;
+    
+    const HeaderCmp = (
+      <div className="flex items-center justify-between w-full">
+        <button
+          onClick={handleExit}
+          className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          <span className="text-sm font-semibold">Back</span>
+        </button>
+        {savedGameId && (
+          <div className="text-center flex-1">
+            <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Game #{savedGameId}</div>
+          </div>
+        )}
+        <div className="flex items-center gap-4">
+          <ThemeSwitcherCompact />
+        </div>
+      </div>
+    );
+
+    return (
+      <>
+        <div className="flex flex-col h-full w-full bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 fixed inset-0 overflow-hidden">
+          {/* Header (10%) */}
+          <div className="h-[10%] min-h-[60px] flex items-center px-4 border-b border-slate-200 dark:border-slate-700 z-20 bg-white dark:bg-slate-900">
+            {HeaderCmp}
+          </div>
+
+          {/* Score Display (30%) - Side by side player cards */}
+          <div className="h-[30%] min-h-[150px] sm:min-h-[120px] bg-white dark:bg-slate-900 relative z-10 shadow-sm overflow-hidden">
+            <APA8BallScoreDisplay gameState={apa8State} />
+          </div>
+
+          {/* Info Display (35%) - Current rack info */}
+          <div className="h-[35%] min-h-[200px] bg-slate-50 dark:bg-slate-800 relative flex flex-col items-center justify-center p-4 overflow-y-auto scrollbar-hide">
+            {isComplete ? (
+              <div className="text-center">
+                <div className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+                  Game Complete!
+                </div>
+                <div className="text-xl text-slate-600 dark:text-slate-400">
+                  {apa8State.gameData.gameStatus === 'player1-won' ? apa8State.gameData.player1Name : apa8State.gameData.player2Name} wins!
+                </div>
+              </div>
+            ) : (
+              <div className="text-center w-full">
+                <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
+                  Rack {apa8State.gameData.currentRack}
+                </div>
+                <div className="text-lg text-slate-600 dark:text-slate-400 mb-4">
+                  {apa8State.gameData.currentPlayer === 1 ? apa8State.gameData.player1Name : apa8State.gameData.player2Name}&apos;s turn
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-6 max-w-md mx-auto">
+                  <div className="bg-white dark:bg-slate-700 p-3 rounded-lg">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Current Rack Stats</div>
+                    <div className="text-sm text-slate-700 dark:text-slate-300">
+                      <div>P1 I: {apa8State.gameData.currentRackPlayer1Innings} D: {apa8State.gameData.currentRackPlayer1DefensiveShots} F: {apa8State.gameData.currentRackPlayer1Fouls}</div>
+                      <div>P2 I: {apa8State.gameData.currentRackPlayer2Innings} D: {apa8State.gameData.currentRackPlayer2DefensiveShots} F: {apa8State.gameData.currentRackPlayer2Fouls}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Control Pad (25%) - Controls */}
+          <div className="h-[25%] min-h-[120px] bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 pb-safe-area">
+            {isComplete ? (
+              <div className="flex flex-col items-center justify-center h-full gap-2 p-3">
+                <div className="text-lg font-bold text-slate-900 dark:text-slate-100">Game Complete!</div>
+                <div className="flex gap-2 w-full">
+                  <button
+                    onClick={handleSaveGame}
+                    disabled={saving}
+                    className="flex-1 py-2 bg-amber-500 text-white font-bold rounded-lg disabled:opacity-50 hover:opacity-90 transition-opacity text-sm"
+                  >
+                    {saving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => router.push("/dashboard")}
+                    className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm"
+                  >
+                    Dashboard
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <APA8BallTurnControls
+                gameState={apa8State}
+                onEndTurn={handleAPA8BallEndTurn}
+                onDefense={handleAPA8BallDefense}
+                onFoul={handleAPA8BallFoul}
+                onTimeout={handleAPA8BallTimeout}
+                onRackComplete={handleAPA8BallRackComplete}
+                onUndo={handleUndo}
+                canUndo={gameHistory.length > 0 && !apa8State.isComplete}
+                disabled={saving}
+                timeoutActive={timeoutActive}
+              />
+            )}
+          </div>
+        </div>
+        
+        {/* Timeout Timer */}
+        <TimeoutTimer
+          isActive={timeoutActive}
+          onComplete={handleAPA8BallTimeoutComplete}
+          onEndEarly={handleAPA8BallTimeoutEndEarly}
+          duration={120}
+        />
+        
+        {baseGameState && (
+          <GameSaveSuccessModal
+            isOpen={showSuccessModal}
+            totalScore={apa8State.totalScore}
+            gameId={savedGameId || undefined}
+            onNewGame={handleNewGame}
+            onDashboard={() => router.push("/dashboard")}
+          />
+        )}
+      </>
+    );
+  }
+
   // For other game types, show "coming soon" message
-  if (gameType && gameType !== 'bowlliards' && gameType !== 'apa9ball') {
+  if (gameType && gameType !== 'bowlliards' && gameType !== 'apa9ball' && gameType !== 'apa8ball') {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-slate-900">
         <div className="text-center p-6">

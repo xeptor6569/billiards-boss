@@ -189,7 +189,7 @@ async function DashboardContent() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {gameTypes.map((gameType) => {
-            const isComingSoon = gameType.metadata.id === 'apa8ball' || gameType.metadata.id === 'straight-pool';
+            const isComingSoon = gameType.metadata.id === 'straight-pool';
             return (
               <GameTypeCard
                 key={gameType.metadata.id}

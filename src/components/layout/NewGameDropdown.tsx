@@ -68,7 +68,7 @@ export default function NewGameDropdown({
   };
 
   const isComingSoon = (gameTypeId: string) => {
-    return gameTypeId === 'apa8ball' || gameTypeId === 'straight-pool' || gameTypeId === 'custom';
+    return gameTypeId === 'straight-pool' || gameTypeId === 'custom';
   };
 
   const handleGameTypeSelect = (gameTypeId: string, customGameId?: number) => {

@@ -37,7 +37,7 @@ export default function GameTypeTabs({ currentGameType, basePath }: GameTypeTabs
           </Link>
           {gameTypes.map((gameType) => {
             const isActive = currentGameType === gameType.metadata.id;
-            const isComingSoon = gameType.metadata.id === 'apa8ball' || gameType.metadata.id === 'straight-pool';
+            const isComingSoon = gameType.metadata.id === 'straight-pool';
             
             if (isComingSoon) {
               return (
