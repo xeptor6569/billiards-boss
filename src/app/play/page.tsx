@@ -8,13 +8,30 @@ import RackVisualizer from "@/components/scoring/RackVisualizer";
 import InputKeypad from "@/components/scoring/InputKeypad";
 import FrameEditModal from "@/components/scoring/FrameEditModal";
 import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
+import FirstTimeGuide, { type GuideStep } from "@/components/scoring/FirstTimeGuide";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { trackGameStarted, trackGameCompleted, trackFirstGameGuideDismissed, trackSignupPromptDismissed, trackCTAClick, trackFirstGameGuideStep } from "@/lib/analytics";
+
+// Lazy initialization for first-time guide
+function getInitialShowGuide(): boolean {
+  if (typeof window === "undefined") return false;
+  const hasPlayedBefore = localStorage.getItem("billiards-boss-has-played");
+  if (!hasPlayedBefore) {
+    localStorage.setItem("billiards-boss-has-played", "true");
+    trackGameStarted("anonymous");
+    return true;
+  }
+  return false;
+}
 
 export default function PlayPage() {
-  const router = useRouter();
   const [gameState, setGameState] = useState<GameState>(createNewGame());
   const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
+  const [showFirstTimeGuide, setShowFirstTimeGuide] = useState(getInitialShowGuide);
+  const [guideStep, setGuideStep] = useState<GuideStep>("welcome");
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
+  const [hasTrackedCompletion, setHasTrackedCompletion] = useState(false);
+
 
   // Derived state
   const currentFrame = gameState.frames[gameState.currentFrame - 1];
@@ -53,6 +70,55 @@ export default function PlayPage() {
 
     const newGameState = addBallToFrame(gameState, currentFrameIndex, ballsToAdd);
     setGameState(newGameState);
+    
+    // Advance guide if on first-shot step
+    if (showFirstTimeGuide && guideStep === "first-shot") {
+      setGuideStep("complete");
+    }
+    
+    // Track completion and show signup prompt
+    if (newGameState.isComplete && !hasTrackedCompletion) {
+      setHasTrackedCompletion(true);
+      setShowSignupPrompt(true);
+      trackGameCompleted(newGameState.totalScore, "anonymous");
+    } else if (!newGameState.isComplete) {
+      setHasTrackedCompletion(false);
+      setShowSignupPrompt(false);
+    }
+  };
+
+  const handleGuideNext = () => {
+    const steps: GuideStep[] = ["welcome", "frame-ribbon", "rack-visualizer", "input-keypad", "first-shot", "complete"];
+    const currentIndex = steps.indexOf(guideStep);
+    if (currentIndex < steps.length - 1) {
+      trackFirstGameGuideStep(guideStep, "next");
+      setGuideStep(steps[currentIndex + 1]);
+    }
+  };
+
+  const handleGuideSkip = () => {
+    trackFirstGameGuideStep(guideStep, "skip");
+    setShowFirstTimeGuide(false);
+    trackFirstGameGuideDismissed();
+  };
+
+  const handleGuideComplete = () => {
+    trackFirstGameGuideStep(guideStep, "complete");
+    setShowFirstTimeGuide(false);
+    trackFirstGameGuideDismissed();
+  };
+
+  const getGuideTarget = (): string | undefined => {
+    switch (guideStep) {
+      case "frame-ribbon":
+        return "[data-guide='frame-ribbon']";
+      case "rack-visualizer":
+        return "[data-guide='rack-visualizer']";
+      case "input-keypad":
+        return "[data-guide='input-keypad']";
+      default:
+        return undefined;
+    }
   };
 
   const handleFrameClick = (frameIndex: number) => {
@@ -68,28 +134,23 @@ export default function PlayPage() {
     setGameState(updatedGameState);
   };
 
-  const calculateCumulativeScore = (frameIndex: number): number => {
-    // Ported from old component - consider moving to lib if used often
-    let total = 0;
-    for (let i = 0; i <= frameIndex; i++) {
-      const frame = gameState.frames[i];
-      // simplified cumulative score logic for display
-      // Note: Real logic is complex with bonuses. 
-      // Ideally we should store cumulative score in state or use a helper
-      // For now, using a simplified summing of frame.score which includes bonuses if calculated
-      total += frame.score;
-    }
-    // The original calculateCumulativeScore was more complex to look ahead.
-    // For this MVP, let's use the totalScore from state if focused on current, or simple sum
-    return gameState.totalScore; // simplified for now
-  };
 
   // Custom Header
   const HeaderCmp = (
     <div className="flex justify-between items-center w-full">
-      <div>
-        <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Score</div>
-        <div className="text-3xl font-black text-[var(--accent)]">{gameState.totalScore}</div>
+      <div className="flex items-center gap-4">
+        <div>
+          <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Score</div>
+          <div className="text-3xl font-black text-[var(--accent)]">{gameState.totalScore}</div>
+        </div>
+        {currentFrame && (
+          <div className="hidden sm:block border-l border-slate-200 dark:border-slate-700 pl-4">
+            <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Frame {currentFrame.frameNumber}</div>
+            <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Shot {shotCount + 1} / {isTenthFrame ? "3" : "2"}
+            </div>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-3">
         <ThemeSwitcherCompact />
@@ -108,47 +169,85 @@ export default function PlayPage() {
       <GameLayout
         header={HeaderCmp}
         frameStrip={
-          <FrameRibbon
-            frames={gameState.frames}
-            currentFrameIndex={gameState.currentFrame - 1}
-            calculateCumulativeScore={(idx) => {
-              // Quick hack used in old component, ideally we fix this properly later
-              // For now just return 0 to hide it if we don't want to re-implement full logic here
-              return 0;
-            }}
-            onFrameClick={handleFrameClick}
-            isEditable={!gameState.isComplete}
-          />
+          <div data-guide="frame-ribbon">
+            <FrameRibbon
+              frames={gameState.frames}
+              currentFrameIndex={gameState.currentFrame - 1}
+              calculateCumulativeScore={() => 0}
+              onFrameClick={handleFrameClick}
+              isEditable={!gameState.isComplete}
+            />
+          </div>
         }
         visualizer={
           <div className="w-full h-full flex flex-col justify-center">
-            <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
-            {gameState.isComplete && (
+            <div data-guide="rack-visualizer">
+              <RackVisualizer totalPocketed={totalPocketed} remainingBalls={remainingBalls} />
+            </div>
+            {gameState.isComplete && showSignupPrompt && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm z-50">
-                <div className="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl">
+                <div className="text-center p-6 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xl max-w-md mx-4">
                   <h2 className="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">Game Complete!</h2>
-                  <div className="text-4xl font-black text-[var(--accent)] mb-6">{gameState.totalScore}</div>
-                  <button
-                    onClick={() => setGameState(createNewGame())}
-                    className="w-full py-3 bg-amber-500 text-white font-bold rounded-lg mb-3 hover:opacity-90 transition-opacity"
-                  >
-                    Play Again
-                  </button>
-                  <Link href="/auth/signup" className="block text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
-                    Sign up to save stats
-                  </Link>
+                  <div className="text-4xl font-black text-[var(--accent)] mb-4">{gameState.totalScore}</div>
+                  <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">
+                    Don&apos;t lose this game! Create a free account to save your history and unlock detailed statistics.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <Link 
+                      href="/auth/signup" 
+                      className="w-full py-3 bg-[var(--accent)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity"
+                      onClick={() => {
+                        setShowSignupPrompt(false);
+                        trackSignupPromptDismissed("signed_up");
+                        trackCTAClick("signup", "game_complete_modal");
+                      }}
+                    >
+                      Sign up free to save
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setShowSignupPrompt(false);
+                        setGameState(createNewGame());
+                        trackSignupPromptDismissed("play_again");
+                        trackCTAClick("play_again", "game_complete_modal");
+                      }}
+                      className="w-full py-3 bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                    >
+                      Play Again
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowSignupPrompt(false);
+                        trackSignupPromptDismissed("maybe_later");
+                      }}
+                      className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                    >
+                      Maybe later
+                    </button>
+                  </div>
                 </div>
               </div>
+            )}
+            {showFirstTimeGuide && !gameState.isComplete && (
+              <FirstTimeGuide
+                currentStep={guideStep}
+                onNext={handleGuideNext}
+                onSkip={handleGuideSkip}
+                onComplete={handleGuideComplete}
+                targetElement={getGuideTarget()}
+              />
             )}
           </div>
         }
         controls={
-          <InputKeypad
-            mode={keypadMode}
-            remainingBalls={remainingBalls}
-            onInput={handleScoreInput}
-            disabled={gameState.isComplete}
-          />
+          <div data-guide="input-keypad">
+            <InputKeypad
+              mode={keypadMode}
+              remainingBalls={remainingBalls}
+              onInput={handleScoreInput}
+              disabled={gameState.isComplete}
+            />
+          </div>
         }
       />
       {editingFrameIndex !== null && editingFrame && (

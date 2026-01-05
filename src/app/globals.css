@@ -83,3 +83,125 @@ h2 {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* PWA-like scrollbar styling - hide on mobile, minimal on desktop */
+/* Mobile: Hide scrollbars completely */
+@media (max-width: 768px) {
+  /* Hide scrollbars on mobile for all scrollable elements */
+  * {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+  
+  /* Ensure smooth scrolling */
+  html {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+}
+
+/* Desktop: Minimal, styled scrollbars */
+@media (min-width: 769px) {
+  /* Webkit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: rgb(148 163 184 / 0.3);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(148 163 184 / 0.5);
+  }
+  
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgb(71 85 105 / 0.3);
+  }
+  
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgb(71 85 105 / 0.5);
+  }
+  
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(148 163 184 / 0.3) transparent;
+  }
+  
+  .dark * {
+    scrollbar-color: rgb(71 85 105 / 0.3) transparent;
+  }
+  
+  /* Elements with scrollbar-hide class will still hide scrollbars on desktop if needed */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  /* Allow main content to show scrollbars on desktop */
+  .scrollbar-default::-webkit-scrollbar {
+    display: block;
+  }
+  
+  .scrollbar-default {
+    -ms-overflow-style: auto;
+    scrollbar-width: thin;
+  }
+}
+
+/* Smooth scrolling globally */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* PWA-like body styling */
+body {
+  overscroll-behavior: none; /* Prevent pull-to-refresh on mobile */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Remove default tap highlight on mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Better focus styles for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 3D coin flip animation */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}

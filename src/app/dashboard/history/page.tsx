@@ -1,28 +1,40 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { db } from "@/lib/db";
-import { games } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { calculateTotalScore } from "@/lib/game-logic";
-import HistoryTableRow from "@/components/history/HistoryTableRow";
-
+import { getStandardGameTypes } from "@/lib/game-types";
+import { gamePersistenceService } from "@/lib/services/game-persistence-service";
+import GameTypeTabs from "@/components/history/GameTypeTabs";
+import HistoryList from "@/components/history/HistoryList";
 import { Suspense } from "react";
 
-async function HistoryList() {
+async function AllGamesHistory() {
   const session = await auth();
-
+  
   if (!session) {
     redirect("/auth/signin");
   }
 
-  const allGames = await db.query.games.findMany({
-    where: eq(games.userId, session.user.id),
-    orderBy: (games, { desc }) => [desc(games.createdAt)],
-    with: {
-      frames: true,
-    },
-  });
+  // Fetch all games across all types
+  const gameTypes = getStandardGameTypes();
+  const allGames = [];
+  
+  for (const gameType of gameTypes) {
+    try {
+      const games = await gamePersistenceService.listGames(session.user.id, {
+        gameType: gameType.metadata.id,
+        limit: 50,
+      });
+      allGames.push(...games.map(game => ({
+        ...game,
+        gameTypeName: gameType.metadata.name,
+      })));
+    } catch (error) {
+      console.error(`Error fetching ${gameType.metadata.id} games:`, error);
+    }
+  }
+
+  // Sort by creation date, newest first
+  allGames.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   if (allGames.length === 0) {
     return (
@@ -40,82 +52,33 @@ async function HistoryList() {
     );
   }
 
-  return (
-    <div className="rounded-lg shadow-md overflow-hidden bg-slate-50 dark:bg-slate-800">
-      <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-        <thead className="bg-slate-100 dark:bg-slate-700">
-          <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-              Game ID
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-              Mode
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-              Status
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-              Score
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-              Date
-            </th>
-            <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-600 dark:text-slate-400">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-          {allGames.map((game) => {
-            // Recalculate score from raw shot data
-            let totalScore = 0;
-            if (game.frames && game.frames.length > 0) {
-              try {
-                // Parse frames and reconstruct game state
-                const parsedFrames = game.frames
-                  .sort((a, b) => a.frameNumber - b.frameNumber)
-                  .map((frame) => ({
-                    frameNumber: frame.frameNumber,
-                    ballsPocketed: JSON.parse(frame.ballsPocketed as string) as number[],
-                    score: frame.score,
-                    isStrike: frame.isStrike,
-                    isSpare: frame.isSpare,
-                    isComplete: true,
-                  }));
-                totalScore = calculateTotalScore(parsedFrames);
-              } catch {
-                // Fallback to sum of frame scores if parsing fails
-                totalScore = game.frames.reduce((sum, frame) => sum + frame.score, 0);
-              }
-            }
-            return (
-              <HistoryTableRow
-                key={game.id}
-                game={game}
-                totalScore={totalScore}
-              />
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
+  return <HistoryList games={allGames} showGameType={true} />;
 }
 
 export default function HistoryPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex items-center gap-2 sm:gap-4 mb-2 sm:mb-3">
+          <Link
+            href="/dashboard"
+            className="text-sm sm:text-base text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
+          >
+            ← Dashboard
+          </Link>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">
           Game History
         </h1>
-        <p className="mt-2 text-slate-600 dark:text-slate-400">
-          View all your past games and scores.
+        <p className="mt-2 text-sm sm:text-base text-slate-600 dark:text-slate-400">
+          View and manage all your games.
         </p>
       </div>
 
+      <GameTypeTabs basePath="/dashboard/history" />
+      
       <Suspense fallback={<div className="text-center py-12">Loading history...</div>}>
-        <HistoryList />
+        <AllGamesHistory />
       </Suspense>
     </div>
   );

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { Session } from "next-auth";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface UserMenuProps {
   session: Session;
@@ -13,14 +14,17 @@ interface UserMenuProps {
 
 export default function UserMenu({ session, variant = "desktop" }: UserMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [showThemeOptions, setShowThemeOptions] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { mode, accentColor, setMode, setAccentColor, availableAccentColors } = useTheme();
 
   // Close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setShowThemeOptions(false);
       }
     }
 
@@ -31,6 +35,13 @@ export default function UserMenu({ session, variant = "desktop" }: UserMenuProps
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
+  }, [isOpen]);
+
+  // Reset theme options when menu closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowThemeOptions(false);
+    }
   }, [isOpen]);
 
   const handleSignOut = async () => {
@@ -61,7 +72,7 @@ export default function UserMenu({ session, variant = "desktop" }: UserMenuProps
           {initials}
         </button>
         {isOpen && (
-          <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-50">
+          <div className="absolute top-full right-0 mt-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-50">
             <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
               <div className="font-medium text-slate-900 dark:text-slate-100 truncate">
                 {displayName}
@@ -91,9 +102,125 @@ export default function UserMenu({ session, variant = "desktop" }: UserMenuProps
               </svg>
               Profile
             </Link>
+            
+            {/* Theme Section */}
+            <div className="border-t border-slate-200 dark:border-slate-700">
+              {!showThemeOptions ? (
+                <button
+                  onClick={() => setShowThemeOptions(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="size-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15M7.21 15l-1.21 2.42A2 2 0 0 0 8.22 20h7.56a2 2 0 0 0 1.22-2.58L16.79 15M7.21 15h9.58M12 3v18"
+                    />
+                  </svg>
+                  Theme: {mode === "dark" ? "🌙 Dark" : "☀️ Light"} • {accentColor}
+                </button>
+              ) : (
+                <div className="p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                      Theme
+                    </div>
+                    <button
+                      onClick={() => setShowThemeOptions(false)}
+                      className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                    >
+                      ← Back
+                    </button>
+                  </div>
+                  
+                  {/* Mode Toggle */}
+                  <div className="mb-3">
+                    <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                      Mode
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setMode("light")}
+                        className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          mode === "light"
+                            ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
+                            : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                        }`}
+                      >
+                        ☀️ Light
+                      </button>
+                      <button
+                        onClick={() => setMode("dark")}
+                        className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          mode === "dark"
+                            ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
+                            : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                        }`}
+                      >
+                        🌙 Dark
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Accent Color Selector */}
+                  <div>
+                    <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                      Accent Color
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.values(availableAccentColors).map((accent) => {
+                        const isSelected = accentColor === accent.name;
+                        const accentValue = mode === "dark" ? accent.dark : accent.light;
+                        
+                        return (
+                          <button
+                            key={accent.name}
+                            onClick={() => {
+                              setAccentColor(accent.name);
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                              isSelected
+                                ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
+                                : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                            }`}
+                          >
+                            <div
+                              className="w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600"
+                              style={{ backgroundColor: accentValue }}
+                            />
+                            <span className="capitalize text-xs">{accent.displayName}</span>
+                            {isSelected && (
+                              <svg
+                                className="w-4 h-4 ml-auto"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={handleSignOut}
-              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-slate-200 dark:border-slate-700"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -153,7 +280,7 @@ export default function UserMenu({ session, variant = "desktop" }: UserMenuProps
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-50">
+        <div className="absolute bottom-full left-0 right-0 mb-2 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg overflow-hidden z-50">
           <Link
             href="/dashboard/profile"
             onClick={() => setIsOpen(false)}
@@ -175,9 +302,125 @@ export default function UserMenu({ session, variant = "desktop" }: UserMenuProps
             </svg>
             Profile
           </Link>
+          
+          {/* Theme Section */}
+          <div className="border-t border-slate-200 dark:border-slate-700">
+            {!showThemeOptions ? (
+              <button
+                onClick={() => setShowThemeOptions(true)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="size-5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15M7.21 15l-1.21 2.42A2 2 0 0 0 8.22 20h7.56a2 2 0 0 0 1.22-2.58L16.79 15M7.21 15h9.58M12 3v18"
+                  />
+                </svg>
+                Theme: {mode === "dark" ? "🌙 Dark" : "☀️ Light"} • {accentColor}
+              </button>
+            ) : (
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                    Theme
+                  </div>
+                  <button
+                    onClick={() => setShowThemeOptions(false)}
+                    className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                  >
+                    ← Back
+                  </button>
+                </div>
+                
+                {/* Mode Toggle */}
+                <div className="mb-3">
+                  <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                    Mode
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setMode("light")}
+                      className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        mode === "light"
+                          ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
+                          : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                      }`}
+                    >
+                      ☀️ Light
+                    </button>
+                    <button
+                      onClick={() => setMode("dark")}
+                      className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        mode === "dark"
+                          ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
+                          : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                      }`}
+                    >
+                      🌙 Dark
+                    </button>
+                  </div>
+                </div>
+
+                {/* Accent Color Selector */}
+                <div>
+                  <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                    Accent Color
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.values(availableAccentColors).map((accent) => {
+                      const isSelected = accentColor === accent.name;
+                      const accentValue = mode === "dark" ? accent.dark : accent.light;
+                      
+                      return (
+                        <button
+                          key={accent.name}
+                          onClick={() => {
+                            setAccentColor(accent.name);
+                          }}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+                            isSelected
+                              ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900"
+                              : "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600"
+                          }`}
+                        >
+                          <div
+                            className="w-4 h-4 rounded-full border-2 border-slate-300 dark:border-slate-600"
+                            style={{ backgroundColor: accentValue }}
+                          />
+                          <span className="capitalize text-xs">{accent.displayName}</span>
+                          {isSelected && (
+                            <svg
+                              className="w-4 h-4 ml-auto"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors border-t border-slate-200 dark:border-slate-700"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -337,12 +337,12 @@ export default async function ScoringPage() {
                 Q: What's the difference between a strike and a spare?
               </h3>
               <p className="text-slate-700 dark:text-slate-300">
-                <strong>A:</strong> 
-                <ul className="list-disc list-inside mt-2 ml-4">
-                  <li><strong>Strike</strong>: All 10 balls on the first shot (marked "X")</li>
-                  <li><strong>Spare</strong>: All 10 balls in 2 shots, where the first shot was NOT a strike (marked "/")</li>
-                </ul>
+                <strong>A:</strong>
               </p>
+              <ul className="list-disc list-inside mt-2 ml-4 text-slate-700 dark:text-slate-300">
+                <li><strong>Strike</strong>: All 10 balls on the first shot (marked "X")</li>
+                <li><strong>Spare</strong>: All 10 balls in 2 shots, where the first shot was NOT a strike (marked "/")</li>
+              </ul>
             </div>
           </div>
         </section>

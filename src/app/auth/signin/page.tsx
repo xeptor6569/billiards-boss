@@ -90,12 +90,12 @@ function SignInForm() {
             Sign in to Billiards Boss
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600 dark:text-slate-400">
-            Or{" "}
+            Don't have an account?{" "}
             <Link
               href="/auth/signup"
               className="font-medium transition-opacity hover:opacity-80 text-[var(--accent)]"
             >
-              create a new account
+              Sign up free
             </Link>
           </p>
         </div>

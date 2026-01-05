@@ -94,6 +94,10 @@ docker compose exec app npm run db:migrate || echo "⚠️  Migration failed or 
 echo "🌱 Seeding database..."
 docker compose exec app npm run db:seed || echo "⚠️  Seeding failed or already done"
 
+# Seed database (idempotent)
+echo "🌱 Seeding database..."
+docker compose exec app npm run db:seed:users || echo "⚠️  Seeding users failed or already done"
+
 # Check health
 echo "🏥 Checking application health..."
 sleep 5

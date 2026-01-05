@@ -1,4 +1,4 @@
-# Debugging GitHub Actions Workflow Failures
+## Debugging GitHub Actions Workflow Failures
 
 ## Step 1: View Detailed Logs in GitHub
 
@@ -163,7 +163,7 @@ sudo apt install docker-compose -y
 **Fix:**
 ```bash
 cd /opt/billiards-boss-dev
-# Create .env file (see DEPLOY.md for required variables)
+# Create .env file (see deploy.md for required variables)
 nano .env
 ```
 

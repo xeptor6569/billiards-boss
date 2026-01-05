@@ -11,6 +11,7 @@ import FrameEditModal from "@/components/scoring/FrameEditModal";
 import GameSaveSuccessModal from "@/components/scoring/GameSaveSuccessModal";
 import ThemeSwitcherCompact from "@/components/ThemeSwitcherCompact";
 import GameSummary from "@/components/scoring/GameSummary";
+import { BaseGameState, getGameType } from "@/lib/game-types";
 
 function GameDetailContent() {
   const params = useParams();
@@ -18,6 +19,7 @@ function GameDetailContent() {
   const [game, setGame] = useState<{
     id: number;
     gameMode: string;
+    gameType?: string;
     status: string;
     createdAt: string;
     frames?: Array<{
@@ -27,9 +29,11 @@ function GameDetailContent() {
       isStrike: boolean;
       isSpare: boolean;
     }>;
+    gameState?: BaseGameState;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [gameState, setGameState] = useState<GameState | null>(null);
+  const [baseGameState, setBaseGameState] = useState<BaseGameState | null>(null);
   const [saving, setSaving] = useState(false);
   const [editingFrameIndex, setEditingFrameIndex] = useState<number | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -45,11 +49,34 @@ function GameDetailContent() {
         if (!response.ok) throw new Error("Game not found");
         const gameData = await response.json();
         setGame(gameData);
-        if (gameData.frames && gameData.frames.length > 0) {
-          const { reconstructGameStateFromFrames } = await import("@/lib/game-logic");
-          setGameState(reconstructGameStateFromFrames(gameData.frames));
+        
+        const gameType = gameData.gameType || 'bowlliards';
+        
+        // Handle different game types
+        if (gameType === 'bowlliards') {
+          // Bowlliards: reconstruct from frames
+          if (gameData.frames && gameData.frames.length > 0) {
+            const { reconstructGameStateFromFrames } = await import("@/lib/game-logic");
+            setGameState(reconstructGameStateFromFrames(gameData.frames));
+          } else {
+            setGameState(createNewGame());
+          }
         } else {
-          setGameState(createNewGame());
+          // Other game types: use gameState from API
+          if (gameData.gameState) {
+            const gameTypeHandler = getGameType(gameType);
+            if (gameTypeHandler) {
+              const reconstructed = gameTypeHandler.reconstructFromData(gameData.gameState);
+              setBaseGameState(reconstructed);
+            }
+          } else {
+            // Create new game of this type
+            const gameTypeHandler = getGameType(gameType);
+            if (gameTypeHandler) {
+              const newState = gameTypeHandler.createNewGame();
+              setBaseGameState(newState);
+            }
+          }
         }
       } catch (error) {
         console.error("Error fetching game:", error);
@@ -223,7 +250,10 @@ function GameDetailContent() {
     }
   };
 
-  if (loading || !game || !gameState) return <div className="p-8 text-center">Loading...</div>;
+  const gameType = game?.gameType || 'bowlliards';
+  const hasGameState = gameType === 'bowlliards' ? !!gameState : !!baseGameState;
+  
+  if (loading || !game || !hasGameState) return <div className="p-8 text-center">Loading...</div>;
 
   // If game is completed, show summary view instead of scorekeeper
   if (game.status === 'completed') {
@@ -253,7 +283,9 @@ function GameDetailContent() {
             </div>
           </div>
           <GameSummary 
-            gameState={gameState} 
+            gameState={gameType === 'bowlliards' ? gameState! : null}
+            baseGameState={gameType !== 'bowlliards' ? baseGameState! : null}
+            gameType={gameType}
             gameId={game.id} 
             createdAt={game.createdAt}
             gameMode={game.gameMode}
@@ -264,8 +296,19 @@ function GameDetailContent() {
   }
 
   // Active game - show scorekeeper interface
-  const currentFrame = gameState.frames[gameState.currentFrame - 1] || gameState.frames[9];
-  const isComplete = gameState.isComplete;
+  // Only bowliards games use the active game interface (gameState)
+  // Other game types should be handled in the new game page
+  if (gameType !== 'bowlliards' || !gameState) {
+    // Redirect non-bowliards active games to new game page
+    router.push(`/dashboard/games/new?gameId=${game.id}`);
+    return <div className="p-8 text-center">Redirecting...</div>;
+  }
+
+  // TypeScript now knows gameState exists and is for bowliards
+  // Use non-null assertion since we've checked above
+  const activeGameState = gameState;
+  const currentFrame = activeGameState.frames[activeGameState.currentFrame - 1] || activeGameState.frames[9];
+  const isComplete = activeGameState.isComplete;
   const remainingBalls = currentFrame ? getRemainingBalls(currentFrame) : 0;
   const totalPocketed = currentFrame
     ? currentFrame.ballsPocketed.reduce((sum, count) => sum + count, 0)
@@ -349,7 +392,7 @@ function GameDetailContent() {
       <div className="flex items-center gap-4">
         <div className="text-right">
           <div className="text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Score</div>
-          <div className="text-3xl font-black text-[var(--accent)]">{gameState.totalScore}</div>
+          <div className="text-3xl font-black text-[var(--accent)]">{activeGameState.totalScore}</div>
         </div>
         <ThemeSwitcherCompact />
       </div>
@@ -357,8 +400,8 @@ function GameDetailContent() {
   );
 
   const editingFrame =
-    editingFrameIndex !== null && gameState
-      ? gameState.frames[editingFrameIndex]
+    editingFrameIndex !== null && activeGameState
+      ? activeGameState.frames[editingFrameIndex]
       : null;
 
   return (
@@ -367,8 +410,8 @@ function GameDetailContent() {
         header={HeaderCmp}
         frameStrip={
           <FrameRibbon
-            frames={gameState.frames}
-            currentFrameIndex={gameState.currentFrame - 1}
+            frames={activeGameState.frames}
+            currentFrameIndex={activeGameState.currentFrame - 1}
             calculateCumulativeScore={() => 0}
             onFrameClick={handleFrameClick}
             isEditable={!isComplete}
@@ -407,14 +450,11 @@ function GameDetailContent() {
           onSave={handleModalSave}
         />
       )}
-      {gameState && game && (
+      {activeGameState && game && (
         <GameSaveSuccessModal
           isOpen={showSuccessModal}
-          totalScore={gameState.totalScore}
+          totalScore={activeGameState.totalScore}
           gameId={game.id}
-          gameState={gameState}
-          createdAt={game.createdAt}
-          gameMode={game.gameMode}
           onViewGame={() => setShowSuccessModal(false)}
           onNewGame={() => router.push("/dashboard/games/new")}
           onDashboard={() => router.push("/dashboard")}

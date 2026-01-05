@@ -1,4 +1,4 @@
-# CI/CD Setup Guide
+## CI/CD Setup Guide
 
 This guide explains how to set up automated deployments for Billiards Boss using GitHub Actions with self-hosted runners.
 
@@ -70,7 +70,7 @@ nano .env.production
 # Fill in your production environment variables (see .env.example.production for template)
 ```
 
-**Note**: The workflows automatically use `.env.development` for dev and `.env.production` for production. See [ENV_SETUP.md](ENV_SETUP.md) for detailed environment configuration guide.
+**Note**: The workflows automatically use `.env.development` for dev and `.env.production` for production. See [`env-setup.md`](./env-setup.md) for a detailed environment configuration guide.
 
 3. **Fix Git ownership/permissions** (important for self-hosted runners):
 
@@ -431,7 +431,7 @@ docker compose exec app npm run db:migrate
 
 1. Set up branch protection rules
 2. Configure monitoring/alerting (optional)
-3. Set up database backups (see DEPLOY.md)
+3. Set up database backups (see `deploy.md`)
 4. Configure SSL certificates (if not already done)
 5. Set up log aggregation (optional)
 

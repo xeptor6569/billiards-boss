@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useEffect, useState } from "react";
 
 interface StatsChartProps {
   chartData: Array<{
@@ -59,23 +60,65 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
 }
 
 export default function StatsChart({ chartData }: StatsChartProps) {
+  const [mounted, setMounted] = useState(false);
+  const [chartHeight, setChartHeight] = useState(200);
+
+  useEffect(() => {
+    setMounted(true);
+    // Adjust chart height based on viewport
+    const updateHeight = () => {
+      if (typeof window !== 'undefined') {
+        const isMobile = window.innerWidth < 768;
+        setChartHeight(isMobile ? 250 : 200);
+      }
+    };
+    
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="w-full" style={{ height: chartHeight }}>
+        <div className="flex items-center justify-center h-full text-slate-600 dark:text-slate-400">
+          Loading chart...
+        </div>
+      </div>
+    );
+  }
+
+  if (!chartData || chartData.length === 0) {
+    return (
+      <div className="w-full" style={{ height: chartHeight }}>
+        <div className="flex items-center justify-center h-full text-slate-600 dark:text-slate-400">
+          No data available
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
-        <XAxis 
-          dataKey="name" 
-          className="text-slate-600 dark:text-slate-400"
-          style={{ fontSize: '12px' }}
-        />
-        <YAxis 
-          className="text-slate-600 dark:text-slate-400"
-          style={{ fontSize: '12px' }}
-        />
-        <Tooltip content={<CustomTooltip />} />
-        <Bar dataKey="value" fill="var(--accent)" />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="w-full" style={{ minHeight: chartHeight }}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <BarChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
+          <XAxis 
+            dataKey="name" 
+            className="text-slate-600 dark:text-slate-400"
+            style={{ fontSize: '11px' }}
+            tick={{ fontSize: '11px' }}
+          />
+          <YAxis 
+            className="text-slate-600 dark:text-slate-400"
+            style={{ fontSize: '12px' }}
+            width={40}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Bar dataKey="value" fill="var(--accent)" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 

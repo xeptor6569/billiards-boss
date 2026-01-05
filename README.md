@@ -18,8 +18,7 @@ The application is production-ready with Docker deployment, comprehensive error 
 
 ### Scoring & Gameplay
 - 🎱 **Dual Scoring Interfaces**
-  - **Simple Interface**: Traditional grid-based scoring board for quick, familiar scoring
-  - **Immersive Interface**: Modern, full-screen experience with visual rack representation, frame ribbon navigation, and haptic feedback
+  - **Full-Screen Experience**: Visual rack representation, frame ribbon navigation, and haptic feedback in a single immersive scoring interface
 - 🎯 **Accurate Scoring Logic**: Full bowling rules implementation including:
   - Strikes (all 10 balls on first shot)
   - Spares (all 10 balls in 2 shots)
@@ -30,7 +29,7 @@ The application is production-ready with Docker deployment, comprehensive error 
 
 ### Account & Data Management
 - 🔒 **Secure Authentication**: NextAuth.js v5 with email/password authentication
-- 💾 **Unlimited Game Saving**: Free plan allows unlimited saved games (no subscription required)
+- 💾 **Unlimited Game Saving**: Free plan allows unlimited saved games (no subscription required for now. This will be limited in the future.)
 - 📊 **Comprehensive Statistics**:
   - Games played, total frames, average score
   - Strike and spare counts with percentages
@@ -122,6 +121,19 @@ This project uses a custom `server.ts` file to enable WebSocket support via Sock
 - The custom server wraps Next.js and adds WebSocket capabilities
 
 **Note**: While Next.js 16 auto-configures TypeScript for application code (`.ts`/`.tsx` files in `app/`, `components/`, etc.), the custom `server.ts` file runs outside Next.js's build system, so we use `tsx` to execute it directly. This is only needed for the server file - all other TypeScript files are handled automatically by Next.js.
+
+## Documentation
+
+For detailed guides, see the `docs/` folder:
+
+- `docs/quickstart.md` – local quickstart (5–10 minute setup)
+- `docs/setup.md` – full setup (npm, database, Docker)
+- `docs/env-setup.md` – environment configuration across local/dev/prod
+- `docs/ci-cd-setup.md` – GitHub Actions and self-hosted runner configuration
+- `docs/deploy.md` – deployment to dev/production on your Proxmox VM
+- `docs/debug-workflow.md` – debugging failed GitHub Actions runs
+- `docs/docker-cleanup.md` – Docker and runner disk space management
+- `docs/multi-env-setup.md` – running dev and prod on the same machine
 
 ## Docker Deployment
 
@@ -331,7 +343,7 @@ The application includes a plan system infrastructure for future monetization:
 
 ## Deployment
 
-For detailed production deployment instructions, see [DEPLOY.md](./DEPLOY.md).
+For detailed production deployment instructions, see `docs/deploy.md`.
 
 Quick deployment overview:
 1. Set up PostgreSQL database

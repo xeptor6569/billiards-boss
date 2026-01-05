@@ -1,4 +1,4 @@
-# Quick Start Guide
+## Quick Start Guide
 
 Follow these steps to get Billiards Boss running locally:
 
@@ -33,7 +33,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 NEXT_PUBLIC_WS_URL=http://localhost:3000
 ```
 
-**Note**: `.env.local` is gitignored and takes highest priority. See [ENV_SETUP.md](ENV_SETUP.md) for more details.
+**Note**: `.env.local` is gitignored and takes highest priority. See [`env-setup.md`](./env-setup.md) for more details.
 
 ## Step 2: Set Up PostgreSQL Database
 

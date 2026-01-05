@@ -31,33 +31,63 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.error("[auth] Missing credentials");
+            return null;
+          }
+
+          let user;
+          try {
+            user = await db.query.users.findFirst({
+              where: eq(users.email, credentials.email as string),
+            });
+          } catch (dbError: unknown) {
+            console.error("[auth] Database error during user lookup:", dbError);
+            // Check for connection errors
+            if (
+              (dbError as any)?.code === "ECONNREFUSED" ||
+              (dbError as any)?.message?.includes("connect") ||
+              (dbError as any)?.message?.includes("ECONNREFUSED")
+            ) {
+              throw new Error(
+                "Database connection failed. Please ensure the database is running."
+              );
+            }
+            throw dbError;
+          }
+
+          if (!user) {
+            console.error(`[auth] User not found: ${credentials.email}`);
+            return null;
+          }
+
+          if (!user.password) {
+            console.error(`[auth] User has no password set: ${credentials.email}`);
+            return null;
+          }
+
+          const isValid = await bcrypt.compare(
+            credentials.password as string,
+            user.password
+          );
+
+          if (!isValid) {
+            console.error(`[auth] Invalid password for: ${credentials.email}`);
+            return null;
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            planId: user.planId,
+          };
+        } catch (error: unknown) {
+          console.error("[auth] Error in authorize function:", error);
+          // Re-throw to let NextAuth handle it properly
+          throw error;
         }
-
-        const user = await db.query.users.findFirst({
-          where: eq(users.email, credentials.email as string),
-        });
-
-        if (!user || !user.password) {
-          return null;
-        }
-
-        const isValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password
-        );
-
-        if (!isValid) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          planId: user.planId,
-        };
       },
     }),
     Email({

@@ -1,4 +1,4 @@
-# Setup Guide
+## Setup Guide
 
 ## Quick Start
 
@@ -34,7 +34,7 @@
    openssl rand -base64 32
    ```
    
-   See [ENV_SETUP.md](ENV_SETUP.md) for detailed environment configuration guide.
+   See [`env-setup.md`](./env-setup.md) for a detailed environment configuration guide.
 
 3. **Set Up PostgreSQL Database**
    

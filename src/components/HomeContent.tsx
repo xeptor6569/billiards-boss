@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { trackCTAClick } from "@/lib/analytics";
 
 export default function HomeContent() {
   return (
@@ -15,6 +16,12 @@ export default function HomeContent() {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
+              <Link
+                href="/play"
+                className="hidden sm:inline-flex transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
+              >
+                Play now
+              </Link>
               <Link
                 href="/auth/signin"
                 className="transition-colors text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100"
@@ -43,22 +50,24 @@ export default function HomeContent() {
             </span>
           </h2>
           <p className="mt-6 max-w-2xl mx-auto text-xl text-slate-600 dark:text-slate-400">
-            Track your billiards bowling scores completely free. No hidden fees,
-            no limits on your passion. Compete with friends, track your stats,
-            and improve your game.
+            Score full billiards bowling games in a beautiful, mobile-friendly interface.
+            Start playing in seconds, then create a free account to save games and unlock
+            your stats.
           </p>
           <div className="mt-10 flex justify-center gap-4">
             <Link
               href="/play"
               className="px-8 py-4 text-white text-lg font-semibold rounded-lg transition-opacity shadow-lg bg-[var(--accent)] hover:opacity-90"
+              onClick={() => trackCTAClick("start_scoring", "hero")}
             >
-              Try It Free
+              Start scoring now
             </Link>
             <Link
               href="/auth/signup"
               className="px-8 py-4 text-lg font-semibold rounded-lg transition-colors shadow-lg bg-slate-50 dark:bg-slate-800 text-[var(--accent)] hover:bg-slate-100 dark:hover:bg-slate-700"
+              onClick={() => trackCTAClick("signup", "hero")}
             >
-              Sign Up to Save
+              Sign up free
             </Link>
             <Link
               href="/auth/signin"
@@ -66,6 +75,41 @@ export default function HomeContent() {
             >
               Sign In
             </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* How it works */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/60 backdrop-blur-sm p-6 sm:p-8">
+          <h3 className="text-2xl font-bold mb-4 text-slate-900 dark:text-slate-100">
+            How Billiards Boss works
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-3 text-left">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                1. Score games
+              </p>
+              <p className="text-slate-600 dark:text-slate-400">
+                Open the scorer and track every frame of your bowlliards games in real time.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                2. Save history
+              </p>
+              <p className="text-slate-600 dark:text-slate-400">
+                Create a free account to keep your games, edit past scores, and view history.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">
+                3. Track stats
+              </p>
+              <p className="text-slate-600 dark:text-slate-400">
+                See averages, strike/spare rates, and trends so you can actually measure progress.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -95,7 +139,12 @@ export default function HomeContent() {
             </p>
           </div>
 
-          <div className="rounded-lg shadow-lg p-8 bg-slate-50 dark:bg-slate-800">
+          <div className="rounded-lg shadow-lg p-8 bg-slate-50 dark:bg-slate-800 relative">
+            <div className="absolute top-4 right-4">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200">
+                Coming Soon
+              </span>
+            </div>
             <div className="text-4xl mb-4">👥</div>
             <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100">
               Real-time Multiplayer
@@ -123,7 +172,7 @@ export default function HomeContent() {
                 <li>✅ Free score saving</li>
                 <li>✅ Unlimited games (free plan)</li>
                 <li>✅ Modern, intuitive UI</li>
-                <li>✅ Real-time multiplayer</li>
+                <li>✅ Real-time multiplayer <span className="text-xs text-amber-600 dark:text-amber-400">(coming soon)</span></li>
                 <li>✅ Detailed statistics</li>
                 <li>✅ No credit card required</li>
               </ul>
@@ -141,6 +190,38 @@ export default function HomeContent() {
                 <li>❌ Subscription required</li>
               </ul>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Why create an account */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-8 sm:p-10 flex flex-col md:flex-row items-start md:items-center gap-8">
+          <div className="flex-1">
+            <h3 className="text-2xl font-bold mb-3 text-slate-900 dark:text-slate-100">
+              Why create a free account?
+            </h3>
+            <ul className="space-y-2 text-slate-700 dark:text-slate-300 text-sm">
+              <li>• Keep an unlimited history of your games (limits may apply in the future).</li>
+              <li>• Unlock detailed statistics and trends over time.</li>
+              <li>• Sync across devices instead of relying on a single browser.</li>
+              <li>• Get ready for upcoming features like multiplayer and tournaments.</li>
+            </ul>
+          </div>
+          <div className="flex flex-col gap-3 w-full md:w-auto">
+            <Link
+              href="/auth/signup"
+              className="inline-flex justify-center px-6 py-3 rounded-lg text-sm font-semibold bg-[var(--accent)] text-white shadow-lg hover:opacity-90 transition-opacity"
+              onClick={() => trackCTAClick("signup", "why_create_account")}
+            >
+              Sign up free
+            </Link>
+            <Link
+              href="/play"
+              className="inline-flex justify-center px-6 py-3 rounded-lg text-sm font-semibold border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+            >
+              Keep playing anonymously
+            </Link>
           </div>
         </div>
       </div>

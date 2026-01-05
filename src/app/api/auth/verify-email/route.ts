@@ -11,6 +11,7 @@ function getBaseUrl(request: NextRequest): string {
   }
   
   // Try to extract from request.url first (most accurate for the actual request)
+  // During build/prerender, request.url may not be available, so we catch errors
   try {
     const url = new URL(request.url);
     // Only use if it's a valid external URL (not localhost/0.0.0.0/127.0.0.1)
@@ -21,7 +22,7 @@ function getBaseUrl(request: NextRequest): string {
       return `${url.protocol}//${url.host}`;
     }
   } catch {
-    // Fall through to Host header
+    // During build/prerender, request.url may throw - fall through to Host header
   }
   
   // Fallback to Host header, but filter out localhost/0.0.0.0
@@ -31,28 +32,48 @@ function getBaseUrl(request: NextRequest): string {
       !host.includes("127.0.0.1") && 
       !host.startsWith("localhost") &&
       host !== "localhost") {
-    const protocol = request.headers.get("x-forwarded-proto") || 
-                     (request.url.startsWith("https") ? "https" : "http");
-    return `${protocol}://${host}`;
+    try {
+      const protocol = request.headers.get("x-forwarded-proto") || 
+                       (request.url?.startsWith("https") ? "https" : "http");
+      return `${protocol}://${host}`;
+    } catch {
+      // If request.url is not available, default to https for production, http for dev
+      const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
+      return `${protocol}://${host}`;
+    }
   }
   
   // If all else fails, return a safe default
   return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 }
 
-// With cacheComponents enabled, routes are dynamic by default
-// This route uses request.url which requires runtime evaluation
 export async function GET(request: NextRequest) {
   try {
+    // During build/prerender, request.url may not be available
+    // This route is dynamic by default in Next.js 16, but we need to handle build-time gracefully
+    let requestUrl: string;
+    try {
+      requestUrl = request.url;
+    } catch (error: any) {
+      // During build/prerender, return a safe response
+      if (error?.message?.includes("prerender") || error?.message?.includes("request.url")) {
+        return NextResponse.json(
+          { error: "This route requires runtime execution" },
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
+
     const baseUrl = getBaseUrl(request);
     console.log("Verification request:", { 
       baseUrl, 
-      requestUrl: request.url,
+      requestUrl,
       host: request.headers.get("host"),
       nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL 
     });
     
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(requestUrl);
     const token = searchParams.get("token");
 
     if (!token) {

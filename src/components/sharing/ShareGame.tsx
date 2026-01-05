@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { GameState, Frame } from "@/lib/game-logic";
+import { BaseGameState } from "@/lib/game-types";
+import { APA9BallGameState } from "@/lib/game-types/apa9ball";
 
 interface ShareGameProps {
-  gameState: GameState;
+  gameState?: GameState;
+  baseGameState?: BaseGameState;
   gameId: number;
   createdAt: string;
   gameMode?: string;
@@ -18,7 +21,7 @@ function generateFrameText(frames: Frame[]): string {
   // Header
   frameLines.push("Frames:");
   
-  frames.forEach((frame, index) => {
+  frames.forEach((frame) => {
     const shots = frame.ballsPocketed.map((balls, idx) => {
       if (frame.isStrike && idx === 0) return "X";
       if (frame.isSpare && idx === 1) return "/";
@@ -44,10 +47,9 @@ function generateFrameText(frames: Frame[]): string {
   return frameLines.join("\n");
 }
 
-// Generate share text
-function generateShareText(gameState: GameState, gameId: number, createdAt: string, gameMode?: string): string {
-  const strikes = gameState.frames.filter(f => f.isStrike).length;
-  const spares = gameState.frames.filter(f => f.isSpare && !f.isStrike).length;
+// Generate share text for APA 9-ball
+function generateAPA9BallShareText(gameState: APA9BallGameState, gameId: number, createdAt: string, gameMode?: string): string {
+  const { player1, player2, racks, player1Name, player2Name, matchPoints, gameStatus, breakAndRun } = gameState.gameData;
   const date = new Date(createdAt);
   const formattedDate = date.toLocaleDateString('en-US', { 
     month: 'short', 
@@ -55,9 +57,68 @@ function generateShareText(gameState: GameState, gameId: number, createdAt: stri
     year: 'numeric'
   });
   
-  const frameText = generateFrameText(gameState.frames);
+  const player1Won = gameStatus === 'player1-won';
+  const player2Won = gameStatus === 'player2-won';
+  const winner = player1Won ? player1Name : player2Won ? player2Name : 'Tie';
   
-  return `🎱 Billiards Bowling Game Results
+  let text = `🎱 APA 9-Ball Game Results
+
+${gameId > 0 ? `Game #${gameId}\n` : ""}Date: ${formattedDate}
+${gameMode ? `Mode: ${gameMode}\n` : ""}
+Winner: ${winner}${breakAndRun ? " (Break & Run!)" : ""}
+
+${player1Name} (SL-${player1.skillLevel}): ${player1.score} / ${player1.targetScore}
+${player2Name} (SL-${player2.skillLevel}): ${player2.score} / ${player2.targetScore}
+
+Stats:
+${player1Name}: ${player1.innings} innings, ${player1.defensiveShots} defensive, ${player1.fouls} fouls
+${player2Name}: ${player2.innings} innings, ${player2.defensiveShots} defensive, ${player2.fouls} fouls`;
+
+  if (matchPoints) {
+    text += `\n\nMatch Points: ${player1Name} ${matchPoints.player1} - ${player2Name} ${matchPoints.player2}`;
+  }
+  
+  if (racks.length > 0) {
+    text += `\n\nRacks Played: ${racks.length}`;
+    racks.forEach((rack) => {
+      text += `\n\nRack ${rack.rackNumber}:`;
+      text += `\n  Break: ${rack.breakPlayer === 1 ? player1Name : player2Name}${rack.nineBallOnBreak ? " (9-ball on break)" : ""}`;
+      text += `\n  ${player1Name}: Balls [${rack.player1Balls.length > 0 ? rack.player1Balls.join(', ') : 'None'}], ${rack.player1Innings} innings, ${rack.player1Fouls} fouls`;
+      text += `\n  ${player2Name}: Balls [${rack.player2Balls.length > 0 ? rack.player2Balls.join(', ') : 'None'}], ${rack.player2Innings} innings, ${rack.player2Fouls} fouls`;
+    });
+  }
+  
+  text += `\n\nPlayed on Billiards Boss 🎯`;
+  return text;
+}
+
+// Generate share text
+function generateShareText(
+  gameState: GameState | undefined, 
+  baseGameState: BaseGameState | undefined,
+  gameId: number, 
+  createdAt: string, 
+  gameMode?: string
+): string {
+  // Handle APA 9-ball
+  if (baseGameState && baseGameState.gameType === 'apa9ball') {
+    return generateAPA9BallShareText(baseGameState as APA9BallGameState, gameId, createdAt, gameMode);
+  }
+  
+  // Handle Bowlliards (legacy)
+  if (gameState) {
+    const strikes = gameState.frames.filter(f => f.isStrike).length;
+    const spares = gameState.frames.filter(f => f.isSpare && !f.isStrike).length;
+    const date = new Date(createdAt);
+    const formattedDate = date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric'
+    });
+    
+    const frameText = generateFrameText(gameState.frames);
+    
+    return `🎱 Billiards Bowling Game Results
 
 ${gameId > 0 ? `Game #${gameId}\n` : ""}Date: ${formattedDate}
 ${gameMode ? `Mode: ${gameMode}\n` : ""}
@@ -68,15 +129,22 @@ Spares: ${spares}
 ${frameText}
 
 Played on Billiards Boss 🎯`;
+  }
+  
+  return `🎱 Billiards Game Results\n\nGame #${gameId}\nPlayed on Billiards Boss 🎯`;
 }
 
-export default function ShareGame({ gameState, gameId, createdAt, gameMode, compact = false }: ShareGameProps) {
+export default function ShareGame({ gameState, baseGameState, gameId, createdAt, gameMode, compact = false }: ShareGameProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
 
-  const shareText = generateShareText(gameState, gameId, createdAt, gameMode);
+  const shareText = generateShareText(gameState, baseGameState, gameId, createdAt, gameMode);
   const shareUrl = typeof window !== 'undefined' && gameId && gameId > 0 ? `${window.location.origin}/dashboard/games/${gameId}` : '';
+  
+  // Get total score for social media sharing
+  const totalScore = gameState?.totalScore || baseGameState?.totalScore || 0;
+  const gameTypeName = baseGameState?.gameType === 'apa9ball' ? 'APA 9-Ball' : 'Billiards Bowling';
 
   const handleShare = async () => {
     setShareError(null);
@@ -85,15 +153,15 @@ export default function ShareGame({ gameState, gameId, createdAt, gameMode, comp
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Billiards Bowling Game #${gameId}`,
+          title: `${gameTypeName} Game #${gameId}`,
           text: shareText,
           url: shareUrl,
         });
         setIsOpen(false);
         return;
-      } catch (error: any) {
+      } catch (error: unknown) {
         // User cancelled or error occurred
-        if (error.name !== 'AbortError') {
+        if (error instanceof Error && error.name !== 'AbortError') {
           console.error('Error sharing:', error);
         }
         // Fall through to show manual share options
@@ -117,7 +185,7 @@ export default function ShareGame({ gameState, gameId, createdAt, gameMode, comp
   };
 
   const handleEmail = () => {
-    const subject = encodeURIComponent(`Billiards Bowling Game ${gameId ? `#${gameId} ` : ''}Results`);
+    const subject = encodeURIComponent(`${gameTypeName} Game ${gameId ? `#${gameId} ` : ''}Results`);
     const body = encodeURIComponent(shareUrl ? `${shareText}\n\nView game: ${shareUrl}` : shareText);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
     setIsOpen(false);
@@ -130,9 +198,21 @@ export default function ShareGame({ gameState, gameId, createdAt, gameMode, comp
   };
 
   const handleTwitter = () => {
-    const tweetText = shareUrl 
-      ? `🎱 Just scored ${gameState.totalScore} in Billiards Bowling!${gameId ? ` Game #${gameId}` : ''}\n\n${shareUrl}`
-      : `🎱 Just scored ${gameState.totalScore} in Billiards Bowling!`;
+    let tweetText: string;
+    if (baseGameState?.gameType === 'apa9ball') {
+      const apa9State = baseGameState as APA9BallGameState;
+      const { player1, player2, player1Name, player2Name, gameStatus } = apa9State.gameData;
+      const player1Won = gameStatus === 'player1-won';
+      const player2Won = gameStatus === 'player2-won';
+      const winner = player1Won ? player1Name : player2Won ? player2Name : 'Tie';
+      tweetText = shareUrl 
+        ? `🎱 Just won APA 9-Ball! ${winner} won ${player1.score}-${player2.score}${gameId ? ` Game #${gameId}` : ''}\n\n${shareUrl}`
+        : `🎱 Just won APA 9-Ball! ${winner} won ${player1.score}-${player2.score}`;
+    } else {
+      tweetText = shareUrl 
+        ? `🎱 Just scored ${totalScore} in Billiards Bowling!${gameId ? ` Game #${gameId}` : ''}\n\n${shareUrl}`
+        : `🎱 Just scored ${totalScore} in Billiards Bowling!`;
+    }
     const text = encodeURIComponent(tweetText);
     window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
     setIsOpen(false);
@@ -332,3 +412,9 @@ export default function ShareGame({ gameState, gameId, createdAt, gameMode, comp
     </>
   );
 }
+
+
+
+
+
+

@@ -29,6 +29,11 @@ services:
     env_file:
       - .env
       - .env.development
+    environment:
+      # Explicitly set DATABASE_URL to ensure correct database name
+      # Uses service name 'postgres' (Docker Compose service name, not container name)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-billiards}:${POSTGRES_PASSWORD:-billiards}@postgres:5432/${POSTGRES_DB:-billiards_boss}
+      NODE_ENV: ${NODE_ENV:-development}
     ports:
       - "${APP_PORT:-3001}:3000"  # Dev uses 3001
     networks:

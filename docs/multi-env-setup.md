@@ -1,4 +1,4 @@
-# Running Dev and Prod on the Same Machine
+## Running Dev and Prod on the Same Machine
 
 This guide explains how to run both dev and production environments on the same server without conflicts.
 
