@@ -16,6 +16,7 @@ interface AppNavigationProps {
 export default function AppNavigation({ children, session }: AppNavigationProps) {
     const pathname = usePathname();
     const [hasPremiumAccess, setHasPremiumAccess] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Fetch user's premium status
     useEffect(() => {
@@ -35,6 +36,18 @@ export default function AppNavigation({ children, session }: AppNavigationProps)
             fetchPremiumStatus();
         }
     }, [session?.user?.id]);
+
+    // Prevent body scroll when mobile menu is open
+    useEffect(() => {
+        if (mobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [mobileMenuOpen]);
 
     // Highlight active link helper
     const isActive = (path: string) => {
@@ -166,14 +179,31 @@ export default function AppNavigation({ children, session }: AppNavigationProps)
             <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                 {/* Mobile Top Bar */}
                 <header className="lg:hidden flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
-                    <Link href="/dashboard" className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent)]/80 flex items-center justify-center text-lg shadow-md">
-                            🎱
-                        </div>
-                        <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                            Billiards Boss
-                        </span>
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="p-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            aria-label="Toggle menu"
+                        >
+                            {mobileMenuOpen ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-6">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-6">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                                </svg>
+                            )}
+                        </button>
+                        <Link href="/dashboard" className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--accent)]/80 flex items-center justify-center text-lg shadow-md">
+                                🎱
+                            </div>
+                            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                                Billiards Boss
+                            </span>
+                        </Link>
+                    </div>
                     <div className="flex items-center gap-2">
                         <UserMenu session={session} variant="mobile" />
                     </div>
@@ -182,51 +212,96 @@ export default function AppNavigation({ children, session }: AppNavigationProps)
                 <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900">
                     {children}
                 </main>
+            </div>
 
-                {/* Mobile Bottom Nav */}
-                {!pathname.startsWith('/dashboard/games/') && (
-                    <nav className="lg:hidden border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg pb-safe">
-                        <div className="flex justify-around items-center h-20">
+            {/* Mobile Sidebar Overlay */}
+            {mobileMenuOpen && (
+                <>
+                    {/* Backdrop */}
+                    <div
+                        className="lg:hidden fixed inset-0 bg-black/50 z-40"
+                        onClick={() => setMobileMenuOpen(false)}
+                    />
+                    {/* Sidebar */}
+                    <aside className="lg:hidden fixed inset-y-0 left-0 w-80 max-w-[85vw] flex flex-col border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-2xl z-50 transform transition-transform duration-300 ease-out">
+                        {/* Logo/Brand */}
+                        <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center justify-between mb-4">
+                                <Link href="/dashboard" className="flex items-center gap-3 group" onClick={() => setMobileMenuOpen(false)}>
+                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent)]/80 flex items-center justify-center text-2xl shadow-lg">
+                                        🎱
+                                    </div>
+                                    <div>
+                                        <div className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                                            Billiards Boss
+                                        </div>
+                                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                                            Scorekeeper
+                                        </div>
+                                    </div>
+                                </Link>
+                                <button
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="p-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    aria-label="Close menu"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="size-6">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Navigation */}
+                        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                             {navItems.map((item) => {
                                 const active = isActive(item.href);
-
+                                
                                 if (item.isPrimary) {
                                     return (
                                         <NewGameDropdown
                                             key={item.href}
                                             userId={session.user.id}
                                             hasPremiumAccess={hasPremiumAccess}
-                                            variant="mobile"
+                                            variant="desktop"
+                                            onGameSelect={() => setMobileMenuOpen(false)}
                                         />
-                                    )
+                                    );
                                 }
-
+                                
                                 return (
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className={`flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors relative ${
-                                            active 
-                                                ? "text-[var(--accent)]" 
-                                                : "text-slate-500 dark:text-slate-400"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className={`group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                                            active
+                                                ? "bg-[var(--accent)] text-white shadow-md shadow-[var(--accent)]/20"
+                                                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100"
                                         }`}
                                     >
-                                        {active && (
-                                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 rounded-b-full bg-[var(--accent)]"></div>
-                                        )}
-                                        <span className={active ? "scale-110" : ""}>
+                                        <span className={active ? "text-white" : ""}>
                                             {item.icon}
                                         </span>
-                                        <span className={`text-[10px] font-medium ${active ? "font-semibold" : ""}`}>
-                                            {item.label}
-                                        </span>
+                                        <span>{item.label}</span>
+                                        {active && (
+                                            <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white"></div>
+                                        )}
                                     </Link>
                                 );
                             })}
+                        </nav>
+
+                        {/* User Menu & Footer */}
+                        <div className="p-4 border-t border-slate-200 dark:border-slate-700 space-y-3">
+                            <UserMenu session={session} variant="desktop" />
+                            <div className="text-xs text-center text-slate-500 dark:text-slate-400 px-2">
+                                {BUILD_INFO.display}
+                            </div>
                         </div>
-                    </nav>
-                )}
-            </div>
+                    </aside>
+                </>
+            )}
         </div>
     );
 }

@@ -8,6 +8,7 @@ interface NewGameDropdownProps {
   userId: string;
   hasPremiumAccess: boolean;
   variant?: "desktop" | "mobile";
+  onGameSelect?: () => void;
 }
 
 interface CustomGame {
@@ -28,6 +29,7 @@ export default function NewGameDropdown({
   userId,
   hasPremiumAccess,
   variant = "desktop",
+  onGameSelect,
 }: NewGameDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [customGames, setCustomGames] = useState<CustomGame[]>([]);
@@ -81,6 +83,7 @@ export default function NewGameDropdown({
       return;
     }
     setIsOpen(false);
+    onGameSelect?.();
     if (customGameId) {
       router.push(`/dashboard/games/new?gameType=${gameTypeId}&customGameId=${customGameId}&new=true`);
     } else {
