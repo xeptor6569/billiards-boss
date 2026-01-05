@@ -113,8 +113,8 @@ export default function APA9BallSelector({
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center p-4">
-      <div className="relative w-[300px] h-[240px] sm:w-[360px] sm:h-[300px] overflow-visible">
+    <div className="w-full h-full flex flex-col items-center justify-center p-2 sm:p-4">
+      <div className="relative w-[260px] h-[200px] min-[375px]:w-[280px] min-[375px]:h-[220px] sm:w-[360px] sm:h-[300px] overflow-visible">
         {RACK_POSITIONS.map(({ row, col, ball }) => {
           const isPocketed = isBallPocketed(ball);
           const isDead = isBallDead(ball);
@@ -142,11 +142,14 @@ export default function APA9BallSelector({
           const shouldShowAsPocketed = isPocketed && !isSelected;
           const shouldShowAsDead = isDead && !isSelected;
           
-          // Calculate adjusted positions to prevent overlap
+          // Calculate adjusted positions to prevent overlap on small screens
+          // On mobile, balls are smaller but we still need to account for selection rings
           // Ball 1 needs extra top padding to prevent overflow
-          // Outer balls (6, 7, 8) need slight adjustments to prevent ring overlap
-          const topOffset = ball === 1 ? 3 : 0; // Extra padding for ball 1 at top
-          const leftOffset = 0; // Keep horizontal positioning as-is
+          const topOffset = ball === 1 ? 5 : 0; // Extra padding for ball 1 at top
+          // Slight horizontal adjustments for outer balls to prevent ring overlap
+          let leftOffset = 0;
+          if (ball === 6) leftOffset = -0.5; // Slight left adjustment for ball 6
+          if (ball === 8) leftOffset = 0.5;  // Slight right adjustment for ball 8
           
           return (
             <div

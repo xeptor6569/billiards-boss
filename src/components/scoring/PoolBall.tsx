@@ -28,7 +28,7 @@ const BALL_COLORS: Record<number, { bg: string; border: string; text: string }> 
 const SIZE_CLASSES = {
   sm: 'w-10 h-10 text-xs',
   md: 'w-12 h-12 sm:w-14 sm:h-14 text-sm sm:text-base',
-  lg: 'w-16 h-16 text-lg',
+  lg: 'w-14 h-14 sm:w-16 sm:h-16 text-base sm:text-lg', // Smaller on mobile, larger on desktop
 };
 
 export default function PoolBall({
@@ -82,9 +82,9 @@ export default function PoolBall({
           ? 'bg-slate-300 dark:bg-slate-600 border-2 border-slate-400 dark:border-slate-500 opacity-50 cursor-not-allowed'
           : `${colors.bg} ${colors.border} border-2 shadow-lg hover:scale-110 active:scale-95 cursor-pointer ${isSelectedAsDead ? 'opacity-60' : ''}`
         }
-        ${isSelected ? 'ring-4 ring-blue-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-800' : ''}
-        ${pocketedBy === 'player1' ? 'ring-2 ring-blue-500 ring-offset-2' : ''}
-        ${pocketedBy === 'player2' ? 'ring-2 ring-red-500 ring-offset-2' : ''}
+        ${isSelected ? 'ring-2 sm:ring-4 ring-blue-400 ring-offset-1 sm:ring-offset-2 ring-offset-white dark:ring-offset-slate-800' : ''}
+        ${pocketedBy === 'player1' ? 'ring-1 sm:ring-2 ring-blue-500 ring-offset-1 sm:ring-offset-2' : ''}
+        ${pocketedBy === 'player2' ? 'ring-1 sm:ring-2 ring-red-500 ring-offset-1 sm:ring-offset-2' : ''}
       `}
       style={
         isNineBall && visualState === 'normal'
@@ -97,7 +97,7 @@ export default function PoolBall({
       {/* White circle with number */}
       <div
         className={`
-          rounded-full w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center
+          rounded-full w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 flex items-center justify-center
           ${visualState === 'pocketed' || visualState === 'dead'
             ? 'bg-slate-300 dark:bg-slate-500'
             : 'bg-white'
@@ -109,7 +109,7 @@ export default function PoolBall({
           shadow-inner
         `}
       >
-        <span className="font-black drop-shadow-sm">{ballNumber}</span>
+        <span className="font-black drop-shadow-sm text-xs sm:text-sm">{ballNumber}</span>
       </div>
       
       {/* Dead ball indicator - only show if actually dead in game state, not just selected as dead */}
