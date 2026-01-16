@@ -19,9 +19,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await db.query.users.findFirst({
-      where: eq(users.email, email),
-    });
+    const existingUserResults = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+    
+    const existingUser = existingUserResults[0] || null;
 
     if (existingUser) {
       return NextResponse.json(
@@ -31,9 +35,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Get free plan
-    const freePlan = await db.query.plans.findFirst({
-      where: eq(plans.tier, "free"),
-    });
+    const freePlanResults = await db
+      .select()
+      .from(plans)
+      .where(eq(plans.tier, "free"))
+      .limit(1);
+    
+    const freePlan = freePlanResults[0] || null;
 
     if (!freePlan) {
       return NextResponse.json(
@@ -86,8 +94,38 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Signup error:", error);
+    
+    // Provide more specific error messages
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Check for database connection errors
+    if (
+      errorMessage.includes("ECONNREFUSED") ||
+      errorMessage.includes("connect") ||
+      errorMessage.includes("database") ||
+      (error as any)?.code === "ECONNREFUSED"
+    ) {
+      return NextResponse.json(
+        { error: "Database connection failed. Please ensure the database is running and DATABASE_URL is configured correctly." },
+        { status: 500 }
+      );
+    }
+    
+    // Check for missing environment variables
+    if (errorMessage.includes("DATABASE_URL") || errorMessage.includes("not set")) {
+      return NextResponse.json(
+        { error: "Database configuration error. Please check your environment variables." },
+        { status: 500 }
+      );
+    }
+    
+    // Generic error with more context in development
+    const detailedError = process.env.NODE_ENV === "development" 
+      ? errorMessage 
+      : "Internal server error";
+    
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: detailedError },
       { status: 500 }
     );
   }

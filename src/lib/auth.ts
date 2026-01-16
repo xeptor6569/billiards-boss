@@ -10,6 +10,8 @@ import { sendMagicLinkEmail } from "./email";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   trustHost: true, // Trust the host (required for reverse proxy setups)
+  // NextAuth v5 supports both AUTH_SECRET and NEXTAUTH_SECRET (for backward compatibility)
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
@@ -39,9 +41,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           let user;
           try {
-            user = await db.query.users.findFirst({
-              where: eq(users.email, credentials.email as string),
-            });
+            // Use standard Drizzle query builder instead of relational API with where clause
+            const userResults = await db
+              .select()
+              .from(users)
+              .where(eq(users.email, credentials.email as string))
+              .limit(1);
+            
+            user = userResults[0] || null;
           } catch (dbError: unknown) {
             console.error("[auth] Database error during user lookup:", dbError);
             // Check for connection errors
@@ -105,8 +112,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       sendVerificationRequest: async ({ identifier, url }) => {
         try {
           await sendMagicLinkEmail(identifier, url);
+          console.log(`[auth] Magic link email sent to ${identifier}`);
         } catch (error) {
-          console.error("Error sending magic link email:", error);
+          console.error("[auth] Error sending magic link email:", error);
+          // In development, allow magic link to proceed even if email fails
+          // (emails are logged to console in dev mode)
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[auth] Continuing in development mode despite email error");
+            return;
+          }
+          // In production, throw the error to prevent silent failures
           throw error;
         }
       },
